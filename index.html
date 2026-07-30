@@ -2148,6 +2148,12 @@ async function handleForgotPassword(){
 
 initUI();
 auth.onAuthStateChanged(async (user) => {
+  if (user && user.isAnonymous){
+    // 欠席連絡フォームやカレンダー閲覧ページ(同じドメイン)から
+    // 匿名セッションが引き継がれてしまった場合の保護。スタッフ用アプリでは無効。
+    await auth.signOut();
+    return;
+  }
   currentUser = user;
   if (user){
     document.getElementById('login-screen').style.display = 'none';
