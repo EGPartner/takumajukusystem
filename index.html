@@ -607,6 +607,7 @@ let editState = { pricing:false, sponsors:false, expenses:false, extra:false, lo
 let currentFY;
 let patterns = [];
 let scheduleEvents = [];
+let locationsList = [];
 let calViewYear, calViewMonth, calSelectedDate = null;
 let chartCount, chartFinance, chartRadar, chartRanking;
 
@@ -661,6 +662,7 @@ const db = firebase.firestore();
 const academyRef = db.collection('academies').doc(ACADEMY_ID);
 const studentsRef = academyRef.collection('students');
 const settingsRef = academyRef.collection('meta').doc('settings');
+const locationsMetaRef = academyRef.collection('meta').doc('locations');
 const staffRef = academyRef.collection('staff');
 const absenceRef = academyRef.collection('absenceReports');
 const patternsRef = academyRef.collection('schedulePatterns');
@@ -715,8 +717,7 @@ function defaultSettings(){
     tuition:8000, enroll:5000,
     sponsors:[{ id:'seed1', name:'メインスポンサー', amount:300000, month:4 }],
     expenses:[{ id:'seed2', name:'設備使用料', amount:100000 },{ id:'seed3', name:'消耗品費', amount:20000 }],
-    extraIncomes:[],
-    locations:[]
+    extraIncomes:[]
   };
 }
 
@@ -756,6 +757,20 @@ function attachListeners(){
     renderPatternsTable();
     renderCalendarViews();
   }, err => console.error(err));
+  unsubLocationsMeta = locationsMetaRef.onSnapshot(async (doc) => {
+    if (doc.exists){
+      locationsList = doc.data().items || [];
+    } else {
+      // 一度だけ、旧settings.locationsからの移行を試みる
+      locationsList = (settings.locations || []);
+      if (locationsList.length > 0){
+        try { await locationsMetaRef.set({ items: locationsList }); } catch(e){ console.error(e); }
+      }
+    }
+    renderLocationsTable();
+    populateLocationSelects();
+    renderPatternsTable();
+  }, err => console.error(err));
   unsubEvents = eventsRef.onSnapshot(snap => {
     scheduleEvents = snap.docs.map(d => Object.assign({ id:d.id }, d.data()));
     renderCalendarViews();
@@ -767,10 +782,12 @@ function detachListeners(){
   if (unsubAbsence){ unsubAbsence(); unsubAbsence = null; }
   if (unsubPatterns){ unsubPatterns(); unsubPatterns = null; }
   if (unsubEvents){ unsubEvents(); unsubEvents = null; }
+  if (unsubLocationsMeta){ unsubLocationsMeta(); unsubLocationsMeta = null; }
 }
 let unsubAbsence = null;
 let unsubPatterns = null;
 let unsubEvents = null;
+let unsubLocationsMeta = null;
 
 function renderAbsenceList(docs){
   const tbody = document.getElementById('absence-tbody');
@@ -836,7 +853,7 @@ const WEEKDAY_NAMES = ['日曜','月曜','火曜','水曜','木曜','金曜','�
 
 function dateStrOf(d){ return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()); }
 function weekdayOf(dateStr){ return new Date(dateStr + 'T00:00:00').getDay(); }
-function locationName(id){ const l = (settings.locations||[]).find(x => x.id === id); return l ? l.name : '(場所未設定)'; }
+function locationName(id){ const l = (locationsList||[]).find(x => x.id === id); return l ? l.name : '(場所未設定)'; }
 
 function occurrencesForDate(dateStr){
   const wd = weekdayOf(dateStr);
@@ -969,7 +986,7 @@ function renderCalendarViews(){
 }
 
 function populateLocationSelects(){
-  const opts = '<option value="">(未選択)</option>' + (settings.locations||[]).map(l => `<option value="${l.id}">${escAttr(l.name)}</option>`).join('');
+  const opts = '<option value="">(未選択)</option>' + (locationsList||[]).map(l => `<option value="${l.id}">${escAttr(l.name)}</option>`).join('');
   ['occ-location','new-occ-location'].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
@@ -1083,7 +1100,7 @@ function renderPatternsTable(){
   if (patterns.length === 0){ tbody.innerHTML = '<tr><td colspan="10" class="empty">定期パターンが登録されていません</td></tr>'; return; }
   const sorted = [...patterns].sort((a,b) => Number(a.weekday) - Number(b.weekday));
   const dis = editState.patterns ? '' : 'disabled';
-  const locOpts = (selected) => '<option value="">(未選択)</option>' + (settings.locations||[]).map(l => `<option value="${l.id}" ${l.id===selected?'selected':''}>${escAttr(l.name)}</option>`).join('');
+  const locOpts = (selected) => '<option value="">(未選択)</option>' + (locationsList||[]).map(l => `<option value="${l.id}" ${l.id===selected?'selected':''}>${escAttr(l.name)}</option>`).join('');
   const wdOpts = (selected) => WEEKDAY_NAMES.map((w,i) => `<option value="${i}" ${Number(selected)===i?'selected':''}>${w}</option>`).join('');
   tbody.innerHTML = sorted.map(p => `
     <tr data-id="${p.id}">
@@ -1122,7 +1139,7 @@ async function handlePatternsClick(e){
 function renderLocationsTable(){
   const tbody = document.getElementById('locations-tbody');
   if (!tbody) return;
-  const locs = settings.locations || [];
+  const locs = locationsList || [];
   const dis = editState.locations ? '' : 'disabled';
   tbody.innerHTML = locs.map(l => `
     <tr data-id="${l.id}">
@@ -1132,23 +1149,28 @@ function renderLocationsTable(){
       <td><button class="link-danger" data-del-loc="${l.id}" ${dis}>削除</button></td>
     </tr>`).join('') || '<tr><td colspan="4" class="empty">場所が登録されていません</td></tr>';
 }
+async function saveLocations(){
+  try { await locationsMetaRef.set({ items: locationsList }); markSaved(true); }
+  catch(err){ console.error(err); markSaved(false); }
+}
+
 async function handleLocationsChange(e){
   const id = e.target.dataset.id;
   if (!id) return;
-  const loc = (settings.locations||[]).find(x => x.id === id);
+  const loc = (locationsList||[]).find(x => x.id === id);
   if (!loc) return;
   if (e.target.classList.contains('loc-name')) loc.name = e.target.value;
   else if (e.target.classList.contains('loc-address')) loc.address = e.target.value;
   else if (e.target.classList.contains('loc-note')) loc.note = e.target.value;
-  await saveSettings();
+  await saveLocations();
   populateLocationSelects();
   renderPatternsTable();
 }
 async function handleLocationsClick(e){
   const id = e.target.dataset.delLoc;
   if (!id) return;
-  settings.locations = (settings.locations||[]).filter(x => x.id !== id);
-  await saveSettings();
+  locationsList = (locationsList||[]).filter(x => x.id !== id);
+  await saveLocations();
   renderLocationsTable();
   populateLocationSelects();
   renderPatternsTable();
@@ -1997,7 +2019,7 @@ function initUI(){
   document.getElementById('btn-save-extra').addEventListener('click', () => toggleEditMode('extra', false));
   document.getElementById('locations-tbody').addEventListener('input', handleLocationsChange);
   document.getElementById('locations-tbody').addEventListener('click', handleLocationsClick);
-  document.getElementById('btn-add-location').addEventListener('click', async () => { settings.locations = (settings.locations||[]).concat([{ id:uid(), name:'新しい場所', address:'', note:'' }]); await saveSettings(); renderLocationsTable(); populateLocationSelects(); renderPatternsTable(); });
+  document.getElementById('btn-add-location').addEventListener('click', async () => { locationsList = (locationsList||[]).concat([{ id:uid(), name:'新しい場所', address:'', note:'' }]); await saveLocations(); renderLocationsTable(); populateLocationSelects(); renderPatternsTable(); });
   document.getElementById('btn-edit-locations').addEventListener('click', () => toggleEditMode('locations', true));
   document.getElementById('btn-save-locations').addEventListener('click', () => toggleEditMode('locations', false));
 
