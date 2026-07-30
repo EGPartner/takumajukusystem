@@ -139,7 +139,7 @@ async function init(){
     document.getElementById('content').innerHTML = '<p class="empty">読み込みに失敗しました。<br>エラー内容: ' + escAttr(e && e.code ? e.code : '') + ' ' + escAttr(e && e.message ? e.message : String(e)) + '</p>';
     return;
   }
-  patternsRef.onSnapshot(snap => { patterns = snap.docs.map(d => d.data()); render(); }, err => {
+  patternsRef.onSnapshot(snap => { patterns = snap.docs.map(d => Object.assign({ id:d.id }, d.data())); render(); }, err => {
     console.error(err);
     document.getElementById('content').innerHTML = '<p class="empty">予定データの読み込みに失敗しました。<br>エラー内容: ' + escAttr(err && err.code ? err.code : '') + ' ' + escAttr(err && err.message ? err.message : String(err)) + '</p>';
   });
