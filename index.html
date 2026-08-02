@@ -747,6 +747,9 @@ async function resolveRole(uid){
   try {
     const doc = await staffRef.doc(uid).get();
     isAdmin = doc.exists && doc.data().role === 'admin';
+    if (doc.exists && doc.data().uid !== uid){
+      staffRef.doc(uid).set({ uid, email: currentUser.email }, { merge:true }).catch(e => console.error(e));
+    }
   } catch(e){ isAdmin = false; }
   document.getElementById('current-user-email').textContent = currentUser.email + (isAdmin ? '(管理者)' : '(スタッフ)');
   updateAdminUI();
@@ -1251,7 +1254,7 @@ async function handleAddStaff(){
     const cred = await secondaryAuth.createUserWithEmailAndPassword(email, password);
     const newUid = cred.user.uid;
     await secondaryAuth.signOut();
-    await staffRef.doc(newUid).set({ role, email });
+    await staffRef.doc(newUid).set({ role, email, uid: newUid });
     statusEl.style.color = 'var(--accent-dark)';
     statusEl.textContent = '✓ ' + email + ' さんのアカウントを発行しました。';
     document.getElementById('new-staff-email').value = '';

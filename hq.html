@@ -132,7 +132,7 @@ document.getElementById('btn-add-school').addEventListener('click', async () => 
     const existing = await schoolsRef.doc(id).get();
     if (existing.exists){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = 'この校舎IDはすでに使われています。'; return; }
     await schoolsRef.doc(id).set({ name, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
-    await db.collection('academies').doc(id).collection('staff').doc(currentUser.uid).set({ role:'admin', email: currentUser.email });
+    await db.collection('academies').doc(id).collection('staff').doc(currentUser.uid).set({ role:'admin', email: currentUser.email, uid: currentUser.uid });
     statusEl.style.color = 'var(--accent-dark)';
     statusEl.textContent = '✓ 登録しました。ご自身がこの校舎の管理者として設定されています。';
     document.getElementById('new-name').value = '';
