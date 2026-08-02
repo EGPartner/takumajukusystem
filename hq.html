@@ -74,7 +74,7 @@
 <div class="wrap">
   <header>
     <h1>タクマ塾 本部管理</h1>
-    <p>全校舎の一覧・新規登録(本部管理者専用)</p>
+    <p>全校舎の統合管理(システム管理者・運用管理者専用)</p>
   </header>
 
   <div class="card" id="login-card">
@@ -231,6 +231,25 @@
         <div class="btn-row"><button class="primary" id="btn-add-school">追加する</button></div>
         <p class="status" id="add-status"></p>
       </div>
+
+      <div class="card" id="hqadmin-manage-section" style="display:none;">
+        <h2 style="font-size:15px;margin:0 0 4px;">運用管理者</h2>
+        <p class="status" style="margin-top:0;color:var(--text-muted);">全校舎の統合スケジュール・欠席連絡・校舎管理ができる権限です。追加・削除はシステム管理者のみ行えます。ここで発行したアカウントは、hq.htmlにログインして運用管理者として利用できます。「削除」はアクセス権のみ外し、ログインアカウント自体は残ります。</p>
+        <div style="overflow-x:auto;">
+          <table class="mini-table">
+            <thead><tr><th>メールアドレス</th><th></th></tr></thead>
+            <tbody id="hqadmin-tbody"></tbody>
+          </table>
+        </div>
+        <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
+          <div class="row2">
+            <div class="field"><label>メールアドレス</label><input type="text" id="new-hqadmin-email" placeholder="例: staff@example.com"></div>
+            <div class="field"><label>初期パスワード</label><input type="text" id="new-hqadmin-password" placeholder="6文字以上"></div>
+          </div>
+          <div class="btn-row"><button class="primary" id="btn-add-hqadmin" style="width:auto;">運用管理者として発行する</button></div>
+          <p class="status" id="add-hqadmin-status"></p>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -249,12 +268,16 @@ const firebaseConfig = {
 };
 
 firebase.initializeApp(firebaseConfig);
+const secondaryApp = firebase.initializeApp(firebaseConfig, 'Secondary');
+const secondaryAuth = secondaryApp.auth();
 const auth = firebase.auth();
 const db = firebase.firestore();
 const schoolsRef = db.collection('schools');
 const hqAdminsRef = db.collection('hqAdmins');
+const systemAdminsRef = db.collection('systemAdmins');
 
 let currentUser = null;
+let isSystemAdminUser = false;
 let schoolsMap = {};
 
 function pad(n){ return String(n).padStart(2,'0'); }
@@ -301,6 +324,56 @@ document.getElementById('btn-add-school').addEventListener('click', async () => 
   } catch(e){
     statusEl.style.color = 'var(--danger)';
     statusEl.textContent = '登録に失敗しました: ' + e.message;
+  }
+});
+
+async function loadHQAdmins(){
+  const tbody = document.getElementById('hqadmin-tbody');
+  tbody.innerHTML = '<tr><td colspan="2" class="status">読み込み中…</td></tr>';
+  try {
+    const snap = await hqAdminsRef.get();
+    if (snap.empty){ tbody.innerHTML = '<tr><td colspan="2" class="status">登録されていません</td></tr>'; return; }
+    tbody.innerHTML = snap.docs.map(d => {
+      const data = d.data();
+      const selfTag = currentUser && d.id === currentUser.uid ? '(自分)' : '';
+      const delBtn = (currentUser && d.id === currentUser.uid) ? '' : `<button class="link-danger" data-del-hqadmin="${d.id}">削除</button>`;
+      return `<tr><td>${escAttr(data.email || d.id)} ${selfTag}</td><td>${delBtn}</td></tr>`;
+    }).join('');
+  } catch(e){
+    tbody.innerHTML = '<tr><td colspan="2" class="status">読み込みに失敗しました: ' + escAttr(e.message) + '</td></tr>';
+  }
+}
+
+document.getElementById('hqadmin-tbody').addEventListener('click', async (e) => {
+  const uid = e.target.dataset.delHqadmin;
+  if (!uid) return;
+  if (!confirm('この本部管理者のアクセス権を削除しますか？(ログインアカウント自体は残ります)')) return;
+  try { await hqAdminsRef.doc(uid).delete(); loadHQAdmins(); }
+  catch(err){ alert('削除に失敗しました: ' + err.message); }
+});
+
+document.getElementById('btn-add-hqadmin').addEventListener('click', async () => {
+  const statusEl = document.getElementById('add-hqadmin-status');
+  const email = document.getElementById('new-hqadmin-email').value.trim();
+  const password = document.getElementById('new-hqadmin-password').value;
+  if (!email || !password){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = 'メールアドレスとパスワードの両方を入力してください。'; return; }
+  if (password.length < 6){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = 'パスワードは6文字以上にしてください。'; return; }
+  statusEl.style.color = 'var(--text-secondary)';
+  statusEl.textContent = 'アカウントを発行しています…';
+  try {
+    const cred = await secondaryAuth.createUserWithEmailAndPassword(email, password);
+    const newUid = cred.user.uid;
+    await secondaryAuth.signOut();
+    await hqAdminsRef.doc(newUid).set({ email });
+    statusEl.style.color = 'var(--accent-dark)';
+    statusEl.textContent = '✓ ' + email + ' さんを本部管理者として発行しました。';
+    document.getElementById('new-hqadmin-email').value = '';
+    document.getElementById('new-hqadmin-password').value = '';
+    loadHQAdmins();
+  } catch(err){
+    console.error(err);
+    statusEl.style.color = 'var(--danger)';
+    statusEl.textContent = '発行に失敗しました: ' + err.message;
   }
 });
 
@@ -793,19 +866,26 @@ auth.onAuthStateChanged(async (user) => {
     return;
   }
   let isHQ = false;
-  try { const doc = await hqAdminsRef.doc(user.uid).get(); isHQ = doc.exists; }
-  catch(e){ console.error(e); }
+  isSystemAdminUser = false;
+  try {
+    const sysDoc = await systemAdminsRef.doc(user.uid).get();
+    isSystemAdminUser = sysDoc.exists;
+    if (isSystemAdminUser){ isHQ = true; }
+    else { const doc = await hqAdminsRef.doc(user.uid).get(); isHQ = doc.exists; }
+  } catch(e){ console.error(e); }
   if (!isHQ){
     document.getElementById('login-status').style.color = 'var(--danger)';
-    document.getElementById('login-status').textContent = 'このアカウントには本部管理者権限がありません。';
+    document.getElementById('login-status').textContent = 'このアカウントには運用管理者・システム管理者の権限がありません。';
     await auth.signOut();
     return;
   }
   document.getElementById('login-card').style.display = 'none';
   document.getElementById('main-content').style.display = 'block';
-  document.getElementById('who').textContent = user.email + '(本部管理者)';
+  document.getElementById('who').textContent = user.email + (isSystemAdminUser ? '(システム管理者)' : '(運用管理者)');
+  document.getElementById('hqadmin-manage-section').style.display = isSystemAdminUser ? 'block' : 'none';
   document.getElementById('hq-new-occ-date').value = (() => { const d = new Date(); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); })();
   await loadSchools();
+  if (isSystemAdminUser) loadHQAdmins();
   loadAbsenceReports();
   attachHQCalendarListeners();
 });
