@@ -55,19 +55,21 @@ const firebaseConfig = {
   messagingSenderId: "1065956673618",
   appId: "1:1065956673618:web:e765409502a9b87031b78b"
 };
-const ACADEMY_ID = new URLSearchParams(window.location.search).get('school') || 'takuma-juku-iwakuni';
+const ACADEMY_ID = new URLSearchParams(window.location.search).get('school');
 
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
-const academyRef = db.collection('academies').doc(ACADEMY_ID);
+const academyRef = ACADEMY_ID ? db.collection('academies').doc(ACADEMY_ID) : null;
 const schoolsRef = db.collection('schools');
-schoolsRef.doc(ACADEMY_ID).get().then(doc => {
-  if (doc.exists) document.getElementById('branch-title').textContent = doc.data().name + ' 活動予定';
-}).catch(() => {});
-const patternsRef = academyRef.collection('schedulePatterns');
-const eventsRef = academyRef.collection('scheduleEvents');
-const locationsMetaRef = academyRef.collection('meta').doc('locations');
+if (ACADEMY_ID){
+  schoolsRef.doc(ACADEMY_ID).get().then(doc => {
+    if (doc.exists) document.getElementById('branch-title').textContent = doc.data().name + ' 活動予定';
+  }).catch(() => {});
+}
+const patternsRef = academyRef ? academyRef.collection('schedulePatterns') : null;
+const eventsRef = academyRef ? academyRef.collection('scheduleEvents') : null;
+const locationsMetaRef = academyRef ? academyRef.collection('meta').doc('locations') : null;
 
 let patterns = [];
 let scheduleEvents = [];
@@ -136,6 +138,10 @@ function render(){
 }
 
 async function init(){
+  if (!ACADEMY_ID){
+    document.getElementById('content').innerHTML = '<p class="empty" style="color:var(--danger);">URLが正しくありません。どの校舎の予定か分かる情報が含まれていません。<br>正しいURL(校舎の管理者から共有されたもの)からアクセスし直してください。</p>';
+    return;
+  }
   try {
     await auth.signInAnonymously();
   } catch(e){

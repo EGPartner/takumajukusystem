@@ -67,6 +67,11 @@
   </div>
 </div>
 
+<div class="card" id="error-card" style="display:none;">
+  <h1 style="color:var(--danger);">URLが正しくありません</h1>
+  <p class="sub" style="margin-bottom:0;">このリンクには、どの校舎の欠席連絡か分かる情報が含まれていません。お手数ですが、正しいURL(校舎の管理者から共有されたもの)からアクセスし直してください。</p>
+</div>
+
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -79,16 +84,22 @@ const firebaseConfig = {
   messagingSenderId: "1065956673618",
   appId: "1:1065956673618:web:e765409502a9b87031b78b"
 };
-const ACADEMY_ID = new URLSearchParams(window.location.search).get('school') || 'takuma-juku-iwakuni';
+const ACADEMY_ID = new URLSearchParams(window.location.search).get('school');
+if (!ACADEMY_ID){
+  document.getElementById('form-card').style.display = 'none';
+  document.getElementById('error-card').style.display = 'block';
+}
 
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
-const absenceRef = db.collection('academies').doc(ACADEMY_ID).collection('absenceReports');
+const absenceRef = ACADEMY_ID ? db.collection('academies').doc(ACADEMY_ID).collection('absenceReports') : null;
 const schoolsRef = db.collection('schools');
-schoolsRef.doc(ACADEMY_ID).get().then(doc => {
-  if (doc.exists) document.getElementById('branch-title').textContent = doc.data().name + ' 欠席連絡';
-}).catch(() => {});
+if (ACADEMY_ID){
+  schoolsRef.doc(ACADEMY_ID).get().then(doc => {
+    if (doc.exists) document.getElementById('branch-title').textContent = doc.data().name + ' 欠席連絡';
+  }).catch(() => {});
+}
 
 let selectedReason = null;
 
