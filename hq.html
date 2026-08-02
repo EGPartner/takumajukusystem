@@ -54,6 +54,11 @@
   .mini-table th,.mini-table td{padding:6px 5px;text-align:left;border-bottom:1px solid var(--border);}
   .link-danger{background:none;border:none;color:var(--danger);font-size:12px;cursor:pointer;width:auto;padding:2px 4px;}
   .ghost-small{padding:6px 10px;font-size:12px;width:auto;background:none;border:1px solid var(--border-strong);border-radius:6px;color:var(--text-primary);cursor:pointer;}
+  .tabs{display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:18px;flex-wrap:wrap;}
+  .tab-btn{padding:11px 14px;font-size:13.5px;font-weight:600;background:none;border:none;color:var(--text-secondary);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;font-family:inherit;width:auto;border-radius:0;}
+  .tab-btn.active{color:var(--accent-dark);border-bottom-color:var(--accent);}
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;}
 </style>
 </head>
 <body>
@@ -78,79 +83,75 @@
       </div>
     </div>
 
-    <div class="card">
-      <h2 style="font-size:15px;margin:0 0 4px;">統合スケジュール(全校舎)</h2>
-      <p class="status" style="margin-top:0;color:var(--text-muted);">今日から60日間の予定を、校舎をまたいでまとめて確認・編集できます。校舎ごとのページを行き来する必要はありません。</p>
-      <div id="hq-calendar-list"><div class="empty">読み込み中…</div></div>
+    <div class="tabs" role="tablist">
+      <button class="tab-btn active" data-tab="schedule">統合スケジュール</button>
+      <button class="tab-btn" data-tab="absence">欠席連絡</button>
+      <button class="tab-btn" data-tab="schools">校舎管理</button>
     </div>
 
-    <div class="card">
-      <h2 style="font-size:15px;margin:0 0 4px;">この日だけの予定を編集</h2>
-      <p class="status" id="hq-occ-hint" style="margin-top:0;color:var(--text-muted);">上の一覧から「編集」を押すと、ここに内容が表示されます。</p>
-      <div id="hq-occ-editor" style="display:none;">
+    <div class="tab-panel active" id="tab-schedule">
+      <div class="card">
+        <h2 style="font-size:15px;margin:0 0 4px;">統合スケジュール(全校舎)</h2>
+        <p class="status" style="margin-top:0;color:var(--text-muted);">今日から60日間の予定を、校舎をまたいでまとめて確認・編集できます。校舎ごとのページを行き来する必要はありません。</p>
+        <div id="hq-calendar-list"><div class="empty">読み込み中…</div></div>
+      </div>
+
+      <div class="card">
+        <h2 style="font-size:15px;margin:0 0 4px;">この日だけの予定を編集</h2>
+        <p class="status" id="hq-occ-hint" style="margin-top:0;color:var(--text-muted);">上の一覧から「編集」を押すと、ここに内容が表示されます。</p>
+        <div id="hq-occ-editor" style="display:none;">
+          <div class="row2">
+            <div class="field"><label>校舎</label><input type="text" id="hq-occ-school" disabled></div>
+            <div class="field"><label>日付</label><input type="text" id="hq-occ-date" disabled></div>
+          </div>
+          <div class="row2">
+            <div class="field"><label>種別</label>
+              <select id="hq-occ-type"><option value="通常練習">通常練習</option><option value="試合">試合</option><option value="イベント">イベント</option></select>
+            </div>
+            <div class="field"><label>場所</label><select id="hq-occ-location"></select></div>
+          </div>
+          <div class="row2">
+            <div class="field"><label>開始時刻</label><input type="time" id="hq-occ-start"></div>
+            <div class="field"><label>終了時刻</label><input type="time" id="hq-occ-end"></div>
+          </div>
+          <div class="field"><label>担当スタッフ</label><input type="text" id="hq-occ-staff"></div>
+          <div class="field"><label>対象学年/グループ</label><input type="text" id="hq-occ-target"></div>
+          <div class="field"><label>備考</label><textarea id="hq-occ-note" rows="2"></textarea></div>
+          <div class="checkbox-row"><input type="checkbox" id="hq-occ-cancelled"><label for="hq-occ-cancelled">この日は中止にする</label></div>
+          <div class="btn-row">
+            <button class="primary" id="hq-btn-save-occ" style="width:auto;">保存</button>
+            <button class="ghost-small" id="hq-btn-reset-occ" style="display:none;">上書きを解除</button>
+            <button class="link-danger" id="hq-btn-delete-occ" style="display:none;">この単発予定を削除</button>
+          </div>
+          <p class="status" id="hq-occ-status"></p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 style="font-size:15px;margin:0 0 4px;">単発予定を追加</h2>
         <div class="row2">
-          <div class="field"><label>校舎</label><input type="text" id="hq-occ-school" disabled></div>
-          <div class="field"><label>日付</label><input type="text" id="hq-occ-date" disabled></div>
+          <div class="field"><label>校舎</label><select id="hq-new-occ-school"></select></div>
+          <div class="field"><label>日付</label><input type="date" id="hq-new-occ-date"></div>
         </div>
         <div class="row2">
           <div class="field"><label>種別</label>
-            <select id="hq-occ-type"><option value="通常練習">通常練習</option><option value="試合">試合</option><option value="イベント">イベント</option></select>
+            <select id="hq-new-occ-type"><option value="試合">試合</option><option value="イベント">イベント</option><option value="通常練習">通常練習</option></select>
           </div>
-          <div class="field"><label>場所</label><select id="hq-occ-location"></select></div>
+          <div class="field"><label>場所</label><select id="hq-new-occ-location"></select></div>
         </div>
         <div class="row2">
-          <div class="field"><label>開始時刻</label><input type="time" id="hq-occ-start"></div>
-          <div class="field"><label>終了時刻</label><input type="time" id="hq-occ-end"></div>
+          <div class="field"><label>開始時刻</label><input type="time" id="hq-new-occ-start"></div>
+          <div class="field"><label>終了時刻</label><input type="time" id="hq-new-occ-end"></div>
         </div>
-        <div class="field"><label>担当スタッフ</label><input type="text" id="hq-occ-staff"></div>
-        <div class="field"><label>対象学年/グループ</label><input type="text" id="hq-occ-target"></div>
-        <div class="field"><label>備考</label><textarea id="hq-occ-note" rows="2"></textarea></div>
-        <div class="checkbox-row"><input type="checkbox" id="hq-occ-cancelled"><label for="hq-occ-cancelled">この日は中止にする</label></div>
-        <div class="btn-row">
-          <button class="primary" id="hq-btn-save-occ" style="width:auto;">保存</button>
-          <button class="ghost-small" id="hq-btn-reset-occ" style="display:none;">上書きを解除</button>
-          <button class="link-danger" id="hq-btn-delete-occ" style="display:none;">この単発予定を削除</button>
-        </div>
-        <p class="status" id="hq-occ-status"></p>
+        <div class="field"><label>担当スタッフ</label><input type="text" id="hq-new-occ-staff"></div>
+        <div class="field"><label>対象学年/グループ</label><input type="text" id="hq-new-occ-target"></div>
+        <div class="field"><label>備考</label><textarea id="hq-new-occ-note" rows="2"></textarea></div>
+        <div class="btn-row"><button class="primary" id="hq-btn-add-occ" style="width:auto;">追加する</button></div>
+        <p class="status" id="hq-add-occ-status"></p>
       </div>
-    </div>
 
-    <div class="card">
-      <h2 style="font-size:15px;margin:0 0 4px;">単発予定を追加</h2>
-      <div class="row2">
-        <div class="field"><label>校舎</label><select id="hq-new-occ-school"></select></div>
-        <div class="field"><label>日付</label><input type="date" id="hq-new-occ-date"></div>
-      </div>
-      <div class="row2">
-        <div class="field"><label>種別</label>
-          <select id="hq-new-occ-type"><option value="試合">試合</option><option value="イベント">イベント</option><option value="通常練習">通常練習</option></select>
-        </div>
-        <div class="field"><label>場所</label><select id="hq-new-occ-location"></select></div>
-      </div>
-      <div class="row2">
-        <div class="field"><label>開始時刻</label><input type="time" id="hq-new-occ-start"></div>
-        <div class="field"><label>終了時刻</label><input type="time" id="hq-new-occ-end"></div>
-      </div>
-      <div class="field"><label>担当スタッフ</label><input type="text" id="hq-new-occ-staff"></div>
-      <div class="field"><label>対象学年/グループ</label><input type="text" id="hq-new-occ-target"></div>
-      <div class="field"><label>備考</label><textarea id="hq-new-occ-note" rows="2"></textarea></div>
-      <div class="btn-row"><button class="primary" id="hq-btn-add-occ" style="width:auto;">追加する</button></div>
-      <p class="status" id="hq-add-occ-status"></p>
-    </div>
-
-    <div class="card">
-      <h2 style="font-size:15px;margin:0 0 12px;">全校舎の欠席連絡</h2>
-      <div id="absence-list"><div class="empty">読み込み中…</div></div>
-    </div>
-
-    <details class="card" style="padding:0;">
-      <summary style="cursor:pointer;padding:18px;font-size:15px;font-weight:700;">その他の管理(校舎一覧・定期パターン・新規登録)</summary>
-      <div style="padding:0 18px 18px;">
-
-        <h2 style="font-size:14px;margin:18px 0 12px;">校舎一覧</h2>
-        <div id="school-list"><div class="empty">読み込み中…</div></div>
-
-        <h2 style="font-size:14px;margin:24px 0 4px;">定期パターン一覧(全校舎)</h2>
+      <div class="card">
+        <h2 style="font-size:15px;margin:0 0 4px;">定期パターン一覧(全校舎)</h2>
         <div style="overflow-x:auto;">
           <table class="mini-table">
             <thead><tr><th>校舎</th><th>曜日</th><th>時間</th><th>種別</th><th></th></tr></thead>
@@ -165,16 +166,30 @@
         </div>
         <div class="btn-row"><button class="primary" id="hq-btn-add-pattern" style="width:auto;">+ このパターンを追加</button></div>
         <p class="status" id="hq-add-pattern-status"></p>
+      </div>
+    </div>
 
-        <h2 style="font-size:14px;margin:24px 0 4px;">新しい校舎を追加</h2>
+    <div class="tab-panel" id="tab-absence">
+      <div class="card">
+        <h2 style="font-size:15px;margin:0 0 12px;">全校舎の欠席連絡</h2>
+        <div id="absence-list"><div class="empty">読み込み中…</div></div>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="tab-schools">
+      <div class="card">
+        <h2 style="font-size:15px;margin:0 0 12px;">校舎一覧</h2>
+        <div id="school-list"><div class="empty">読み込み中…</div></div>
+      </div>
+      <div class="card">
+        <h2 style="font-size:15px;margin:0 0 4px;">新しい校舎を追加</h2>
         <p class="status" style="margin-top:0;color:var(--text-muted);">校舎IDは半角英数字とハイフンのみ(例: nara)。あとで変更できません。</p>
         <div class="field"><label for="new-name">校舎名</label><input type="text" id="new-name" placeholder="例: タクマ塾奈良校"></div>
         <div class="field"><label for="new-id">校舎ID</label><input type="text" id="new-id" placeholder="例: nara"></div>
         <div class="btn-row"><button class="primary" id="btn-add-school">追加する</button></div>
         <p class="status" id="add-status"></p>
-
       </div>
-    </details>
+    </div>
   </div>
 </div>
 
@@ -216,6 +231,12 @@ document.getElementById('btn-login').addEventListener('click', async () => {
   }
 });
 document.getElementById('btn-logout').addEventListener('click', () => auth.signOut());
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b === btn));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + btn.dataset.tab));
+  });
+});
 
 document.getElementById('btn-add-school').addEventListener('click', async () => {
   const statusEl = document.getElementById('add-status');
@@ -280,15 +301,21 @@ async function loadSchools(){
 async function loadAbsenceReports(){
   const container = document.getElementById('absence-list');
   container.innerHTML = '<div class="empty">読み込み中…</div>';
+  if (schoolsArr.length === 0){ container.innerHTML = '<div class="empty">校舎が登録されていません。</div>'; return; }
   try {
-    const snap = await db.collectionGroup('absenceReports').orderBy('absenceDate', 'desc').limit(30).get();
-    if (snap.empty){ container.innerHTML = '<div class="empty">欠席連絡はまだありません。</div>'; return; }
-    container.innerHTML = snap.docs.map(d => {
-      const r = d.data();
-      const academyId = d.ref.parent.parent.id;
-      const schoolName = schoolsMap[academyId] || academyId;
+    const perSchool = await Promise.all(schoolsArr.map(async (s) => {
+      try {
+        const snap = await db.collection('academies').doc(s.id).collection('absenceReports')
+          .orderBy('absenceDate', 'desc').limit(10).get();
+        return snap.docs.map(d => Object.assign({ id:d.id, academyId:s.id }, d.data()));
+      } catch(e){ console.error('absenceReports load failed for', s.id, e); return []; }
+    }));
+    const all = perSchool.flat().sort((a,b) => (b.absenceDate||'').localeCompare(a.absenceDate||''));
+    if (all.length === 0){ container.innerHTML = '<div class="empty">欠席連絡はまだありません。</div>'; return; }
+    container.innerHTML = all.map(r => {
+      const schoolName = schoolsMap[r.academyId] || r.academyId;
       const statusBadge = r.status === 'new' ? '<span class="badge">未確認</span>' : '<span class="badge muted">確認済み</span>';
-      const ackBtn = r.status === 'new' ? `<button class="ghost-small" data-ack="${academyId}|${d.id}">確認済みにする</button>` : '';
+      const ackBtn = r.status === 'new' ? `<button class="ghost-small" data-ack="${r.academyId}|${r.id}">確認済みにする</button>` : '';
       return `<div class="absence-row">
         <strong>${escAttr(schoolName)}</strong> ${statusBadge}<br>
         ${escAttr(r.studentName||'')} ／ ${escAttr(r.absenceDate||'')} ／ ${escAttr(r.reason||'')}
@@ -317,7 +344,7 @@ let allPatterns = [];
 let allEvents = [];
 let allLocations = {};
 let schoolsArr = [];
-let unsubPatternsGroup = null, unsubEventsGroup = null, unsubMetaGroup = null;
+let unsubPatternsGroup = null, unsubEventsGroup = null;
 
 function dateStrOf(d){ return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()); }
 function weekdayOf(dateStr){ return new Date(dateStr + 'T00:00:00').getDay(); }
@@ -561,17 +588,23 @@ function attachHQCalendarListeners(){
     allEvents = snap.docs.map(d => Object.assign({ id:d.id, academyId: d.ref.parent.parent.id }, d.data()));
     renderHQCalendarList();
   }, err => console.error(err));
-  unsubMetaGroup = db.collectionGroup('meta').onSnapshot(snap => {
-    const map = {};
-    snap.docs.forEach(d => { if (d.id === 'locations') map[d.ref.parent.parent.id] = d.data().items || []; });
-    allLocations = map;
-    renderHQCalendarList();
-  }, err => console.error(err));
+  loadAllLocations();
+}
+
+async function loadAllLocations(){
+  const map = {};
+  await Promise.all(schoolsArr.map(async (s) => {
+    try {
+      const doc = await db.collection('academies').doc(s.id).collection('meta').doc('locations').get();
+      map[s.id] = doc.exists ? (doc.data().items || []) : [];
+    } catch(e){ console.error('locations load failed for', s.id, e); map[s.id] = []; }
+  }));
+  allLocations = map;
+  renderHQCalendarList();
 }
 function detachHQCalendarListeners(){
   if (unsubPatternsGroup){ unsubPatternsGroup(); unsubPatternsGroup = null; }
   if (unsubEventsGroup){ unsubEventsGroup(); unsubEventsGroup = null; }
-  if (unsubMetaGroup){ unsubMetaGroup(); unsubMetaGroup = null; }
 }
 
 auth.onAuthStateChanged(async (user) => {
