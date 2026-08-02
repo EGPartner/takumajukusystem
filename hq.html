@@ -79,16 +79,6 @@
     </div>
 
     <div class="card">
-      <h2 style="font-size:15px;margin:0 0 12px;">校舎一覧</h2>
-      <div id="school-list"><div class="empty">読み込み中…</div></div>
-    </div>
-
-    <div class="card">
-      <h2 style="font-size:15px;margin:0 0 12px;">全校舎の欠席連絡</h2>
-      <div id="absence-list"><div class="empty">読み込み中…</div></div>
-    </div>
-
-    <div class="card">
       <h2 style="font-size:15px;margin:0 0 4px;">統合スケジュール(全校舎)</h2>
       <p class="status" style="margin-top:0;color:var(--text-muted);">今日から60日間の予定を、校舎をまたいでまとめて確認・編集できます。校舎ごとのページを行き来する必要はありません。</p>
       <div id="hq-calendar-list"><div class="empty">読み込み中…</div></div>
@@ -149,31 +139,42 @@
     </div>
 
     <div class="card">
-      <h2 style="font-size:15px;margin:0 0 4px;">定期パターン一覧(全校舎)</h2>
-      <div style="overflow-x:auto;">
-        <table class="mini-table">
-          <thead><tr><th>校舎</th><th>曜日</th><th>時間</th><th>種別</th><th></th></tr></thead>
-          <tbody id="hq-patterns-tbody"></tbody>
-        </table>
-      </div>
-      <div class="row2" style="margin-top:12px;">
-        <div class="field"><label>新規パターンを追加する校舎</label><select id="hq-new-pattern-school"></select></div>
-        <div class="field"><label>曜日</label>
-          <select id="hq-new-pattern-weekday"><option value="0">日曜</option><option value="1">月曜</option><option value="2" selected>火曜</option><option value="3">水曜</option><option value="4">木曜</option><option value="5">金曜</option><option value="6">土曜</option></select>
-        </div>
-      </div>
-      <div class="btn-row"><button class="primary" id="hq-btn-add-pattern" style="width:auto;">+ このパターンを追加</button></div>
-      <p class="status" id="hq-add-pattern-status"></p>
+      <h2 style="font-size:15px;margin:0 0 12px;">全校舎の欠席連絡</h2>
+      <div id="absence-list"><div class="empty">読み込み中…</div></div>
     </div>
 
-    <div class="card">
-      <h2 style="font-size:15px;margin:0 0 4px;">新しい校舎を追加</h2>
-      <p class="status" style="margin-top:0;color:var(--text-muted);">校舎IDは半角英数字とハイフンのみ(例: nara)。あとで変更できません。</p>
-      <div class="field"><label for="new-name">校舎名</label><input type="text" id="new-name" placeholder="例: タクマ塾奈良校"></div>
-      <div class="field"><label for="new-id">校舎ID</label><input type="text" id="new-id" placeholder="例: nara"></div>
-      <div class="btn-row"><button class="primary" id="btn-add-school">追加する</button></div>
-      <p class="status" id="add-status"></p>
-    </div>
+    <details class="card" style="padding:0;">
+      <summary style="cursor:pointer;padding:18px;font-size:15px;font-weight:700;">その他の管理(校舎一覧・定期パターン・新規登録)</summary>
+      <div style="padding:0 18px 18px;">
+
+        <h2 style="font-size:14px;margin:18px 0 12px;">校舎一覧</h2>
+        <div id="school-list"><div class="empty">読み込み中…</div></div>
+
+        <h2 style="font-size:14px;margin:24px 0 4px;">定期パターン一覧(全校舎)</h2>
+        <div style="overflow-x:auto;">
+          <table class="mini-table">
+            <thead><tr><th>校舎</th><th>曜日</th><th>時間</th><th>種別</th><th></th></tr></thead>
+            <tbody id="hq-patterns-tbody"></tbody>
+          </table>
+        </div>
+        <div class="row2" style="margin-top:12px;">
+          <div class="field"><label>新規パターンを追加する校舎</label><select id="hq-new-pattern-school"></select></div>
+          <div class="field"><label>曜日</label>
+            <select id="hq-new-pattern-weekday"><option value="0">日曜</option><option value="1">月曜</option><option value="2" selected>火曜</option><option value="3">水曜</option><option value="4">木曜</option><option value="5">金曜</option><option value="6">土曜</option></select>
+          </div>
+        </div>
+        <div class="btn-row"><button class="primary" id="hq-btn-add-pattern" style="width:auto;">+ このパターンを追加</button></div>
+        <p class="status" id="hq-add-pattern-status"></p>
+
+        <h2 style="font-size:14px;margin:24px 0 4px;">新しい校舎を追加</h2>
+        <p class="status" style="margin-top:0;color:var(--text-muted);">校舎IDは半角英数字とハイフンのみ(例: nara)。あとで変更できません。</p>
+        <div class="field"><label for="new-name">校舎名</label><input type="text" id="new-name" placeholder="例: タクマ塾奈良校"></div>
+        <div class="field"><label for="new-id">校舎ID</label><input type="text" id="new-id" placeholder="例: nara"></div>
+        <div class="btn-row"><button class="primary" id="btn-add-school">追加する</button></div>
+        <p class="status" id="add-status"></p>
+
+      </div>
+    </details>
   </div>
 </div>
 
