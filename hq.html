@@ -54,6 +54,15 @@
   .mini-table th,.mini-table td{padding:6px 5px;text-align:left;border-bottom:1px solid var(--border);}
   .link-danger{background:none;border:none;color:var(--danger);font-size:12px;cursor:pointer;width:auto;padding:2px 4px;}
   .ghost-small{padding:6px 10px;font-size:12px;width:auto;background:none;border:1px solid var(--border-strong);border-radius:6px;color:var(--text-primary);cursor:pointer;}
+  .ghost-small.hq-view-toggle.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .hq-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+  .hq-cal-grid .hcg-head{font-size:10px;color:var(--text-secondary);text-align:center;padding:3px 0;font-weight:600;}
+  .hq-cal-day{border:1px solid var(--border);border-radius:6px;min-height:64px;padding:3px;font-size:10px;cursor:pointer;background:var(--surface);}
+  .hq-cal-day.empty-cell{border:none;background:none;cursor:default;}
+  .hq-cal-day.selected{border-color:var(--accent);background:var(--accent-bg);}
+  .hq-cal-day .hcd-num{font-weight:700;margin-bottom:2px;}
+  .hq-cal-day .hcd-tag{font-size:8.5px;font-weight:700;line-height:1.4;padding:1px 3px;border-radius:3px;background:var(--accent);color:#fff;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .hq-cal-day .hcd-tag.cancelled{background:#EEECE4;color:var(--text-muted);text-decoration:line-through;}
   .tabs{display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:18px;flex-wrap:wrap;}
   .tab-btn{padding:11px 14px;font-size:13.5px;font-weight:600;background:none;border:none;color:var(--text-secondary);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;font-family:inherit;width:auto;border-radius:0;}
   .tab-btn.active{color:var(--accent-dark);border-bottom-color:var(--accent);}
@@ -93,7 +102,22 @@
       <div class="card">
         <h2 style="font-size:15px;margin:0 0 4px;">統合スケジュール(全校舎)</h2>
         <p class="status" style="margin-top:0;color:var(--text-muted);">今日から60日間の予定を、校舎をまたいでまとめて確認・編集できます。校舎ごとのページを行き来する必要はありません。</p>
-        <div id="hq-calendar-list"><div class="empty">読み込み中…</div></div>
+        <div class="btn-row" style="margin-bottom:12px;">
+          <button class="ghost-small hq-view-toggle active" id="hq-btn-view-list">一覧</button>
+          <button class="ghost-small hq-view-toggle" id="hq-btn-view-grid">カレンダー</button>
+        </div>
+        <div id="hq-calendar-list-view">
+          <div id="hq-calendar-list"><div class="empty">読み込み中…</div></div>
+        </div>
+        <div id="hq-calendar-grid-view" style="display:none;">
+          <div class="btn-row" style="justify-content:space-between;margin-bottom:10px;">
+            <button class="ghost-small" id="hq-cal-prev-month">◀</button>
+            <strong id="hq-cal-month-label">-</strong>
+            <button class="ghost-small" id="hq-cal-next-month">▶</button>
+          </div>
+          <div class="hq-cal-grid" id="hq-cal-grid"></div>
+          <div id="hq-cal-day-detail" style="margin-top:14px;"></div>
+        </div>
       </div>
 
       <div class="card">
@@ -171,7 +195,25 @@
 
     <div class="tab-panel" id="tab-absence">
       <div class="card">
-        <h2 style="font-size:15px;margin:0 0 12px;">全校舎の欠席連絡</h2>
+        <h2 style="font-size:15px;margin:0 0 4px;">校舎別の状況</h2>
+        <p class="status" style="margin-top:0;color:var(--text-muted);">「詳細」を押すと、その校の選手ごとの欠席回数が下に表示されます。</p>
+        <div style="overflow-x:auto;">
+          <table class="mini-table">
+            <thead><tr><th>校舎</th><th>未確認</th><th>直近30日</th><th></th></tr></thead>
+            <tbody id="hq-absence-summary-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card" id="hq-absence-detail-card" style="display:none;">
+        <h2 style="font-size:15px;margin:0 0 4px;" id="hq-absence-detail-title">選手ごとの欠席状況</h2>
+        <p class="status" style="margin-top:0;color:var(--text-muted);">選手名をクリックすると、日付・理由の履歴が下に表示されます。</p>
+        <div id="hq-absence-detail-table"><div class="empty">読み込み中…</div></div>
+        <div id="hq-absence-student-history" style="margin-top:14px;"></div>
+      </div>
+
+      <div class="card">
+        <h2 style="font-size:15px;margin:0 0 12px;">最新の欠席連絡(全校舎)</h2>
         <div id="absence-list"><div class="empty">読み込み中…</div></div>
       </div>
     </div>
@@ -298,34 +340,107 @@ async function loadSchools(){
   }
 }
 
+let absenceDataBySchool = {};
+let selectedAbsenceSchool = null;
+
 async function loadAbsenceReports(){
-  const container = document.getElementById('absence-list');
-  container.innerHTML = '<div class="empty">読み込み中…</div>';
-  if (schoolsArr.length === 0){ container.innerHTML = '<div class="empty">校舎が登録されていません。</div>'; return; }
+  const listContainer = document.getElementById('absence-list');
+  const summaryTbody = document.getElementById('hq-absence-summary-tbody');
+  listContainer.innerHTML = '<div class="empty">読み込み中…</div>';
+  summaryTbody.innerHTML = '<tr><td colspan="4" class="status">読み込み中…</td></tr>';
+  if (schoolsArr.length === 0){ listContainer.innerHTML = '<div class="empty">校舎が登録されていません。</div>'; summaryTbody.innerHTML = ''; return; }
   try {
-    const perSchool = await Promise.all(schoolsArr.map(async (s) => {
+    await Promise.all(schoolsArr.map(async (s) => {
       try {
         const snap = await db.collection('academies').doc(s.id).collection('absenceReports')
-          .orderBy('absenceDate', 'desc').limit(10).get();
-        return snap.docs.map(d => Object.assign({ id:d.id, academyId:s.id }, d.data()));
-      } catch(e){ console.error('absenceReports load failed for', s.id, e); return []; }
+          .orderBy('absenceDate', 'desc').limit(100).get();
+        absenceDataBySchool[s.id] = snap.docs.map(d => Object.assign({ id:d.id, academyId:s.id }, d.data()));
+      } catch(e){ console.error('absenceReports load failed for', s.id, e); absenceDataBySchool[s.id] = []; }
     }));
-    const all = perSchool.flat().sort((a,b) => (b.absenceDate||'').localeCompare(a.absenceDate||''));
-    if (all.length === 0){ container.innerHTML = '<div class="empty">欠席連絡はまだありません。</div>'; return; }
-    container.innerHTML = all.map(r => {
-      const schoolName = schoolsMap[r.academyId] || r.academyId;
-      const statusBadge = r.status === 'new' ? '<span class="badge">未確認</span>' : '<span class="badge muted">確認済み</span>';
-      const ackBtn = r.status === 'new' ? `<button class="ghost-small" data-ack="${r.academyId}|${r.id}">確認済みにする</button>` : '';
-      return `<div class="absence-row">
-        <strong>${escAttr(schoolName)}</strong> ${statusBadge}<br>
-        ${escAttr(r.studentName||'')} ／ ${escAttr(r.absenceDate||'')} ／ ${escAttr(r.reason||'')}
-        ${ackBtn ? '<div style="margin-top:6px;">' + ackBtn + '</div>' : ''}
-      </div>`;
-    }).join('');
+    renderHQAbsenceSummary();
+    renderHQAbsenceList();
+    if (selectedAbsenceSchool) showSchoolAbsenceDetail(selectedAbsenceSchool);
   } catch(e){
-    container.innerHTML = '<div class="empty">読み込みに失敗しました: ' + escAttr(e.message) + '</div>';
+    listContainer.innerHTML = '<div class="empty">読み込みに失敗しました: ' + escAttr(e.message) + '</div>';
   }
 }
+
+function renderHQAbsenceSummary(){
+  const tbody = document.getElementById('hq-absence-summary-tbody');
+  if (!tbody) return;
+  const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 30);
+  const cutoffStr = dateStrOf(cutoff);
+  tbody.innerHTML = schoolsArr.map(s => {
+    const list = absenceDataBySchool[s.id] || [];
+    const unconfirmed = list.filter(r => r.status === 'new').length;
+    const recent30 = list.filter(r => (r.absenceDate||'') >= cutoffStr).length;
+    return `<tr>
+      <td>${escAttr(s.name)}</td>
+      <td>${unconfirmed > 0 ? '<span class="badge">'+unconfirmed+'件</span>' : '0件'}</td>
+      <td>${recent30}件</td>
+      <td><button class="ghost-small" data-detail-school="${escAttr(s.id)}">詳細</button></td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="4" class="status">校舎がありません</td></tr>';
+}
+
+function renderHQAbsenceList(){
+  const container = document.getElementById('absence-list');
+  if (!container) return;
+  const all = Object.values(absenceDataBySchool).flat().sort((a,b) => (b.absenceDate||'').localeCompare(a.absenceDate||'')).slice(0, 20);
+  if (all.length === 0){ container.innerHTML = '<div class="empty">欠席連絡はまだありません。</div>'; return; }
+  container.innerHTML = all.map(r => {
+    const schoolName = schoolsMap[r.academyId] || r.academyId;
+    const statusBadge = r.status === 'new' ? '<span class="badge">未確認</span>' : '<span class="badge muted">確認済み</span>';
+    const ackBtn = r.status === 'new' ? `<button class="ghost-small" data-ack="${r.academyId}|${r.id}">確認済みにする</button>` : '';
+    return `<div class="absence-row">
+      <strong>${escAttr(schoolName)}</strong> ${statusBadge}<br>
+      ${escAttr(r.studentName||'')} ／ ${escAttr(r.absenceDate||'')} ／ ${escAttr(r.reason||'')}
+      ${ackBtn ? '<div style="margin-top:6px;">' + ackBtn + '</div>' : ''}
+    </div>`;
+  }).join('');
+}
+
+function showSchoolAbsenceDetail(academyId){
+  selectedAbsenceSchool = academyId;
+  const card = document.getElementById('hq-absence-detail-card');
+  const title = document.getElementById('hq-absence-detail-title');
+  const tableEl = document.getElementById('hq-absence-detail-table');
+  const historyEl = document.getElementById('hq-absence-student-history');
+  card.style.display = 'block';
+  title.textContent = (schoolsMap[academyId] || academyId) + ' 選手ごとの欠席状況';
+  historyEl.innerHTML = '';
+  const list = absenceDataBySchool[academyId] || [];
+  const byStudent = {};
+  list.forEach(r => {
+    const name = (r.studentName || '').trim();
+    if (!name) return;
+    if (!byStudent[name]) byStudent[name] = [];
+    byStudent[name].push(r);
+  });
+  const names = Object.keys(byStudent).sort();
+  if (names.length === 0){ tableEl.innerHTML = '<div class="empty">欠席連絡がありません。</div>'; return; }
+  tableEl.innerHTML = `<table class="mini-table"><thead><tr><th>選手名</th><th>回数</th><th>最終欠席日</th><th></th></tr></thead><tbody>` +
+    names.map(name => {
+      const sorted = byStudent[name].sort((a,b) => (b.absenceDate||'').localeCompare(a.absenceDate||''));
+      return `<tr><td>${escAttr(name)}</td><td>${sorted.length}回</td><td>${escAttr(sorted[0].absenceDate||'')}</td><td><button class="ghost-small" data-student-history="${escAttr(name)}">履歴</button></td></tr>`;
+    }).join('') + `</tbody></table>`;
+}
+
+document.getElementById('hq-absence-summary-tbody').addEventListener('click', (e) => {
+  const schoolId = e.target.dataset.detailSchool;
+  if (schoolId) showSchoolAbsenceDetail(schoolId);
+});
+document.getElementById('hq-absence-detail-table').addEventListener('click', (e) => {
+  const name = e.target.dataset.studentHistory;
+  if (!name || !selectedAbsenceSchool) return;
+  const list = (absenceDataBySchool[selectedAbsenceSchool] || []).filter(r => (r.studentName||'').trim() === name)
+    .sort((a,b) => (b.absenceDate||'').localeCompare(a.absenceDate||''));
+  const historyEl = document.getElementById('hq-absence-student-history');
+  historyEl.innerHTML = `<h2 style="font-size:13px;margin:0 0 8px;">${escAttr(name)}さんの欠席履歴</h2>` +
+    `<table class="mini-table"><thead><tr><th>日付</th><th>理由</th><th>備考</th></tr></thead><tbody>` +
+    list.map(r => `<tr><td>${escAttr(r.absenceDate||'')}</td><td>${escAttr(r.reason||'')}</td><td>${escAttr(r.note||'')}</td></tr>`).join('') +
+    `</tbody></table>`;
+});
 
 document.getElementById('absence-list').addEventListener('click', async (e) => {
   const key = e.target.dataset.ack;
@@ -415,7 +530,68 @@ function renderHQCalendarList(){
     occurrencesForAllDate(dateStrOf(d)).forEach(o => rows.push(o));
   }
   container.innerHTML = rows.length === 0 ? '<div class="empty">今後60日間の予定はありません。</div>' : rows.map(calRowHTML).join('');
+  renderHQCalGrid();
+  if (hqCalSelectedDate) renderHQCalDayDetail(hqCalSelectedDate);
 }
+
+let hqCalViewYear, hqCalViewMonth, hqCalSelectedDate = null;
+
+function renderHQCalGrid(){
+  const grid = document.getElementById('hq-cal-grid');
+  const label = document.getElementById('hq-cal-month-label');
+  if (!grid || !label || hqCalViewYear == null) return;
+  label.textContent = hqCalViewYear + '年' + (hqCalViewMonth+1) + '月';
+  const first = new Date(hqCalViewYear, hqCalViewMonth, 1);
+  const startOffset = first.getDay();
+  const daysInMonth = new Date(hqCalViewYear, hqCalViewMonth+1, 0).getDate();
+  let html = ['日','月','火','水','木','金','土'].map(w => `<div class="hcg-head">${w}</div>`).join('');
+  for (let i = 0; i < startOffset; i++) html += '<div class="hq-cal-day empty-cell"></div>';
+  for (let day = 1; day <= daysInMonth; day++){
+    const dateStr = hqCalViewYear + '-' + pad(hqCalViewMonth+1) + '-' + pad(day);
+    const occ = occurrencesForAllDate(dateStr);
+    const tags = occ.map(o => `<div class="hcd-tag ${o.cancelled ? 'cancelled' : ''}">${escAttr(schoolNameFor(o.academyId))}</div>`).join('');
+    const sel = dateStr === hqCalSelectedDate ? ' selected' : '';
+    html += `<div class="hq-cal-day${sel}" data-date="${dateStr}"><div class="hcd-num">${day}</div>${tags}</div>`;
+  }
+  grid.innerHTML = html;
+}
+
+function renderHQCalDayDetail(dateStr){
+  const container = document.getElementById('hq-cal-day-detail');
+  if (!container) return;
+  const d = new Date(dateStr + 'T00:00:00');
+  const occ = occurrencesForAllDate(dateStr);
+  const heading = `<h2 style="font-size:14px;margin-bottom:8px;">${d.getMonth()+1}月${d.getDate()}日(${WEEKDAY_LABELS[d.getDay()]})の予定</h2>`;
+  container.innerHTML = heading + (occ.length === 0 ? '<div class="empty">この日の予定はありません。</div>' : occ.map(calRowHTML).join(''));
+}
+
+document.getElementById('hq-btn-view-list').addEventListener('click', () => {
+  document.getElementById('hq-btn-view-list').classList.add('active');
+  document.getElementById('hq-btn-view-grid').classList.remove('active');
+  document.getElementById('hq-calendar-list-view').style.display = 'block';
+  document.getElementById('hq-calendar-grid-view').style.display = 'none';
+});
+document.getElementById('hq-btn-view-grid').addEventListener('click', () => {
+  document.getElementById('hq-btn-view-grid').classList.add('active');
+  document.getElementById('hq-btn-view-list').classList.remove('active');
+  document.getElementById('hq-calendar-list-view').style.display = 'none';
+  document.getElementById('hq-calendar-grid-view').style.display = 'block';
+  if (hqCalViewYear == null){ const t = new Date(); hqCalViewYear = t.getFullYear(); hqCalViewMonth = t.getMonth(); }
+  renderHQCalGrid();
+});
+document.getElementById('hq-cal-prev-month').addEventListener('click', () => { hqCalViewMonth--; if (hqCalViewMonth < 0){ hqCalViewMonth = 11; hqCalViewYear--; } renderHQCalGrid(); });
+document.getElementById('hq-cal-next-month').addEventListener('click', () => { hqCalViewMonth++; if (hqCalViewMonth > 11){ hqCalViewMonth = 0; hqCalViewYear++; } renderHQCalGrid(); });
+document.getElementById('hq-cal-grid').addEventListener('click', (e) => {
+  const cell = e.target.closest('.hq-cal-day[data-date]');
+  if (!cell) return;
+  hqCalSelectedDate = cell.dataset.date;
+  renderHQCalGrid();
+  renderHQCalDayDetail(hqCalSelectedDate);
+});
+document.getElementById('hq-cal-day-detail').addEventListener('click', (e) => {
+  const key = e.target.dataset.editOcc;
+  if (key) openHQOccEditor(key);
+});
 
 function populateSchoolSelects(){
   const opts = schoolsArr.map(s => `<option value="${escAttr(s.id)}">${escAttr(s.name)}</option>`).join('');
