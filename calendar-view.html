@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>活動予定 - タクマ塾岩国校</title>
+<title>活動予定 - タクマ塾</title>
 <style>
   :root{
     --bg:#F6F6F1; --surface:#FFFFFF; --border:#E1E7E7; --border-strong:#C7D2D2;
@@ -18,6 +18,8 @@
   header h1{font-size:19px;font-weight:700;margin:0 0 4px;}
   header p{font-size:13px;color:var(--text-secondary);margin:0;}
   .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 18px;margin-bottom:16px;}
+  label{font-size:13px;color:var(--text-secondary);display:block;margin-bottom:5px;}
+  select{width:100%;padding:10px 11px;border:1px solid var(--border-strong);border-radius:8px;font-size:16px;background:var(--surface);color:var(--text-primary);font-family:inherit;font-weight:600;}
   .status{font-size:13px;color:var(--text-secondary);text-align:center;padding:24px 0;}
   .row{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--border);}
   .row:last-child{border-bottom:none;}
@@ -35,11 +37,15 @@
 <body>
 <div class="wrap">
   <header>
-    <h1 id="branch-title">タクマ塾 活動予定</h1>
+    <h1>タクマ塾 活動予定</h1>
     <p>今日から60日間の練習・試合・イベント予定です(閲覧専用)。</p>
   </header>
   <div class="card">
-    <div id="content"><div class="status">読み込んでいます…</div></div>
+    <label for="school-select">校舎を選択</label>
+    <select id="school-select"><option value="">読み込み中…</option></select>
+  </div>
+  <div class="card">
+    <div id="content"><div class="status">上で校舎を選択してください。</div></div>
   </div>
 </div>
 
@@ -55,25 +61,17 @@ const firebaseConfig = {
   messagingSenderId: "1065956673618",
   appId: "1:1065956673618:web:e765409502a9b87031b78b"
 };
-const ACADEMY_ID = new URLSearchParams(window.location.search).get('school');
 
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
-const academyRef = ACADEMY_ID ? db.collection('academies').doc(ACADEMY_ID) : null;
 const schoolsRef = db.collection('schools');
-if (ACADEMY_ID){
-  schoolsRef.doc(ACADEMY_ID).get().then(doc => {
-    if (doc.exists) document.getElementById('branch-title').textContent = doc.data().name + ' 活動予定';
-  }).catch(() => {});
-}
-const patternsRef = academyRef ? academyRef.collection('schedulePatterns') : null;
-const eventsRef = academyRef ? academyRef.collection('scheduleEvents') : null;
-const locationsMetaRef = academyRef ? academyRef.collection('meta').doc('locations') : null;
 
 let patterns = [];
 let scheduleEvents = [];
 let locationsList = [];
+let unsubPatterns = null, unsubEvents = null, unsubLocations = null;
+const LAST_SCHOOL_KEY = 'takumajuku_last_school';
 
 function pad(n){ return String(n).padStart(2,'0'); }
 function escAttr(v){ return String(v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -137,11 +135,58 @@ function render(){
     : rows.map(rowHTML).join('');
 }
 
-async function init(){
-  if (!ACADEMY_ID){
-    document.getElementById('content').innerHTML = '<p class="empty" style="color:var(--danger);">URLが正しくありません。どの校舎の予定か分かる情報が含まれていません。<br>正しいURL(校舎の管理者から共有されたもの)からアクセスし直してください。</p>';
-    return;
+function detachSchoolListeners(){
+  if (unsubPatterns){ unsubPatterns(); unsubPatterns = null; }
+  if (unsubEvents){ unsubEvents(); unsubEvents = null; }
+  if (unsubLocations){ unsubLocations(); unsubLocations = null; }
+}
+
+function loadSchool(academyId){
+  detachSchoolListeners();
+  patterns = []; scheduleEvents = []; locationsList = [];
+  document.getElementById('content').innerHTML = '<div class="status">読み込んでいます…</div>';
+  const academyRef = db.collection('academies').doc(academyId);
+  unsubPatterns = academyRef.collection('schedulePatterns').onSnapshot(snap => {
+    patterns = snap.docs.map(d => Object.assign({ id:d.id }, d.data())); render();
+  }, err => {
+    console.error(err);
+    document.getElementById('content').innerHTML = '<p class="empty">予定データの読み込みに失敗しました。<br>エラー内容: ' + escAttr(err && err.code ? err.code : '') + ' ' + escAttr(err && err.message ? err.message : String(err)) + '</p>';
+  });
+  unsubEvents = academyRef.collection('scheduleEvents').onSnapshot(snap => {
+    scheduleEvents = snap.docs.map(d => d.data()); render();
+  }, err => console.error(err));
+  unsubLocations = academyRef.collection('meta').doc('locations').onSnapshot(doc => {
+    locationsList = doc.exists ? (doc.data().items||[]) : []; render();
+  }, err => console.error(err));
+  try { localStorage.setItem(LAST_SCHOOL_KEY, academyId); } catch(e){}
+}
+
+async function loadSchoolOptions(){
+  const sel = document.getElementById('school-select');
+  try {
+    const snap = await schoolsRef.orderBy('name').get();
+    if (snap.empty){
+      sel.innerHTML = '<option value="">校舎が登録されていません</option>';
+      return;
+    }
+    sel.innerHTML = '<option value="">選択してください</option>' + snap.docs.map(d => `<option value="${d.id}">${escAttr(d.data().name || d.id)}</option>`).join('');
+    const remembered = localStorage.getItem(LAST_SCHOOL_KEY);
+    if (remembered && snap.docs.some(d => d.id === remembered)){
+      sel.value = remembered;
+      loadSchool(remembered);
+    }
+  } catch(e){
+    console.error(e);
+    sel.innerHTML = '<option value="">読み込みに失敗しました</option>';
   }
+}
+
+document.getElementById('school-select').addEventListener('change', (e) => {
+  if (e.target.value) loadSchool(e.target.value);
+  else { detachSchoolListeners(); document.getElementById('content').innerHTML = '<div class="status">上で校舎を選択してください。</div>'; }
+});
+
+async function init(){
   try {
     await auth.signInAnonymously();
   } catch(e){
@@ -149,12 +194,7 @@ async function init(){
     document.getElementById('content').innerHTML = '<p class="empty">読み込みに失敗しました。<br>エラー内容: ' + escAttr(e && e.code ? e.code : '') + ' ' + escAttr(e && e.message ? e.message : String(e)) + '</p>';
     return;
   }
-  patternsRef.onSnapshot(snap => { patterns = snap.docs.map(d => Object.assign({ id:d.id }, d.data())); render(); }, err => {
-    console.error(err);
-    document.getElementById('content').innerHTML = '<p class="empty">予定データの読み込みに失敗しました。<br>エラー内容: ' + escAttr(err && err.code ? err.code : '') + ' ' + escAttr(err && err.message ? err.message : String(err)) + '</p>';
-  });
-  eventsRef.onSnapshot(snap => { scheduleEvents = snap.docs.map(d => d.data()); render(); }, err => console.error(err));
-  locationsMetaRef.onSnapshot(doc => { locationsList = doc.exists ? (doc.data().items||[]) : []; render(); }, err => console.error(err));
+  loadSchoolOptions();
 }
 
 init();

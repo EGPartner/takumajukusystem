@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>欠席連絡 - タクマ塾岩国校</title>
+<title>欠席連絡 - タクマ塾</title>
 <style>
   :root{
     --bg:#F6F5F0; --surface:#FFFFFF; --border:#DEDBCF; --border-strong:#C7C3B4;
@@ -17,6 +17,7 @@
   p.sub{font-size:13px;color:var(--text-secondary);margin:0 0 20px;}
   label{font-size:13px;color:var(--text-secondary);display:block;margin-bottom:5px;}
   input[type=text],input[type=date],select,textarea{width:100%;padding:10px 11px;border:1px solid var(--border-strong);border-radius:8px;font-size:16px;background:var(--surface);color:var(--text-primary);font-family:inherit;}
+  select#f-school{font-weight:600;}
   textarea{resize:vertical;}
   .field{margin-bottom:16px;}
   .reason-group{display:flex;gap:8px;flex-wrap:wrap;}
@@ -31,9 +32,13 @@
 </head>
 <body>
 <div class="card" id="form-card">
-  <h1 id="branch-title">欠席連絡</h1>
-  <p class="sub">タクマ塾岩国校の練習を欠席する場合、こちらからご連絡ください。</p>
+  <h1>欠席連絡</h1>
+  <p class="sub">練習を欠席する場合、こちらからご連絡ください。</p>
 
+  <div class="field">
+    <label for="f-school">校舎を選択</label>
+    <select id="f-school"><option value="">読み込み中…</option></select>
+  </div>
   <div class="field">
     <label for="f-name">選手の氏名(姓名)</label>
     <input type="text" id="f-name" placeholder="例: 山田 蓮">
@@ -67,11 +72,6 @@
   </div>
 </div>
 
-<div class="card" id="error-card" style="display:none;">
-  <h1 style="color:var(--danger);">URLが正しくありません</h1>
-  <p class="sub" style="margin-bottom:0;">このリンクには、どの校舎の欠席連絡か分かる情報が含まれていません。お手数ですが、正しいURL(校舎の管理者から共有されたもの)からアクセスし直してください。</p>
-</div>
-
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -84,22 +84,34 @@ const firebaseConfig = {
   messagingSenderId: "1065956673618",
   appId: "1:1065956673618:web:e765409502a9b87031b78b"
 };
-const ACADEMY_ID = new URLSearchParams(window.location.search).get('school');
-if (!ACADEMY_ID){
-  document.getElementById('form-card').style.display = 'none';
-  document.getElementById('error-card').style.display = 'block';
-}
 
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
-const absenceRef = ACADEMY_ID ? db.collection('academies').doc(ACADEMY_ID).collection('absenceReports') : null;
 const schoolsRef = db.collection('schools');
-if (ACADEMY_ID){
-  schoolsRef.doc(ACADEMY_ID).get().then(doc => {
-    if (doc.exists) document.getElementById('branch-title').textContent = doc.data().name + ' 欠席連絡';
-  }).catch(() => {});
+
+function escAttr(v){ return String(v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+const LAST_SCHOOL_KEY = 'takumajuku_last_school';
+
+async function loadSchoolOptions(){
+  const sel = document.getElementById('f-school');
+  try {
+    const snap = await schoolsRef.orderBy('name').get();
+    if (snap.empty){
+      sel.innerHTML = '<option value="">校舎が登録されていません</option>';
+      document.getElementById('btn-submit').disabled = true;
+      return;
+    }
+    sel.innerHTML = '<option value="">選択してください</option>' + snap.docs.map(d => `<option value="${d.id}">${escAttr(d.data().name || d.id)}</option>`).join('');
+    const remembered = localStorage.getItem(LAST_SCHOOL_KEY);
+    if (remembered && snap.docs.some(d => d.id === remembered)) sel.value = remembered;
+  } catch(e){
+    console.error(e);
+    sel.innerHTML = '<option value="">読み込みに失敗しました</option>';
+  }
 }
+loadSchoolOptions();
 
 let selectedReason = null;
 
@@ -128,10 +140,12 @@ async function ensureSignedIn(){
 document.getElementById('btn-submit').addEventListener('click', async () => {
   const statusEl = document.getElementById('form-status');
   const btn = document.getElementById('btn-submit');
+  const schoolId = document.getElementById('f-school').value;
   const name = document.getElementById('f-name').value.trim();
   const date = document.getElementById('f-date').value;
   const note = document.getElementById('f-note').value.trim();
 
+  if (!schoolId){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = '校舎を選択してください。'; return; }
   if (!name){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = '選手の氏名を入力してください。'; return; }
   if (!date){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = '欠席日を選択してください。'; return; }
   if (!selectedReason){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = '理由を選択してください。'; return; }
@@ -142,7 +156,7 @@ document.getElementById('btn-submit').addEventListener('click', async () => {
 
   try {
     await ensureSignedIn();
-    await absenceRef.add({
+    await db.collection('academies').doc(schoolId).collection('absenceReports').add({
       studentName: name,
       absenceDate: date,
       reason: selectedReason,
@@ -150,6 +164,7 @@ document.getElementById('btn-submit').addEventListener('click', async () => {
       status: 'new',
       submittedAt: firebase.firestore.FieldValue.serverTimestamp()
     });
+    try { localStorage.setItem(LAST_SCHOOL_KEY, schoolId); } catch(e){}
     document.getElementById('form-card').style.display = 'none';
     document.getElementById('success-card').style.display = 'block';
   } catch(err){
