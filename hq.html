@@ -82,6 +82,11 @@
     <div class="field"><label for="password">パスワード</label><input type="password" id="password"></div>
     <div class="btn-row"><button class="primary" id="btn-login">ログイン</button></div>
     <p class="status" id="login-status"></p>
+    <div style="margin-top:10px;padding:12px 14px;border:1px solid var(--border-strong);border-radius:8px;background:var(--bg);">
+      <p style="font-weight:700;font-size:13px;margin:0 0 4px;">まだアカウントをお持ちでない方へ</p>
+      <p class="status" style="margin:0;color:var(--text-muted);">このシステムは、ご自身で新規登録することはできません。システム管理者にご連絡いただき、アカウントを発行してもらってください。</p>
+    </div>
+    <p class="status"><a href="index.html" style="color:var(--accent-dark);">← 全体の入口(ログイン選択画面)に戻る</a></p>
   </div>
 
   <div id="main-content" style="display:none;">
@@ -400,7 +405,7 @@ async function loadSchools(){
           .where('months.' + currentMonthKey(), '==', 'active').get();
         count = studentsSnap.size;
       } catch(e){ count = '?'; }
-      const url = base + 'index.html?school=' + encodeURIComponent(doc.id);
+      const url = base + 'school.html?school=' + encodeURIComponent(doc.id);
       return `<div class="school-row">
         <div>
           <div class="school-name">${escAttr(s.name || doc.id)}</div>
