@@ -490,8 +490,26 @@
     </div>
     <div id="settings-content-wrapper">
     <div class="card">
-      <h2>スタッフ・権限について</h2>
-      <p class="note" style="margin-top:0;">スタッフのログインアカウントと管理者権限は、Firebaseコンソール(Authentication / Firestoreのstaffコレクション)で管理します。アプリ内からの追加・変更機能は現時点では未実装です。</p>
+      <div class="btn-row" style="justify-content:space-between;margin-bottom:4px;">
+        <h2 style="margin:0;">スタッフ管理</h2>
+        <span><button class="ghost" id="btn-edit-staff">編集</button><button class="primary" id="btn-save-staff" style="display:none;">登録</button></span>
+      </div>
+      <p class="note" style="margin-top:0;">このシステム内でスタッフのログインアカウントを発行できます。「削除」は、このシステムへのアクセス権を外すだけで、発行済みのアカウント自体は残ります。</p>
+      <div class="table-scroll">
+        <table class="mini-table"><thead><tr><th>メールアドレス</th><th>役割</th><th></th></tr></thead><tbody id="staff-tbody"></tbody></table>
+      </div>
+      <div id="staff-empty" class="empty" style="display:none;">スタッフが登録されていません。</div>
+      <div id="add-staff-form" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
+        <div class="row">
+          <div class="field"><label for="new-staff-email">メールアドレス</label><input type="text" id="new-staff-email" placeholder="例: staff@example.com"></div>
+          <div class="field"><label for="new-staff-password">初期パスワード</label><input type="text" id="new-staff-password" placeholder="6文字以上"></div>
+          <div class="field"><label for="new-staff-role">役割</label>
+            <select id="new-staff-role"><option value="staff">スタッフ</option><option value="admin">管理者</option></select>
+          </div>
+        </div>
+        <div class="btn-row"><button class="primary" id="btn-add-staff">アカウントを発行する</button></div>
+        <p class="note" id="add-staff-status"></p>
+      </div>
     </div>
     <div class="card">
       <div class="btn-row" style="justify-content:space-between;margin-bottom:4px;">
@@ -603,11 +621,12 @@ let settings = {
   extraIncomes:[]
 };
 let isAdmin = false;
-let editState = { pricing:false, sponsors:false, expenses:false, extra:false, locations:false, patterns:false };
+let editState = { pricing:false, sponsors:false, expenses:false, extra:false, locations:false, patterns:false, staff:false };
 let currentFY;
 let patterns = [];
 let scheduleEvents = [];
 let locationsList = [];
+let staffList = [];
 let calViewYear, calViewMonth, calSelectedDate = null;
 let chartCount, chartFinance, chartRadar, chartRanking;
 
@@ -657,6 +676,8 @@ const firebaseConfig = {
 const ACADEMY_ID = new URLSearchParams(window.location.search).get('school') || 'takuma-juku-iwakuni';
 
 firebase.initializeApp(firebaseConfig);
+const secondaryApp = firebase.initializeApp(firebaseConfig, 'Secondary');
+const secondaryAuth = secondaryApp.auth();
 const auth = firebase.auth();
 const db = firebase.firestore();
 const academyRef = db.collection('academies').doc(ACADEMY_ID);
@@ -772,6 +793,10 @@ function attachListeners(){
     populateLocationSelects();
     renderPatternsTable();
   }, err => console.error(err));
+  unsubStaffList = staffRef.onSnapshot(snap => {
+    staffList = snap.docs.map(d => Object.assign({ id:d.id }, d.data()));
+    renderStaffTable();
+  }, err => console.error(err));
   unsubEvents = eventsRef.onSnapshot(snap => {
     scheduleEvents = snap.docs.map(d => Object.assign({ id:d.id }, d.data()));
     renderCalendarViews();
@@ -784,11 +809,13 @@ function detachListeners(){
   if (unsubPatterns){ unsubPatterns(); unsubPatterns = null; }
   if (unsubEvents){ unsubEvents(); unsubEvents = null; }
   if (unsubLocationsMeta){ unsubLocationsMeta(); unsubLocationsMeta = null; }
+  if (unsubStaffList){ unsubStaffList(); unsubStaffList = null; }
 }
 let unsubAbsence = null;
 let unsubPatterns = null;
 let unsubEvents = null;
 let unsubLocationsMeta = null;
+let unsubStaffList = null;
 
 function renderAbsenceList(docs){
   const tbody = document.getElementById('absence-tbody');
@@ -1182,6 +1209,60 @@ async function handleLocationsClick(e){
   renderPatternsTable();
 }
 
+function renderStaffTable(){
+  const tbody = document.getElementById('staff-tbody');
+  const empty = document.getElementById('staff-empty');
+  if (!tbody) return;
+  if (staffList.length === 0){ tbody.innerHTML = ''; if (empty) empty.style.display = 'block'; return; }
+  if (empty) empty.style.display = 'none';
+  const dis = editState.staff ? '' : 'disabled';
+  tbody.innerHTML = staffList.map(s => `
+    <tr data-id="${s.id}">
+      <td>${escAttr(s.email || s.id)}</td>
+      <td><select class="stf-role" data-id="${s.id}" ${dis}><option value="staff" ${s.role!=='admin'?'selected':''}>スタッフ</option><option value="admin" ${s.role==='admin'?'selected':''}>管理者</option></select></td>
+      <td><button class="link-danger" data-del-staff="${s.id}" ${dis}>削除</button></td>
+    </tr>`).join('');
+}
+
+async function handleStaffChange(e){
+  const id = e.target.dataset.id;
+  if (!id || !e.target.classList.contains('stf-role')) return;
+  try { await staffRef.doc(id).set({ role: e.target.value }, { merge:true }); }
+  catch(err){ console.error(err); alert('更新に失敗しました: ' + err.message); }
+}
+async function handleStaffClick(e){
+  const id = e.target.dataset.delStaff;
+  if (!id) return;
+  if (!confirm('このアカウントのアクセス権を削除しますか？(ログインアカウント自体は残ります)')) return;
+  try { await staffRef.doc(id).delete(); }
+  catch(err){ console.error(err); alert('削除に失敗しました: ' + err.message); }
+}
+
+async function handleAddStaff(){
+  const statusEl = document.getElementById('add-staff-status');
+  const email = document.getElementById('new-staff-email').value.trim();
+  const password = document.getElementById('new-staff-password').value;
+  const role = document.getElementById('new-staff-role').value;
+  if (!email || !password){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = 'メールアドレスとパスワードの両方を入力してください。'; return; }
+  if (password.length < 6){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = 'パスワードは6文字以上にしてください。'; return; }
+  statusEl.style.color = 'var(--text-secondary)';
+  statusEl.textContent = 'アカウントを発行しています…';
+  try {
+    const cred = await secondaryAuth.createUserWithEmailAndPassword(email, password);
+    const newUid = cred.user.uid;
+    await secondaryAuth.signOut();
+    await staffRef.doc(newUid).set({ role, email });
+    statusEl.style.color = 'var(--accent-dark)';
+    statusEl.textContent = '✓ ' + email + ' さんのアカウントを発行しました。';
+    document.getElementById('new-staff-email').value = '';
+    document.getElementById('new-staff-password').value = '';
+  } catch(err){
+    console.error(err);
+    statusEl.style.color = 'var(--danger)';
+    statusEl.textContent = '発行に失敗しました: ' + err.message;
+  }
+}
+
 function absenceHistoryData(fy){
   const months = fiscalMonths(fy);
   const filterText = (document.getElementById('ah-filter') && document.getElementById('ah-filter').value.trim().toLowerCase()) || '';
@@ -1550,7 +1631,8 @@ const EDIT_SECTIONS = {
   expenses: { render: () => renderExpenses(), addBtn: 'btn-add-expense' },
   extra: { render: () => renderExtra(), addBtn: 'btn-add-extra' },
   locations: { render: () => renderLocationsTable(), addBtn: 'btn-add-location' },
-  patterns: { render: () => renderPatternsTable(), addBtn: 'btn-add-pattern' }
+  patterns: { render: () => renderPatternsTable(), addBtn: 'btn-add-pattern' },
+  staff: { render: () => renderStaffTable(), addBtn: 'add-staff-form' }
 };
 
 function toggleEditMode(key, editing){
@@ -2039,6 +2121,11 @@ function initUI(){
   document.getElementById('btn-add-location').addEventListener('click', async () => { locationsList = (locationsList||[]).concat([{ id:uid(), name:'新しい場所', address:'', note:'' }]); await saveLocations(); renderLocationsTable(); populateLocationSelects(); renderPatternsTable(); });
   document.getElementById('btn-edit-locations').addEventListener('click', () => toggleEditMode('locations', true));
   document.getElementById('btn-save-locations').addEventListener('click', () => toggleEditMode('locations', false));
+  document.getElementById('staff-tbody').addEventListener('change', handleStaffChange);
+  document.getElementById('staff-tbody').addEventListener('click', handleStaffClick);
+  document.getElementById('btn-add-staff').addEventListener('click', handleAddStaff);
+  document.getElementById('btn-edit-staff').addEventListener('click', () => toggleEditMode('staff', true));
+  document.getElementById('btn-save-staff').addEventListener('click', () => toggleEditMode('staff', false));
 
   const today0 = new Date();
   calViewYear = today0.getFullYear();

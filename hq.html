@@ -32,6 +32,10 @@
   .school-meta{font-size:12px;color:var(--text-secondary);}
   .empty{color:var(--text-muted);font-size:13px;text-align:center;padding:20px 0;}
   a.link-btn{font-size:13px;color:var(--accent-dark);text-decoration:none;border:1px solid var(--border-strong);padding:7px 12px;border-radius:8px;white-space:nowrap;}
+  .absence-row{padding:10px 0;border-bottom:1px solid var(--border);font-size:13px;}
+  .absence-row:last-child{border-bottom:none;}
+  .badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:20px;background:var(--accent-bg);color:var(--accent-dark);font-weight:600;}
+  .badge.muted{background:#F0EFE9;color:var(--text-muted);}
 </style>
 </head>
 <body>
@@ -59,6 +63,11 @@
     <div class="card">
       <h2 style="font-size:15px;margin:0 0 12px;">校舎一覧</h2>
       <div id="school-list"><div class="empty">読み込み中…</div></div>
+    </div>
+
+    <div class="card">
+      <h2 style="font-size:15px;margin:0 0 12px;">全校舎の欠席連絡</h2>
+      <div id="absence-list"><div class="empty">読み込み中…</div></div>
     </div>
 
     <div class="card">
@@ -92,6 +101,7 @@ const schoolsRef = db.collection('schools');
 const hqAdminsRef = db.collection('hqAdmins');
 
 let currentUser = null;
+let schoolsMap = {};
 
 function pad(n){ return String(n).padStart(2,'0'); }
 function currentMonthKey(){ const d = new Date(); return d.getFullYear() + '-' + pad(d.getMonth()+1); }
@@ -139,6 +149,8 @@ async function loadSchools(){
   container.innerHTML = '<div class="empty">読み込み中…</div>';
   try {
     const snap = await schoolsRef.get();
+    schoolsMap = {};
+    snap.docs.forEach(d => { schoolsMap[d.id] = d.data().name || d.id; });
     if (snap.empty){ container.innerHTML = '<div class="empty">まだ校舎が登録されていません。</div>'; return; }
     const base = window.location.origin + window.location.pathname.replace(/hq\.html$/, '');
     const rows = await Promise.all(snap.docs.map(async (doc) => {
@@ -164,6 +176,27 @@ async function loadSchools(){
   }
 }
 
+async function loadAbsenceReports(){
+  const container = document.getElementById('absence-list');
+  container.innerHTML = '<div class="empty">読み込み中…</div>';
+  try {
+    const snap = await db.collectionGroup('absenceReports').orderBy('absenceDate', 'desc').limit(30).get();
+    if (snap.empty){ container.innerHTML = '<div class="empty">欠席連絡はまだありません。</div>'; return; }
+    container.innerHTML = snap.docs.map(d => {
+      const r = d.data();
+      const academyId = d.ref.parent.parent.id;
+      const schoolName = schoolsMap[academyId] || academyId;
+      const statusBadge = r.status === 'new' ? '<span class="badge">未確認</span>' : '<span class="badge muted">確認済み</span>';
+      return `<div class="absence-row">
+        <strong>${escAttr(schoolName)}</strong>${statusBadge}<br>
+        ${escAttr(r.studentName||'')} ／ ${escAttr(r.absenceDate||'')} ／ ${escAttr(r.reason||'')}
+      </div>`;
+    }).join('');
+  } catch(e){
+    container.innerHTML = '<div class="empty">読み込みに失敗しました: ' + escAttr(e.message) + '</div>';
+  }
+}
+
 auth.onAuthStateChanged(async (user) => {
   if (user && user.isAnonymous){ await auth.signOut(); return; }
   currentUser = user;
@@ -184,7 +217,8 @@ auth.onAuthStateChanged(async (user) => {
   document.getElementById('login-card').style.display = 'none';
   document.getElementById('main-content').style.display = 'block';
   document.getElementById('who').textContent = user.email + '(本部管理者)';
-  loadSchools();
+  await loadSchools();
+  loadAbsenceReports();
 });
 </script>
 </body>
