@@ -1,0 +1,2301 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0A8A93">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="タクマ塾岩国校">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+<title>タクマ塾岩国校 収支・塾生管理システム</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Noto+Sans+JP:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F3F6F6; --surface:#FFFFFF; --surface-2:#EAF1F1;
+    --border:#E1E7E7; --border-strong:#C7D2D2;
+    --text-primary:#12181A; --text-secondary:#5B6B6D; --text-muted:#8A9799;
+    --accent:#0FB8C4; --accent-dark:#0A8A93; --accent-bg:#E3F7F8;
+    --danger:#D6483F; --warn:#E0A83A; --good:#1FA971; --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:"Noto Sans JP","Hiragino Sans","Yu Gothic",-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text-primary);line-height:1.6;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1120px;margin:0 auto;padding:28px 20px 100px;}
+  header{margin-bottom:8px;display:flex;align-items:center;gap:14px;}
+  header .logo-mark{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent-dark));flex:none;}
+  header h1{font-size:19px;font-weight:700;margin:0 0 2px;letter-spacing:-0.01em;}
+  header p{font-size:12.5px;color:var(--text-secondary);margin:0;}
+
+  .fy-nav{display:flex;align-items:center;gap:10px;margin:18px 0 14px;}
+  .fy-nav #fy-label{font-size:14px;font-weight:700;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:7px 14px;font-family:'Outfit',sans-serif;}
+
+  .tabs{display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:22px;flex-wrap:wrap;}
+  .tab-btn{padding:12px 18px;font-size:13.5px;font-weight:600;background:none;border:none;color:var(--text-secondary);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;font-family:inherit;}
+  .tab-btn.active{color:var(--accent-dark);border-bottom-color:var(--accent);}
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;}
+
+  .bottom-nav{display:none;}
+
+  .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:24px;}
+  .kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;}
+  .kpi-card .label{font-size:11.5px;color:var(--text-secondary);margin-bottom:6px;font-weight:600;}
+  .kpi-card .value{font-size:24px;font-weight:700;font-family:'Outfit',sans-serif;}
+  .kpi-card .value.neg{color:var(--danger);}
+  .kpi-card.highlight{background:linear-gradient(135deg,var(--accent),var(--accent-dark));border-color:transparent;}
+  .kpi-card.highlight .label{color:#DFF9FA;}
+  .kpi-card.highlight .value{color:#fff;}
+
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px 22px;margin-bottom:20px;}
+  .card h2{font-size:14.5px;font-weight:700;margin:0 0 14px;letter-spacing:-0.01em;}
+
+  label{font-size:12px;color:var(--text-secondary);display:block;margin-bottom:4px;font-weight:600;}
+  input[type=text],input[type=number],input[type=month],select,textarea{width:100%;padding:8px 10px;border:1px solid var(--border-strong);border-radius:8px;font-size:14px;background:var(--surface);color:var(--text-primary);font-family:inherit;}
+  input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:1px;}
+  .field{margin-bottom:12px;}
+  .row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;}
+
+  button.primary{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;}
+  button.primary:hover{background:var(--accent-dark);}
+  button.primary:disabled{opacity:0.6;cursor:default;}
+  button.ghost{background:var(--surface);border:1px solid var(--border-strong);border-radius:8px;padding:9px 15px;font-size:13px;cursor:pointer;color:var(--text-primary);font-weight:600;font-family:inherit;}
+  button.ghost:hover{background:var(--surface-2);}
+  button.link-danger{background:none;border:none;color:var(--danger);font-size:12px;cursor:pointer;padding:2px 4px;white-space:nowrap;font-weight:600;}
+  .btn-row{display:flex;gap:8px;margin-top:4px;flex-wrap:wrap;align-items:center;}
+
+  table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  th,td{padding:8px 6px;text-align:right;border-bottom:1px solid var(--border);white-space:nowrap;}
+  th:first-child,td:first-child{text-align:left;}
+  thead th{color:var(--text-secondary);font-weight:700;border-bottom:1px solid var(--border-strong);font-size:11.5px;text-transform:uppercase;letter-spacing:0.02em;}
+  .table-scroll{overflow-x:auto;}
+  .empty{color:var(--text-muted);font-size:13px;padding:20px 0;text-align:center;}
+  .note{font-size:12px;color:var(--text-muted);margin-top:8px;}
+
+  .chart-box{position:relative;width:100%;height:280px;margin-bottom:8px;}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--text-secondary);margin-bottom:6px;}
+  .legend span{display:inline-flex;align-items:center;gap:5px;}
+  .legend i{width:10px;height:10px;border-radius:3px;display:inline-block;}
+
+  .metric-picker{display:flex;flex-wrap:wrap;gap:4px 16px;margin-bottom:12px;}
+  .metric-picker label{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:500;color:var(--text-primary);white-space:nowrap;}
+  .metric-picker input{width:auto;margin:0;}
+  .metric-swatch{width:9px;height:9px;border-radius:3px;display:inline-block;}
+
+  .grid-scroll{overflow:auto;max-height:520px;border:1px solid var(--border);border-radius:12px;}
+  table.grid-table{font-size:13px;}
+  table.grid-table th,table.grid-table td{padding:7px 4px;text-align:center;white-space:nowrap;}
+  table.grid-table thead th{position:sticky;top:0;background:var(--surface-2);z-index:2;}
+  table.grid-table .col-name{text-align:left;min-width:110px;position:sticky;left:0;background:var(--surface);z-index:1;}
+  table.grid-table thead .col-name{z-index:3;}
+  table.grid-table .col-name input{border:none;background:transparent;font-size:13px;width:100%;padding:2px;font-family:inherit;}
+  table.grid-table .col-grade input{width:46px;border:1px solid var(--border-strong);border-radius:6px;padding:2px;text-align:center;}
+  table.grid-table .col-trial{width:36px;}
+  table.grid-table .cell-month{width:34px;height:34px;cursor:pointer;font-size:14px;color:var(--accent-dark);user-select:none;border-radius:8px;}
+  table.grid-table .cell-month:not(:empty){background:var(--accent-bg);}
+  table.grid-table .cell-month:hover{filter:brightness(0.96);}
+  table.grid-table .cell-month.pause{color:var(--text-muted);font-size:12px;}
+  table.grid-table .cell-month.pause:not(:empty){background:var(--surface-2);}
+  table.grid-table tfoot td{font-weight:700;border-top:2px solid var(--border-strong);border-bottom:none;background:var(--surface-2);position:sticky;bottom:0;}
+
+  .mini-table td, .mini-table th{text-align:left;}
+  .mini-table td:not(:first-child), .mini-table th:not(:first-child){text-align:right;}
+
+  .ability-block{border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:12px;background:var(--surface);}
+  .ability-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
+  .ability-title{font-size:13.5px;font-weight:700;}
+  .ability-weight{font-size:11px;color:var(--text-secondary);background:var(--surface-2);padding:3px 9px;border-radius:10px;font-weight:600;}
+  .ability-subtotal{font-size:16px;font-weight:700;color:var(--accent-dark);font-family:'Outfit',sans-serif;}
+  .ability-items{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;}
+  .item-row label{font-size:12px;margin-bottom:3px;}
+  .item-row select{padding:6px 8px;}
+  .overall-score{font-size:15px;font-weight:700;color:var(--accent-dark);margin:6px 0 16px;padding:12px 16px;background:var(--accent-bg);border-radius:10px;display:inline-block;font-family:'Outfit',sans-serif;}
+
+  .grid-scroll, .table-scroll{-webkit-overflow-scrolling:touch;}
+
+  .badge{display:inline-block;font-size:11px;padding:3px 9px;border-radius:20px;background:var(--accent-bg);color:var(--accent-dark);font-weight:600;}
+  .badge.muted{background:var(--surface-2);color:var(--text-secondary);}
+
+  .checkbox-row{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+  .checkbox-row input{width:auto;}
+  .checkbox-row label{margin:0;font-size:13px;color:var(--text-primary);font-weight:500;}
+
+  button.ghost.view-toggle.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+
+  .calendar-row{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--border);}
+  .calendar-row.cancelled{opacity:0.55;}
+  .calendar-row .cr-date{width:64px;flex:0 0 64px;font-weight:700;font-size:13px;padding-top:2px;font-family:'Outfit',sans-serif;}
+  .calendar-row .cr-time{width:100px;flex:0 0 100px;font-size:13px;color:var(--text-secondary);padding-top:2px;}
+  .calendar-row .cr-body{flex:1 1 auto;font-size:13px;}
+  .calendar-row .cr-type{font-weight:700;margin-bottom:2px;}
+  .calendar-row .cr-loc, .calendar-row .cr-staff{color:var(--text-secondary);margin-bottom:2px;}
+  .calendar-row .cr-note{color:var(--text-muted);font-size:12px;}
+  .calendar-row .cr-absent{color:var(--danger);font-size:12px;margin-top:4px;font-weight:600;}
+  .calendar-row .cr-actions{flex:0 0 auto;display:flex;flex-direction:column;gap:6px;align-items:stretch;}
+
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+  .cal-grid .cal-head{font-size:11px;color:var(--text-secondary);text-align:center;padding:4px 0;font-weight:600;}
+  #calendar-list{max-height:520px;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-right:4px;}
+  .cal-day{border:1px solid var(--border);border-radius:8px;min-height:76px;padding:4px;font-size:11px;cursor:pointer;background:var(--surface);}
+  .cal-day.empty-cell{border:none;background:none;cursor:default;}
+  .cal-day.selected{border-color:var(--accent);background:var(--accent-bg);}
+  .cal-day .cd-num{font-weight:700;margin-bottom:3px;font-family:'Outfit',sans-serif;}
+  .cal-day .cd-tag{font-size:9px;font-weight:700;line-height:1.5;padding:1px 3px;border-radius:4px;background:var(--accent);color:#fff;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .cal-day .cd-tag.cd-tag-cancelled{background:var(--surface-2);color:var(--text-muted);text-decoration:line-through;}
+  .cal-day .cd-absent{font-size:9px;color:var(--danger);font-weight:700;margin-top:2px;}
+
+  @media (max-width: 640px){
+    .wrap{padding:14px 10px 96px;}
+    header h1{font-size:16px;}
+    header .logo-mark{width:32px;height:32px;}
+    .fy-nav{flex-wrap:wrap;justify-content:center;text-align:center;gap:8px;}
+    .tabs{display:none;}
+    .card{padding:16px 14px;}
+    .chart-box{height:220px;}
+    .kpi-grid{grid-template-columns:repeat(2,1fr);}
+    input[type=text],input[type=number],input[type=month],select,textarea{font-size:16px;}
+    table.grid-table .cell-month{width:38px;height:38px;font-size:15px;}
+    table.grid-table th,table.grid-table td{padding:8px 5px;}
+    .btn-row button{flex:1 1 auto;}
+
+    .bottom-nav{display:flex;position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--border);padding:6px 4px calc(6px + env(safe-area-inset-bottom));z-index:50;box-shadow:0 -4px 16px rgba(18,24,26,0.06);overflow-x:auto;}
+    .bottom-nav .tab-btn{flex:1 0 auto;min-width:52px;display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 2px;font-size:10px;font-weight:600;border-bottom:none;margin-bottom:0;color:var(--text-muted);}
+    .bottom-nav .tab-btn .nav-icon{width:20px;height:20px;border-radius:7px;background:var(--surface-2);}
+    .bottom-nav .tab-btn.active{color:var(--accent-dark);}
+    .bottom-nav .tab-btn.active .nav-icon{background:var(--accent);}
+  }
+</style>
+</head>
+<body>
+<div id="login-screen" style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:var(--bg);">
+  <div class="card" style="max-width:360px;width:100%;">
+    <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent-dark));margin-bottom:14px;"></div>
+    <h2 id="login-branch-title" style="margin-top:0;">タクマ塾 管理システム</h2>
+    <div class="field"><label for="login-email">メールアドレス</label><input type="email" id="login-email" autocomplete="username"></div>
+    <div class="field"><label for="login-password">パスワード</label><input type="password" id="login-password" autocomplete="current-password"></div>
+    <div class="btn-row"><button class="primary" id="btn-login" style="width:100%;justify-content:center;">ログイン</button></div>
+    <p id="login-error" class="note" style="color:var(--danger);"></p>
+    <div class="btn-row"><button type="button" class="ghost" id="btn-forgot-password" style="width:100%;justify-content:center;">パスワードを忘れた場合はこちら</button></div>
+    <p id="forgot-password-status" class="note" style="min-height:16px;"></p>
+    <p class="note">アカウントは管理者が発行します。ログイン情報が分からない場合は管理者にお問い合わせください。</p>
+    <p class="note"><a href="index.html" style="color:var(--accent-dark);">← 全体の入口(ログイン選択画面)に戻る</a></p>
+  </div>
+</div>
+<div id="app-root" style="display:none;">
+<div class="wrap">
+  <header>
+    <div class="logo-mark"></div>
+    <div>
+      <h1 id="branch-title">タクマ塾 収支・塾生管理システム</h1>
+      <p>階段図(塾生×月のマス目)で在籍状況を管理すると、収支と選手の成長記録が連動して管理できます。</p>
+    </div>
+  </header>
+
+  <div class="fy-nav">
+    <button class="ghost" id="fy-prev">◀ 前年度</button>
+    <div id="fy-label">-</div>
+    <button class="ghost" id="fy-next">翌年度 ▶</button>
+  </div>
+  <p class="note" id="storage-status" style="margin-top:-8px;"></p>
+  <div class="btn-row" style="margin-bottom:6px;">
+    <span class="note" id="current-user-email" style="margin:0;"></span>
+    <button class="ghost" id="btn-logout">ログアウト</button>
+  </div>
+
+  <div class="tabs" role="tablist">
+    <button class="tab-btn admin-only-tab" data-tab="dashboard">ダッシュボード</button>
+    <button class="tab-btn active" data-tab="grid">階段図</button>
+    <button class="tab-btn" data-tab="growth">成長管理</button>
+    <button class="tab-btn" data-tab="summary">成長サマリー</button>
+    <button class="tab-btn" data-tab="absence">欠席連絡</button>
+    <button class="tab-btn" data-tab="absenceHistory">欠席履歴</button>
+    <button class="tab-btn" data-tab="calendar">カレンダー</button>
+    <button class="tab-btn admin-only-tab" data-tab="settings">設定</button>
+  </div>
+
+  <div class="bottom-nav" role="tablist">
+    <button class="tab-btn admin-only-tab" data-tab="dashboard"><span class="nav-icon"></span>集計</button>
+    <button class="tab-btn active" data-tab="grid"><span class="nav-icon"></span>階段図</button>
+    <button class="tab-btn" data-tab="growth"><span class="nav-icon"></span>成長</button>
+    <button class="tab-btn" data-tab="summary"><span class="nav-icon"></span>サマリー</button>
+    <button class="tab-btn" data-tab="absence"><span class="nav-icon"></span>欠席</button>
+    <button class="tab-btn" data-tab="absenceHistory"><span class="nav-icon"></span>履歴</button>
+    <button class="tab-btn" data-tab="calendar"><span class="nav-icon"></span>予定</button>
+    <button class="tab-btn admin-only-tab" data-tab="settings"><span class="nav-icon"></span>設定</button>
+  </div>
+
+  <!-- Dashboard -->
+  <div class="tab-panel" id="tab-dashboard">
+    <div class="card" id="dashboard-locked-notice" style="display:none;">
+      <h2>🔒 管理者専用</h2>
+      <p class="note" style="margin-top:0;">収支・KPIなどの経営情報は、管理者権限を持つアカウントだけが閲覧できます。</p>
+    </div>
+    <div id="dashboard-content-wrapper">
+    <div class="kpi-grid">
+      <div class="kpi-card"><div class="label">現在の在籍人数</div><div class="value" id="kpi-current">-</div></div>
+      <div class="kpi-card"><div class="label">年度 収入見込み</div><div class="value" id="kpi-revenue">-</div></div>
+      <div class="kpi-card"><div class="label">年度 支出見込み</div><div class="value" id="kpi-cost">-</div></div>
+      <div class="kpi-card"><div class="label">年度 損益見込み</div><div class="value" id="kpi-profit">-</div></div>
+    </div>
+    <div class="card">
+      <h2>塾生数の推移(階段図)</h2>
+      <div class="chart-box"><canvas id="chartCount" role="img" aria-label="月末時点の在籍塾生数の推移を示す階段グラフ">月末時点の在籍塾生数の推移</canvas></div>
+    </div>
+    <div class="card">
+      <h2>月次収支(項目を選んでトレンド比較)</h2>
+      <div class="metric-picker" id="finance-metric-picker"></div>
+      <div class="chart-box"><canvas id="chartFinance" role="img" aria-label="選択した項目ごとの月次トレンドを示す折れ線グラフ">月次収支の推移</canvas></div>
+      <p class="note" style="margin-top:0;">円(金額)系の項目は左軸、人数系の項目は右軸(0〜40固定)で表示されます。</p>
+    </div>
+    <div class="card">
+      <h2>月次内訳表</h2>
+      <div class="table-scroll">
+      <table>
+        <thead><tr><th>月</th><th>期首人数</th><th>新規/再開</th><th>退会/休会</th><th>期末人数</th><th>月謝収入</th><th>入会金収入</th><th>スポンサー収入</th><th>臨時収入</th><th>支出</th><th>単月損益</th><th>累計損益</th></tr></thead>
+        <tbody id="monthly-tbody"></tbody>
+      </table>
+      </div>
+    </div>
+    </div>
+  </div>
+
+  <!-- Grid -->
+  <div class="tab-panel active" id="tab-grid">
+    <div class="card">
+      <h2>階段図</h2>
+      <p class="note" style="margin-top:0;">マスをクリックすると 空欄 → ★(在籍) → −(休会) → 空欄 の順で切り替わります。★の数がその月の月謝収入人数になります。</p>
+      <div class="grid-scroll">
+        <table class="grid-table">
+          <thead><tr id="grid-head-row"><th class="col-name">氏名</th><th class="col-grade">学年</th><th class="col-trial">体験</th></tr></thead>
+          <tbody id="grid-tbody"></tbody>
+          <tfoot>
+            <tr id="grid-foot-count"><td class="col-name">在籍数(★)</td><td class="col-grade"></td><td class="col-trial"></td></tr>
+            <tr id="grid-foot-revenue"><td class="col-name">月謝収入</td><td class="col-grade"></td><td class="col-trial"></td></tr>
+          </tfoot>
+        </table>
+      </div>
+      <div id="grid-empty" class="empty" style="display:none;">まだ塾生が登録されていません。下のボタンから追加してください。</div>
+      <div class="btn-row" style="margin-top:14px;">
+        <button class="primary" id="btn-add-student">+ 塾生を追加</button>
+        <button class="ghost" id="btn-sample">サンプルデータを追加</button>
+        <button class="ghost" id="btn-reset-students">塾生データを全削除</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Growth -->
+  <div class="tab-panel" id="tab-growth">
+    <div class="card">
+      <h2>評価基準について</h2>
+      <p class="note" style="margin-top:0;">4大能力マトリクス(指導比率: Physical 30% / Skill・Technic 30% / Mental 30% / Idea・Tactics 10%)。各能力につき4つの詳細要件を「1=要改善 / 2=標準 / 3=優秀」の3段階で評価し、4項目の合計(最大12点)がその能力の小計になります。指導比率で加重平均した値を総合スコア(100点満点)として表示します。</p>
+    </div>
+
+    <div class="card">
+      <h2>成長評価の入力</h2>
+      <div class="row">
+        <div class="field"><label for="growth-student">選手</label><select id="growth-student"></select></div>
+        <div class="field"><label for="growth-month">対象月</label><input type="month" id="growth-month"></div>
+      </div>
+      <div class="overall-score" id="overall-score">総合スコア: -</div>
+      <p class="note" id="growth-status-line" style="margin-top:-8px;"></p>
+      <div id="growth-inputs"></div>
+      <div class="field"><label for="g-comment">特記事項</label><textarea id="g-comment" rows="3"></textarea></div>
+      <div class="btn-row">
+        <button class="primary" id="btn-save-growth">この月の評価を保存</button>
+        <span id="growth-saved" style="font-size:12px;color:var(--accent-dark);display:none;">保存しました</span>
+      </div>
+      <div class="btn-row">
+        <button class="ghost" id="btn-download-single">この選手のレポートをPDF保存</button>
+        <button class="ghost" id="btn-share-single">共有する(LINEなど)</button>
+      </div>
+      <p id="single-status" style="font-size:13px;margin-top:8px;"></p>
+      <p class="note">「共有する」は端末標準の共有シートを開きます(対応端末のみ)。LINEがインストールされていれば送信先の1つとして選べます。対応していない場合はPDFを保存し、LINEに手動で添付してください。</p>
+    </div>
+
+    <div class="card">
+      <h2>レーダーチャート プレビュー</h2>
+      <div class="chart-box"><canvas id="chartRadar" role="img" aria-label="Physical・Skill/Technic・Mental・Idea/Tacticsの4軸の成長度を示すレーダーチャート">選手の成長度レーダーチャート</canvas></div>
+      <div class="legend"><span><i style="background:#0FB8C4"></i>選択中の月</span><span><i style="background:#C7D2D2"></i>前月</span></div>
+    </div>
+
+    <div class="card">
+      <h2>月次成長レポート(全選手・PDF)</h2>
+      <p class="note" style="margin-top:0;">対象月にデータが入力されている選手をまとめて1つのPDFに出力します(1人1ページ)。</p>
+      <div class="row"><div class="field"><label for="pdf-month">出力対象月</label><input type="month" id="pdf-month"></div></div>
+      <div class="btn-row"><button class="primary" id="btn-export-pdf">PDFをダウンロード</button></div>
+      <p id="pdf-status" style="font-size:13px;margin-top:10px;"></p>
+    </div>
+  </div>
+
+  <!-- Growth Summary -->
+  <div class="tab-panel" id="tab-summary">
+    <div class="card">
+      <h2>成長サマリー</h2>
+      <div class="row"><div class="field"><label for="summary-start">起点の月</label><input type="month" id="summary-start"></div></div>
+      <div class="btn-row" style="margin-bottom:6px;">
+        <button class="ghost" id="btn-refresh-summary">↻ 今すぐ更新</button>
+        <span id="summary-updated" class="note" style="margin-top:0;"></span>
+      </div>
+      <p class="note" id="summary-diagnostic" style="margin-top:0;"></p>
+      <div class="table-scroll">
+        <table class="mini-table" id="summary-table">
+          <thead id="summary-thead"></thead>
+          <tbody id="summary-tbody"></tbody>
+        </table>
+      </div>
+      <p class="note">起点の月から6ヶ月分の推移を、選手ごとに4能力(小計/12点)で表示します。セルをクリックすると、その選手・その月の詳細が「成長管理」タブで開きます。色はスコアの高低を示し(緑=高い/黄=標準/赤=要注意)、「-」は未評価です。学年は起点の月時点のものを表示しています。</p>
+    </div>
+    <div class="card">
+      <h2>総合スコア ランキング(表示期間の最終月)</h2>
+      <div class="chart-box"><canvas id="chartRanking" role="img" aria-label="表示期間の最終月における選手別・総合スコアのランキングを示す横棒グラフ">総合スコアランキング</canvas></div>
+    </div>
+  </div>
+
+  <!-- Absence reports -->
+  <div class="tab-panel" id="tab-absence">
+    <div class="card">
+      <h2>欠席連絡</h2>
+      <p class="note" style="margin-top:0;">保護者専用フォームから送られた欠席連絡の一覧です。「確認済みにする」を押すと一覧の下の方に移動します。</p>
+      <div class="btn-row" id="absence-bulk-actions" style="display:none;margin-bottom:12px;">
+        <button class="link-danger" id="btn-delete-acknowledged">確認済みをすべて削除</button>
+      </div>
+      <div class="table-scroll">
+        <table class="mini-table">
+          <thead><tr><th>状態</th><th>選手氏名</th><th>欠席日</th><th>理由</th><th>備考</th><th>連絡日時</th><th></th></tr></thead>
+          <tbody id="absence-tbody"></tbody>
+        </table>
+      </div>
+      <div id="absence-empty" class="empty" style="display:none;">欠席連絡はまだありません。</div>
+    </div>
+  </div>
+
+  <!-- Absence history -->
+  <div class="tab-panel" id="tab-absenceHistory">
+    <div class="card">
+      <h2>欠席履歴(振り返り用)</h2>
+      <p class="note" style="margin-top:0;">「欠席連絡」の一覧からアーカイブ(削除)しても、ここには表示中の年度の記録がすべて残ります。列をクリックすると、その選手・その月の詳細(日付・理由・備考)が下に表示されます。</p>
+      <div class="field" style="max-width:280px;"><label for="ah-filter">選手名で絞り込み</label><input type="text" id="ah-filter" placeholder="例: 山田"></div>
+      <div class="table-scroll">
+        <table class="mini-table" id="ah-table">
+          <thead id="ah-thead"></thead>
+          <tbody id="ah-tbody"></tbody>
+        </table>
+      </div>
+      <div id="ah-empty" class="empty" style="display:none;">この年度の欠席記録はありません。</div>
+      <p class="note">選手名は保護者が欠席連絡フォームに自由入力した文字列を基に集計しています。表記の揺れ(スペースの有無など)によって、同一選手が別集計になる場合があります。</p>
+    </div>
+    <div id="ah-detail"></div>
+  </div>
+
+  <!-- Calendar -->
+  <div class="tab-panel" id="tab-calendar">
+    <div class="card">
+      <h2>活動カレンダー</h2>
+      <div class="btn-row" style="margin-bottom:14px;">
+        <button class="ghost view-toggle active" id="btn-view-list">一覧</button>
+        <button class="ghost view-toggle" id="btn-view-grid">カレンダー</button>
+      </div>
+
+      <div id="calendar-list-view">
+        <p class="note" style="margin-top:0;">今日から60日間の予定です(スクロールしてすべて確認できます)。「編集」で、その日だけ場所・担当・中止などを変更できます。</p>
+        <div id="calendar-list"></div>
+      </div>
+
+      <div id="calendar-grid-view" style="display:none;">
+        <div class="fy-nav" style="margin:0 0 12px;">
+          <button class="ghost" id="cal-prev-month">◀</button>
+          <div id="cal-month-label">-</div>
+          <button class="ghost" id="cal-next-month">▶</button>
+        </div>
+        <div class="cal-grid" id="cal-grid"></div>
+        <div id="cal-day-detail" style="margin-top:16px;"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>この日だけの予定を編集</h2>
+      <p class="note" id="occ-editor-hint" style="margin-top:0;">上の一覧またはカレンダーから「編集」を押すと、ここに内容が表示されます。</p>
+      <div id="occ-editor" style="display:none;">
+        <div class="row">
+          <div class="field"><label>日付</label><input type="text" id="occ-date" disabled></div>
+          <div class="field"><label for="occ-type">種別</label>
+            <select id="occ-type"><option value="通常練習">通常練習</option><option value="試合">試合</option><option value="イベント">イベント</option></select>
+          </div>
+        </div>
+        <div class="row">
+          <div class="field"><label for="occ-start">開始時刻</label><input type="time" id="occ-start"></div>
+          <div class="field"><label for="occ-end">終了時刻</label><input type="time" id="occ-end"></div>
+        </div>
+        <div class="row">
+          <div class="field"><label for="occ-location">場所</label><select id="occ-location"></select></div>
+          <div class="field"><label for="occ-staff">担当スタッフ</label><input type="text" id="occ-staff"></div>
+        </div>
+        <div class="field"><label for="occ-target">対象学年/グループ</label><input type="text" id="occ-target" placeholder="例: 全学年、小1-3など"></div>
+        <div class="field"><label for="occ-note">備考</label><textarea id="occ-note" rows="2"></textarea></div>
+        <div class="checkbox-row"><input type="checkbox" id="occ-cancelled"><label for="occ-cancelled">この日は中止にする</label></div>
+        <div class="btn-row">
+          <button class="primary" id="btn-save-occ">保存</button>
+          <button class="ghost" id="btn-reset-occ" style="display:none;">上書きを解除(通常の予定に戻す)</button>
+          <button class="link-danger" id="btn-delete-occ" style="display:none;">この単発予定を削除</button>
+        </div>
+        <p id="occ-status" class="note"></p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>単発の予定を追加</h2>
+      <p class="note" style="margin-top:0;">定期パターンに属さない、大会や特別イベントなどを追加します。</p>
+      <div class="row">
+        <div class="field"><label for="new-occ-date">日付</label><input type="date" id="new-occ-date"></div>
+        <div class="field"><label for="new-occ-type">種別</label>
+          <select id="new-occ-type"><option value="試合">試合</option><option value="イベント">イベント</option><option value="通常練習">通常練習</option></select>
+        </div>
+      </div>
+      <div class="row">
+        <div class="field"><label for="new-occ-start">開始時刻</label><input type="time" id="new-occ-start"></div>
+        <div class="field"><label for="new-occ-end">終了時刻</label><input type="time" id="new-occ-end"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label for="new-occ-location">場所</label><select id="new-occ-location"></select></div>
+        <div class="field"><label for="new-occ-staff">担当スタッフ</label><input type="text" id="new-occ-staff"></div>
+      </div>
+      <div class="field"><label for="new-occ-target">対象学年/グループ</label><input type="text" id="new-occ-target"></div>
+      <div class="field"><label for="new-occ-note">備考</label><textarea id="new-occ-note" rows="2"></textarea></div>
+      <div class="btn-row"><button class="primary" id="btn-add-occ">追加する</button></div>
+      <p id="add-occ-status" class="note"></p>
+    </div>
+
+    <div class="card">
+      <div class="btn-row" style="justify-content:space-between;margin-bottom:4px;">
+        <h2 style="margin:0;">定期パターン(毎週の練習など)</h2>
+        <span><button class="ghost" id="btn-edit-patterns">編集</button><button class="primary" id="btn-save-patterns" style="display:none;">登録</button></span>
+      </div>
+      <p class="note" style="margin-top:0;">「開始日」「終了日」は空欄のままでOKです(無期限で繰り返されます)。学年が変わるタイミングなどで区切りたい場合にご利用ください。</p>
+      <div class="table-scroll">
+        <table class="mini-table">
+          <thead><tr><th>曜日</th><th>時間</th><th>場所</th><th>担当</th><th>対象</th><th>種別</th><th>備考</th><th>開始日</th><th>終了日</th><th></th></tr></thead>
+          <tbody id="patterns-tbody"></tbody>
+        </table>
+      </div>
+      <button class="ghost" id="btn-add-pattern" style="margin-top:10px;display:none;">+ 定期パターンを追加</button>
+    </div>
+  </div>
+
+  <!-- Settings -->
+  <div class="tab-panel" id="tab-settings">
+    <div class="card" id="settings-locked-notice" style="display:none;">
+      <h2>🔒 管理者専用</h2>
+      <p class="note" style="margin-top:0;">料金・支出・スポンサー設定やデータの一括削除・復元は、管理者権限を持つアカウントだけが操作できます。権限はFirebaseのstaffデータで管理されています。管理者への昇格が必要な場合は、既存の管理者にFirebaseコンソールでの設定を依頼してください。</p>
+    </div>
+    <div id="settings-content-wrapper">
+    <div class="card">
+      <div class="btn-row" style="justify-content:space-between;margin-bottom:4px;">
+        <h2 style="margin:0;">スタッフ管理</h2>
+        <span><button class="ghost" id="btn-edit-staff">編集</button><button class="primary" id="btn-save-staff" style="display:none;">登録</button></span>
+      </div>
+      <p class="note" style="margin-top:0;">このシステム内でスタッフのログインアカウントを発行できます。「削除」は、このシステムへのアクセス権を外すだけで、発行済みのアカウント自体は残ります。</p>
+      <div class="table-scroll">
+        <table class="mini-table"><thead><tr><th>メールアドレス</th><th>役割</th><th></th></tr></thead><tbody id="staff-tbody"></tbody></table>
+      </div>
+      <div id="staff-empty" class="empty" style="display:none;">スタッフが登録されていません。</div>
+      <div id="add-staff-form" style="display:none;margin-top:16px;padding:14px;border:1px solid var(--accent);border-radius:10px;background:var(--accent-bg);">
+        <p style="font-weight:700;font-size:13px;margin:0 0 4px;color:var(--accent-dark);">◆ ここは新しいログイン情報を作る機能です(ログイン画面ではありません)</p>
+        <p class="note" style="margin-top:0;">入力した内容が、その人の新しいメールアドレス・パスワードになります。作成後、この2つをそのまま本人に伝えてください。<br>※このメールアドレスがすでに(他の校や運用管理者などとして)登録済みの場合は、エラーになり作成できません。</p>
+        <div class="row" style="margin-top:10px;">
+          <div class="field"><label for="new-staff-email">新しいメールアドレス</label><input type="text" id="new-staff-email" placeholder="例: staff@example.com"></div>
+          <div class="field"><label for="new-staff-password">新しい初期パスワード</label><input type="text" id="new-staff-password" placeholder="6文字以上"></div>
+          <div class="field"><label for="new-staff-role">役割</label>
+            <select id="new-staff-role"><option value="staff">スタッフ</option><option value="admin">管理者</option></select>
+          </div>
+        </div>
+        <div class="btn-row"><button class="primary" id="btn-add-staff">この内容で新規アカウントを作成する</button></div>
+        <p class="note" id="add-staff-status"></p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="btn-row" style="justify-content:space-between;margin-bottom:4px;">
+        <h2 style="margin:0;">単価設定</h2>
+        <span><button class="ghost" id="btn-edit-pricing">編集</button><button class="primary" id="btn-save-pricing" style="display:none;">登録</button></span>
+      </div>
+      <div class="row">
+        <div class="field"><label for="cfg-tuition">月謝単価(円/人)</label><input type="number" id="cfg-tuition" min="0" step="500" disabled></div>
+        <div class="field"><label for="cfg-enroll">入会金(円)</label><input type="number" id="cfg-enroll" min="0" step="500" disabled></div>
+      </div>
+      <p class="note">階段図で「体験」にチェックが入っている塾生は、初めて★が付いた月の入会金が自動的に免除されます。</p>
+    </div>
+    <div class="card">
+      <div class="btn-row" style="justify-content:space-between;margin-bottom:4px;">
+        <h2 style="margin:0;">スポンサー収入(毎年・複数登録可)</h2>
+        <span><button class="ghost" id="btn-edit-sponsors">編集</button><button class="primary" id="btn-save-sponsors" style="display:none;">登録</button></span>
+      </div>
+      <div class="table-scroll"><table class="mini-table"><thead><tr><th>名称</th><th>年間金額(円)</th><th>徴収月</th><th></th></tr></thead><tbody id="sponsors-tbody"></tbody></table></div>
+      <button class="ghost" id="btn-add-sponsor" style="margin-top:10px;display:none;">+ スポンサーを追加</button>
+    </div>
+    <div class="card">
+      <div class="btn-row" style="justify-content:space-between;margin-bottom:4px;">
+        <h2 style="margin:0;">支出項目(月額固定・複数登録可)</h2>
+        <span><button class="ghost" id="btn-edit-expenses">編集</button><button class="primary" id="btn-save-expenses" style="display:none;">登録</button></span>
+      </div>
+      <div class="table-scroll"><table class="mini-table"><thead><tr><th>項目名</th><th>金額(円/月)</th><th></th></tr></thead><tbody id="expenses-tbody"></tbody></table></div>
+      <button class="ghost" id="btn-add-expense" style="margin-top:10px;display:none;">+ 支出項目を追加</button>
+    </div>
+    <div class="card">
+      <div class="btn-row" style="justify-content:space-between;margin-bottom:4px;">
+        <h2 style="margin:0;">臨時収入(単発・複数登録可)</h2>
+        <span><button class="ghost" id="btn-edit-extra">編集</button><button class="primary" id="btn-save-extra" style="display:none;">登録</button></span>
+      </div>
+      <div class="table-scroll"><table class="mini-table"><thead><tr><th>内容</th><th>金額(円)</th><th>発生年月</th><th></th></tr></thead><tbody id="extra-tbody"></tbody></table></div>
+      <button class="ghost" id="btn-add-extra" style="margin-top:10px;display:none;">+ 臨時収入を追加</button>
+    </div>
+    <div class="card">
+      <div class="btn-row" style="justify-content:space-between;margin-bottom:4px;">
+        <h2 style="margin:0;">練習場所(カレンダーで使用)</h2>
+        <span><button class="ghost" id="btn-edit-locations">編集</button><button class="primary" id="btn-save-locations" style="display:none;">登録</button></span>
+      </div>
+      <div class="table-scroll"><table class="mini-table"><thead><tr><th>名称</th><th>住所</th><th>メモ</th><th></th></tr></thead><tbody id="locations-tbody"></tbody></table></div>
+      <button class="ghost" id="btn-add-location" style="margin-top:10px;display:none;">+ 場所を追加</button>
+    </div>
+    <div class="card">
+      <h2>保護者用URL(全校共通)</h2>
+      <p class="note" style="margin-top:0;">下のURLは、どの校の保護者にも同じものを共有できます。フォーム内で保護者ご自身に校舎を選んでいただく仕組みになっています。</p>
+      <div class="field"><label>欠席連絡フォーム</label><input type="text" id="url-absence" readonly onclick="this.select()"></div>
+      <div class="field"><label>活動カレンダー(閲覧専用)</label><input type="text" id="url-calendar" readonly onclick="this.select()"></div>
+      <p class="note" style="margin-top:0;">タップすると全選択されるので、コピーして貼り付けてください。</p>
+    </div>
+    <div class="card">
+
+      <h2>データのバックアップ・復元(重要)</h2>
+      <p class="note" style="margin-top:0;">保存データはこのブラウザ内に保持されますが、このファイルを別名で再ダウンロードしたり、別のブラウザ・別の端末で開いたりすると引き継がれません。作業のきりの良いタイミングで、バックアップ(JSON)をダウンロードして保管してください。</p>
+      <div class="btn-row">
+        <button class="primary" id="btn-export-json">バックアップをダウンロード(JSON)</button>
+        <button class="ghost" id="btn-import-json-trigger">バックアップから復元</button>
+        <input type="file" id="import-file" accept="application/json" style="display:none;">
+      </div>
+      <p id="import-status" style="font-size:13px;margin-top:8px;"></p>
+    </div>
+
+    <div class="card">
+      <h2>データのダウンロード</h2>
+      <p class="note" style="margin-top:0;">表示中の年度の階段図・設定・月次内訳をCSVファイルとしてダウンロードします。ダウンロード後、Googleドライブにアップロードすれば自動的にGoogleスプレッドシートとして開けます。</p>
+      <div class="btn-row"><button class="primary" id="btn-download-csv">CSVをダウンロード</button></div>
+    </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div id="pdf-render-area" style="position:fixed;left:-9999px;top:0;"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+const ABILITY_DEFS = [
+  { key:'physical', short:'Physical', label:'Physical(フィジカル)', weight:30, items:[
+      {key:'tenacity', ja:'執念', en:'Tenacity'},
+      {key:'consistency', ja:'継続力', en:'Consistency'},
+      {key:'commitment', ja:'貢献意識', en:'Commitment'},
+      {key:'selfDiscipline', ja:'自己規律', en:'Self-Discipline'}
+  ]},
+  { key:'skill', short:'Skill / Technic', label:'Skill / Technic(スキル・テクニック)', weight:30, items:[
+      {key:'challenge', ja:'挑戦心', en:'Challenge Spirit'},
+      {key:'courage', ja:'勇気', en:'Courage'},
+      {key:'influence', ja:'影響力', en:'Influence'},
+      {key:'proactivity', ja:'積極性', en:'Proactivity'}
+  ]},
+  { key:'mental', short:'Mental', label:'Mental(メンタル)', weight:30, items:[
+      {key:'obsession', ja:'勝負への執着', en:'Obsession for Win'},
+      {key:'resilience', ja:'レジリエンス', en:'Resilience'},
+      {key:'pressureTolerance', ja:'プレッシャー耐性', en:'Pressure Tolerance'},
+      {key:'responsibility', ja:'責任感', en:'Responsibility'}
+  ]},
+  { key:'tactics', short:'Idea / Tactics', label:'Idea / Tactics(アイデア・タクティクス)', weight:10, items:[
+      {key:'ownership', ja:'主体性', en:'Ownership'},
+      {key:'selfCorrection', ja:'自己修正力', en:'Self-Correction'},
+      {key:'selfAwareness', ja:'自己認知', en:'Self-Awareness'},
+      {key:'collaboration', ja:'協調性', en:'Collaboration'}
+  ]}
+];
+
+let students = [];
+let absenceReports = [];
+let settings = {
+  tuition:8000, enroll:5000,
+  sponsors:[{id:'seed1', name:'メインスポンサー', amount:300000, month:4}],
+  expenses:[{id:'seed2', name:'設備使用料', amount:100000},{id:'seed3', name:'消耗品費', amount:20000}],
+  extraIncomes:[]
+};
+let isAdmin = false;
+let editState = { pricing:false, sponsors:false, expenses:false, extra:false, locations:false, patterns:false, staff:false };
+let currentFY;
+let patterns = [];
+let scheduleEvents = [];
+let locationsList = [];
+let staffList = [];
+let calViewYear, calViewMonth, calSelectedDate = null;
+let chartCount, chartFinance, chartRadar, chartRanking;
+
+function pad(n){ return String(n).padStart(2,'0'); }
+function uid(){ return 'id_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,7); }
+function fmtYen(n){ const v = Math.round(n); return (v<0?'-':'') + '¥' + Math.abs(v).toLocaleString('ja-JP'); }
+function escAttr(v){ return String(v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function fmtTimestamp(ts){
+  if (!ts || !ts.toDate) return '-';
+  const d = ts.toDate();
+  return d.getFullYear() + '/' + pad(d.getMonth()+1) + '/' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+}
+
+function fiscalYearOf(year, month){ return month >= 4 ? year : year - 1; }
+function fyOfYm(ym){ return fiscalYearOf(Number(ym.slice(0,4)), Number(ym.slice(5,7))); }
+function fiscalMonths(fy){
+  const list = [];
+  for (let m = 4; m <= 12; m++) list.push({ year: fy, month: m });
+  for (let m = 1; m <= 3; m++) list.push({ year: fy+1, month: m });
+  return list.map(x => ({ year:x.year, month:x.month, key: x.year + '-' + pad(x.month), label: x.month + '月' }));
+}
+function gradeLabel(g){
+  if (g === null || g === undefined || isNaN(g)) return '-';
+  if (g < 1) return '未就学';
+  if (g <= 6) return '小' + g;
+  if (g <= 9) return '中' + (g-6);
+  if (g <= 12) return '高' + (g-9);
+  return '卒業';
+}
+function studentGradeAtFY(s, fy){ return s.gradeRef + (fy - s.gradeRefFY); }
+function firstActiveKey(s){ const keys = Object.keys(s.months).filter(k => s.months[k] === 'active').sort(); return keys.length ? keys[0] : null; }
+function cellMark(status){ return status === 'active' ? '★' : (status === 'pause' ? '−' : ''); }
+function cycleStatus(cur){ if (cur === 'active') return 'pause'; if (cur === 'pause') return null; return 'active'; }
+function currentMonthStr(){ const d = new Date(); return d.getFullYear() + '-' + pad(d.getMonth()+1); }
+function prevMonthStr(ym){ let [y,m] = ym.split('-').map(Number); m--; if(m<1){m=12;y--;} return y + '-' + pad(m); }
+
+// ---- Firebase setup ----
+// Fill in your own project's config here (Firebase console > Project settings > Your apps > Web app).
+const firebaseConfig = {
+  apiKey: "AIzaSyDKTuN49WGP1pFobS6rS_RwDnDvzJe1h00",
+  authDomain: "takuma-juku-iwakuni.firebaseapp.com",
+  projectId: "takuma-juku-iwakuni",
+  storageBucket: "takuma-juku-iwakuni.firebasestorage.app",
+  messagingSenderId: "1065956673618",
+  appId: "1:1065956673618:web:e765409502a9b87031b78b"
+};
+const ACADEMY_ID = new URLSearchParams(window.location.search).get('school') || '_unspecified';
+
+firebase.initializeApp(firebaseConfig);
+const secondaryApp = firebase.initializeApp(firebaseConfig, 'Secondary');
+const secondaryAuth = secondaryApp.auth();
+const auth = firebase.auth();
+const db = firebase.firestore();
+const academyRef = db.collection('academies').doc(ACADEMY_ID);
+const schoolsRef = db.collection('schools');
+const studentsRef = academyRef.collection('students');
+const settingsRef = academyRef.collection('meta').doc('settings');
+const locationsMetaRef = academyRef.collection('meta').doc('locations');
+const staffRef = academyRef.collection('staff');
+const absenceRef = academyRef.collection('absenceReports');
+const patternsRef = academyRef.collection('schedulePatterns');
+const eventsRef = academyRef.collection('scheduleEvents');
+
+let unsubStudents = null, unsubSettings = null;
+let currentUser = null;
+
+function markSaved(ok){
+  const el = document.getElementById('storage-status');
+  if (!el) return;
+  const now = new Date();
+  const t = pad(now.getHours()) + ':' + pad(now.getMinutes()) + ':' + pad(now.getSeconds());
+  if (ok){ el.textContent = '✓ ' + t + ' にクラウドへ保存しました。'; el.style.color = 'var(--text-muted)'; }
+  else { el.textContent = '⚠ 保存に失敗しました(通信状況や権限をご確認ください)。'; el.style.color = 'var(--danger)'; }
+}
+
+async function saveStudent(s){
+  try { await studentsRef.doc(s.id).set(s); markSaved(true); }
+  catch(e){ console.error(e); markSaved(false); }
+}
+async function deleteStudentDoc(id){
+  try { await studentsRef.doc(id).delete(); markSaved(true); }
+  catch(e){ console.error(e); markSaved(false); alert('削除に失敗しました: ' + e.message); }
+}
+async function batchAddStudents(list){
+  try {
+    const batch = db.batch();
+    list.forEach(s => batch.set(studentsRef.doc(s.id), s));
+    await batch.commit();
+    markSaved(true);
+  } catch(e){ console.error(e); markSaved(false); }
+}
+async function replaceAllStudents(list){
+  try {
+    const snap = await studentsRef.get();
+    const batch = db.batch();
+    const keepIds = new Set(list.map(s => s.id));
+    snap.docs.forEach(d => { if (!keepIds.has(d.id)) batch.delete(d.ref); });
+    list.forEach(s => batch.set(studentsRef.doc(s.id), s));
+    await batch.commit();
+    markSaved(true);
+  } catch(e){ console.error(e); markSaved(false); }
+}
+async function saveSettings(){
+  try { await settingsRef.set(settings); markSaved(true); }
+  catch(e){ console.error(e); markSaved(false); }
+}
+
+function defaultSettings(){
+  return {
+    tuition:8000, enroll:5000,
+    sponsors:[{ id:'seed1', name:'メインスポンサー', amount:300000, month:4 }],
+    expenses:[{ id:'seed2', name:'設備使用料', amount:100000 },{ id:'seed3', name:'消耗品費', amount:20000 }],
+    extraIncomes:[]
+  };
+}
+
+async function resolveRole(uid){
+  try {
+    const doc = await staffRef.doc(uid).get();
+    isAdmin = doc.exists && doc.data().role === 'admin';
+    if (doc.exists && doc.data().uid !== uid){
+      staffRef.doc(uid).set({ uid, email: currentUser.email }, { merge:true }).catch(e => console.error(e));
+    }
+  } catch(e){ isAdmin = false; }
+  document.getElementById('current-user-email').textContent = currentUser.email + (isAdmin ? '(管理者)' : '(スタッフ)');
+  updateAdminUI();
+}
+
+function attachListeners(){
+  detachListeners();
+  unsubStudents = studentsRef.onSnapshot(snap => {
+    students = snap.docs.map(d => Object.assign({ id:d.id }, d.data()));
+    students.forEach(s => { if (!s.growth) s.growth = {}; if (!s.months) s.months = {}; });
+    renderAll();
+  }, err => { console.error(err); markSaved(false); });
+  unsubSettings = settingsRef.onSnapshot(doc => {
+    if (doc.exists) settings = Object.assign(defaultSettings(), doc.data());
+    else settingsRef.set(defaultSettings());
+    loadSettingsToForm();
+    refreshDashboard();
+    renderGridFooter(fiscalMonths(currentFY));
+    renderPatternsTable();
+    renderCalendarViews();
+  }, err => console.error(err));
+  unsubAbsence = absenceRef.orderBy('absenceDate', 'desc').onSnapshot(snap => {
+    absenceReports = snap.docs.map(d => Object.assign({ id:d.id }, d.data()));
+    renderAbsenceList(snap.docs);
+    renderCalendarViews();
+    renderAbsenceHistory();
+  }, err => console.error(err));
+  unsubPatterns = patternsRef.onSnapshot(snap => {
+    patterns = snap.docs.map(d => Object.assign({ id:d.id }, d.data()));
+    renderPatternsTable();
+    renderCalendarViews();
+  }, err => console.error(err));
+  unsubLocationsMeta = locationsMetaRef.onSnapshot(async (doc) => {
+    if (doc.exists){
+      locationsList = doc.data().items || [];
+    } else {
+      // 一度だけ、旧settings.locationsからの移行を試みる
+      locationsList = (settings.locations || []);
+      if (locationsList.length > 0){
+        try { await locationsMetaRef.set({ items: locationsList }); } catch(e){ console.error(e); }
+      }
+    }
+    renderLocationsTable();
+    populateLocationSelects();
+    renderPatternsTable();
+  }, err => console.error(err));
+  unsubStaffList = staffRef.onSnapshot(snap => {
+    staffList = snap.docs.map(d => Object.assign({ id:d.id }, d.data()));
+    renderStaffTable();
+  }, err => console.error(err));
+  unsubEvents = eventsRef.onSnapshot(snap => {
+    scheduleEvents = snap.docs.map(d => Object.assign({ id:d.id }, d.data()));
+    renderCalendarViews();
+  }, err => console.error(err));
+}
+function detachListeners(){
+  if (unsubStudents){ unsubStudents(); unsubStudents = null; }
+  if (unsubSettings){ unsubSettings(); unsubSettings = null; }
+  if (unsubAbsence){ unsubAbsence(); unsubAbsence = null; }
+  if (unsubPatterns){ unsubPatterns(); unsubPatterns = null; }
+  if (unsubEvents){ unsubEvents(); unsubEvents = null; }
+  if (unsubLocationsMeta){ unsubLocationsMeta(); unsubLocationsMeta = null; }
+  if (unsubStaffList){ unsubStaffList(); unsubStaffList = null; }
+}
+let unsubAbsence = null;
+let unsubPatterns = null;
+let unsubEvents = null;
+let unsubLocationsMeta = null;
+let unsubStaffList = null;
+
+function renderAbsenceList(docs){
+  const tbody = document.getElementById('absence-tbody');
+  const empty = document.getElementById('absence-empty');
+  const bulkActions = document.getElementById('absence-bulk-actions');
+  if (bulkActions) bulkActions.style.display = isAdmin ? 'flex' : 'none';
+  if (!tbody) return;
+  const visibleDocs = docs.filter(d => !d.data().archived);
+  if (visibleDocs.length === 0){ tbody.innerHTML = ''; if (empty) empty.style.display = 'block'; return; }
+  if (empty) empty.style.display = 'none';
+  const sorted = [...visibleDocs].sort((a,b) => {
+    const da = a.data(), db_ = b.data();
+    if (da.status !== db_.status) return da.status === 'new' ? -1 : 1;
+    return (db_.absenceDate || '').localeCompare(da.absenceDate || '');
+  });
+  tbody.innerHTML = sorted.map(d => {
+    const r = d.data();
+    const submittedStr = fmtTimestamp(r.submittedAt);
+    const statusBadge = r.status === 'new' ? '<span class="badge">未確認</span>' : '<span class="badge muted">確認済み</span>';
+    const ackBtn = r.status === 'new' ? `<button class="ghost" data-ack="${d.id}">確認済みにする</button>` : '';
+    const delBtn = isAdmin ? `<button class="link-danger" data-archive-absence="${d.id}">一覧から削除</button>` : '';
+    const actionCell = ackBtn + ' ' + delBtn;
+    return `<tr>
+      <td>${statusBadge}</td>
+      <td>${escAttr(r.studentName || '')}</td>
+      <td>${escAttr(r.absenceDate || '')}</td>
+      <td>${escAttr(r.reason || '')}</td>
+      <td>${escAttr(r.note || '')}</td>
+      <td>${submittedStr}</td>
+      <td>${actionCell}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function handleAbsenceClick(e){
+  const ackId = e.target.dataset.ack;
+  const archiveId = e.target.dataset.archiveAbsence;
+  if (ackId){
+    try { await absenceRef.doc(ackId).update({ status:'acknowledged' }); }
+    catch(err){ console.error(err); alert('更新に失敗しました: ' + err.message); }
+    return;
+  }
+  if (archiveId){
+    if (!confirm('この欠席連絡を一覧から削除します。カレンダー上の欠席記録はそのまま残ります。よろしいですか？')) return;
+    try { await absenceRef.doc(archiveId).update({ archived:true }); }
+    catch(err){ console.error(err); alert('削除に失敗しました: ' + err.message); }
+  }
+}
+
+async function handleDeleteAcknowledged(){
+  const targets = absenceReports.filter(r => r.status === 'acknowledged' && !r.archived);
+  if (targets.length === 0){ alert('確認済みの欠席連絡はありません。'); return; }
+  if (!confirm('確認済みの欠席連絡を' + targets.length + '件、一覧から削除します。カレンダー上の欠席記録はそのまま残ります。よろしいですか？')) return;
+  try {
+    const batch = db.batch();
+    targets.forEach(r => batch.update(absenceRef.doc(r.id), { archived:true }));
+    await batch.commit();
+  } catch(err){ console.error(err); alert('削除に失敗しました: ' + err.message); }
+}
+
+const WEEKDAY_LABELS = ['日','月','火','水','木','金','土'];
+const WEEKDAY_NAMES = ['日曜','月曜','火曜','水曜','木曜','金曜','土曜'];
+
+function dateStrOf(d){ return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()); }
+function weekdayOf(dateStr){ return new Date(dateStr + 'T00:00:00').getDay(); }
+function locationName(id){ const l = (locationsList||[]).find(x => x.id === id); return l ? l.name : '(場所未設定)'; }
+
+function occurrencesForDate(dateStr){
+  const wd = weekdayOf(dateStr);
+  const results = [];
+  patterns.filter(p => Number(p.weekday) === wd
+    && (!p.startDate || dateStr >= p.startDate)
+    && (!p.endDate || dateStr <= p.endDate)
+  ).forEach(p => {
+    const override = scheduleEvents.find(e => e.date === dateStr && e.patternId === p.id);
+    const merged = Object.assign({}, p, override || {});
+    results.push({
+      date:dateStr, patternId:p.id, eventId: override ? override.id : null,
+      cancelled: !!(override && override.cancelled),
+      startTime: merged.startTime, endTime: merged.endTime, locationId: merged.locationId,
+      staffInCharge: merged.staffInCharge, targetGroup: merged.targetGroup, type: merged.type, note: merged.note
+    });
+  });
+  scheduleEvents.filter(e => e.date === dateStr && !e.patternId).forEach(e => {
+    results.push({
+      date:dateStr, patternId:null, eventId:e.id, cancelled: !!e.cancelled,
+      startTime:e.startTime, endTime:e.endTime, locationId:e.locationId,
+      staffInCharge:e.staffInCharge, targetGroup:e.targetGroup, type:e.type, note:e.note
+    });
+  });
+  results.sort((a,b) => (a.startTime||'').localeCompare(b.startTime||''));
+  return results;
+}
+
+function absenteesForDate(dateStr){
+  return absenceReports.filter(r => r.absenceDate === dateStr);
+}
+
+function calendarRowHTML(o){
+  const d = new Date(o.date + 'T00:00:00');
+  const dateLabel = (d.getMonth()+1) + '/' + d.getDate() + '(' + WEEKDAY_LABELS[d.getDay()] + ')';
+  const cancelledTag = o.cancelled ? ' <span class="badge muted">中止</span>' : '';
+  const key = o.date + '|' + (o.patternId||'') + '|' + (o.eventId||'');
+  const absentees = absenteesForDate(o.date);
+  const absenteesHTML = absentees.length
+    ? `<div class="cr-absent">🚫 欠席: ${absentees.map(a => escAttr(a.studentName) + (a.reason ? '('+escAttr(a.reason)+')' : '')).join('、')}</div>`
+    : '';
+  return `<div class="calendar-row ${o.cancelled ? 'cancelled' : ''}">
+    <div class="cr-date">${dateLabel}</div>
+    <div class="cr-time">${escAttr(o.startTime||'')}${o.endTime ? '〜'+escAttr(o.endTime) : ''}</div>
+    <div class="cr-body">
+      <div class="cr-type">${escAttr(o.type||'')}${cancelledTag}</div>
+      <div class="cr-loc">📍 ${escAttr(locationName(o.locationId))}</div>
+      <div class="cr-staff">担当: ${escAttr(o.staffInCharge||'-')} ／ 対象: ${escAttr(o.targetGroup||'-')}</div>
+      ${o.note ? '<div class="cr-note">' + escAttr(o.note) + '</div>' : ''}
+      ${absenteesHTML}
+    </div>
+    <div class="cr-actions">
+      <button class="ghost" data-edit-occ="${key}">編集</button>
+      <button class="link-danger" data-delete-occ="${key}">削除</button>
+    </div>
+  </div>`;
+}
+
+async function handleDeleteOccurrenceFromList(key){
+  const [dateStr, patternId, eventId] = key.split('|');
+  if (patternId){
+    if (!confirm('この日の予定を中止にしますか？(定期パターン自体は残ります)')) return;
+    const payload = { date:dateStr, patternId, cancelled:true };
+    try { await eventsRef.doc(patternId + '_' + dateStr).set(payload, { merge:true }); }
+    catch(err){ console.error(err); alert('失敗しました: ' + err.message); }
+  } else {
+    if (!eventId) return;
+    if (!confirm('この単発予定を削除しますか？(元に戻せません)')) return;
+    try { await eventsRef.doc(eventId).delete(); }
+    catch(err){ console.error(err); alert('削除に失敗しました: ' + err.message); }
+  }
+}
+
+function renderCalendarList(){
+  const container = document.getElementById('calendar-list');
+  if (!container) return;
+  const today = new Date();
+  const rows = [];
+  for (let i = 0; i < 60; i++){
+    const d = new Date(today); d.setDate(d.getDate() + i);
+    occurrencesForDate(dateStrOf(d)).forEach(o => rows.push(o));
+  }
+  container.innerHTML = rows.length === 0
+    ? '<p class="empty">今後60日間の予定はありません。</p>'
+    : rows.map(calendarRowHTML).join('');
+}
+
+function renderCalGrid(){
+  const grid = document.getElementById('cal-grid');
+  const label = document.getElementById('cal-month-label');
+  if (!grid || !label) return;
+  label.textContent = calViewYear + '年' + (calViewMonth+1) + '月';
+  const first = new Date(calViewYear, calViewMonth, 1);
+  const startOffset = first.getDay();
+  const daysInMonth = new Date(calViewYear, calViewMonth+1, 0).getDate();
+  let html = WEEKDAY_LABELS.map(w => `<div class="cal-head">${w}</div>`).join('');
+  for (let i = 0; i < startOffset; i++) html += '<div class="cal-day empty-cell"></div>';
+  for (let day = 1; day <= daysInMonth; day++){
+    const dateStr = calViewYear + '-' + pad(calViewMonth+1) + '-' + pad(day);
+    const occ = occurrencesForDate(dateStr);
+    const tags = occ.map(o => {
+      const abbr = o.type === '試合' ? '試合' : (o.type === 'イベント' ? '行事' : '練習');
+      return `<div class="cd-tag ${o.cancelled ? 'cd-tag-cancelled' : ''}">${o.cancelled ? '中止' : abbr}</div>`;
+    }).join('');
+    const absentCount = absenteesForDate(dateStr).length;
+    const absentBadge = absentCount ? `<div class="cd-absent">欠${absentCount}</div>` : '';
+    const sel = dateStr === calSelectedDate ? ' selected' : '';
+    html += `<div class="cal-day${sel}" data-date="${dateStr}"><div class="cd-num">${day}</div>${tags}${absentBadge}</div>`;
+  }
+  grid.innerHTML = html;
+}
+
+function renderCalDayDetail(dateStr){
+  const container = document.getElementById('cal-day-detail');
+  if (!container) return;
+  if (!dateStr){ container.innerHTML = ''; return; }
+  const d = new Date(dateStr + 'T00:00:00');
+  const occ = occurrencesForDate(dateStr);
+  const heading = `<h2 style="margin-bottom:8px;">${d.getMonth()+1}月${d.getDate()}日(${WEEKDAY_LABELS[d.getDay()]})の予定</h2>`;
+  container.innerHTML = heading + (occ.length === 0 ? '<p class="empty">この日の予定はありません。</p>' : occ.map(calendarRowHTML).join(''));
+}
+
+function renderCalendarViews(){
+  renderCalendarList();
+  renderCalGrid();
+  if (calSelectedDate) renderCalDayDetail(calSelectedDate);
+  populateLocationSelects();
+}
+
+function populateLocationSelects(){
+  const opts = '<option value="">(未選択)</option>' + (locationsList||[]).map(l => `<option value="${l.id}">${escAttr(l.name)}</option>`).join('');
+  ['occ-location','new-occ-location'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const prev = el.value;
+    el.innerHTML = opts;
+    if (prev) el.value = prev;
+  });
+}
+
+function openOccurrenceEditor(key){
+  const [dateStr, patternId, eventId] = key.split('|');
+  const occ = occurrencesForDate(dateStr).find(o => (o.patternId||'') === patternId);
+  if (!occ) return;
+  document.getElementById('occ-editor').style.display = 'block';
+  document.getElementById('occ-editor-hint').style.display = 'none';
+  document.getElementById('occ-date').value = dateStr;
+  document.getElementById('occ-type').value = occ.type || '通常練習';
+  document.getElementById('occ-start').value = occ.startTime || '';
+  document.getElementById('occ-end').value = occ.endTime || '';
+  document.getElementById('occ-location').value = occ.locationId || '';
+  document.getElementById('occ-staff').value = occ.staffInCharge || '';
+  document.getElementById('occ-target').value = occ.targetGroup || '';
+  document.getElementById('occ-note').value = occ.note || '';
+  document.getElementById('occ-cancelled').checked = occ.cancelled;
+  document.getElementById('occ-editor').dataset.date = dateStr;
+  document.getElementById('occ-editor').dataset.patternId = patternId || '';
+  document.getElementById('occ-editor').dataset.eventId = eventId || '';
+  document.getElementById('btn-reset-occ').style.display = (patternId && eventId) ? 'inline-block' : 'none';
+  document.getElementById('btn-delete-occ').style.display = (!patternId && eventId) ? 'inline-block' : 'none';
+  document.getElementById('occ-status').textContent = '';
+}
+
+async function handleSaveOccurrence(){
+  const editor = document.getElementById('occ-editor');
+  const dateStr = editor.dataset.date;
+  const patternId = editor.dataset.patternId || null;
+  const eventId = editor.dataset.eventId || null;
+  const statusEl = document.getElementById('occ-status');
+  const payload = {
+    date: dateStr,
+    patternId: patternId || null,
+    type: document.getElementById('occ-type').value,
+    startTime: document.getElementById('occ-start').value,
+    endTime: document.getElementById('occ-end').value,
+    locationId: document.getElementById('occ-location').value || null,
+    staffInCharge: document.getElementById('occ-staff').value,
+    targetGroup: document.getElementById('occ-target').value,
+    note: document.getElementById('occ-note').value,
+    cancelled: document.getElementById('occ-cancelled').checked
+  };
+  try {
+    if (patternId){
+      // 定期パターンの上書きは「パターンID_日付」で必ず一意にし、重複を防ぐ
+      await eventsRef.doc(patternId + '_' + dateStr).set(payload, { merge:true });
+    } else if (eventId){
+      await eventsRef.doc(eventId).set(payload, { merge:true });
+    } else {
+      await eventsRef.add(payload);
+    }
+    statusEl.style.color = 'var(--accent-dark)';
+    statusEl.textContent = '✓ 保存しました。';
+  } catch(err){
+    console.error(err);
+    statusEl.style.color = 'var(--danger)';
+    statusEl.textContent = '保存に失敗しました: ' + err.message;
+  }
+}
+
+async function handleResetOccurrence(){
+  const editor = document.getElementById('occ-editor');
+  const dateStr = editor.dataset.date;
+  const patternId = editor.dataset.patternId;
+  if (!patternId) return;
+  if (!confirm('この日だけの変更を取り消し、通常のパターン通りに戻します。よろしいですか？')) return;
+  try { await eventsRef.doc(patternId + '_' + dateStr).delete(); document.getElementById('occ-editor').style.display = 'none'; document.getElementById('occ-editor-hint').style.display = 'block'; }
+  catch(err){ console.error(err); alert('失敗しました: ' + err.message); }
+}
+
+async function handleDeleteOccurrence(){
+  const editor = document.getElementById('occ-editor');
+  const eventId = editor.dataset.eventId;
+  if (!eventId) return;
+  if (!confirm('この単発予定を削除しますか？')) return;
+  try { await eventsRef.doc(eventId).delete(); document.getElementById('occ-editor').style.display = 'none'; document.getElementById('occ-editor-hint').style.display = 'block'; }
+  catch(err){ console.error(err); alert('失敗しました: ' + err.message); }
+}
+
+async function handleAddStandaloneOccurrence(){
+  const statusEl = document.getElementById('add-occ-status');
+  const date = document.getElementById('new-occ-date').value;
+  if (!date){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = '日付を選択してください。'; return; }
+  const payload = {
+    date, patternId: null,
+    type: document.getElementById('new-occ-type').value,
+    startTime: document.getElementById('new-occ-start').value,
+    endTime: document.getElementById('new-occ-end').value,
+    locationId: document.getElementById('new-occ-location').value || null,
+    staffInCharge: document.getElementById('new-occ-staff').value,
+    targetGroup: document.getElementById('new-occ-target').value,
+    note: document.getElementById('new-occ-note').value,
+    cancelled: false
+  };
+  try {
+    await eventsRef.add(payload);
+    statusEl.style.color = 'var(--accent-dark)';
+    statusEl.textContent = '✓ 追加しました。';
+    ['new-occ-date','new-occ-start','new-occ-end','new-occ-staff','new-occ-target','new-occ-note'].forEach(id => document.getElementById(id).value = '');
+  } catch(err){
+    console.error(err);
+    statusEl.style.color = 'var(--danger)';
+    statusEl.textContent = '追加に失敗しました: ' + err.message;
+  }
+}
+
+function renderPatternsTable(){
+  const tbody = document.getElementById('patterns-tbody');
+  if (!tbody) return;
+  if (patterns.length === 0){ tbody.innerHTML = '<tr><td colspan="10" class="empty">定期パターンが登録されていません</td></tr>'; return; }
+  const sorted = [...patterns].sort((a,b) => Number(a.weekday) - Number(b.weekday));
+  const dis = editState.patterns ? '' : 'disabled';
+  const locOpts = (selected) => '<option value="">(未選択)</option>' + (locationsList||[]).map(l => `<option value="${l.id}" ${l.id===selected?'selected':''}>${escAttr(l.name)}</option>`).join('');
+  const wdOpts = (selected) => WEEKDAY_NAMES.map((w,i) => `<option value="${i}" ${Number(selected)===i?'selected':''}>${w}</option>`).join('');
+  tbody.innerHTML = sorted.map(p => `
+    <tr data-id="${p.id}">
+      <td><select class="pt-weekday" data-id="${p.id}" ${dis}>${wdOpts(p.weekday)}</select></td>
+      <td><input type="time" class="pt-start" data-id="${p.id}" value="${p.startTime||''}" style="width:80px;display:inline-block;" ${dis}> 〜 <input type="time" class="pt-end" data-id="${p.id}" value="${p.endTime||''}" style="width:80px;display:inline-block;" ${dis}></td>
+      <td><select class="pt-location" data-id="${p.id}" ${dis}>${locOpts(p.locationId)}</select></td>
+      <td><input type="text" class="pt-staff" data-id="${p.id}" value="${escAttr(p.staffInCharge||'')}" style="width:90px;" ${dis}></td>
+      <td><input type="text" class="pt-target" data-id="${p.id}" value="${escAttr(p.targetGroup||'')}" style="width:90px;" ${dis}></td>
+      <td><select class="pt-type" data-id="${p.id}" ${dis}><option ${p.type==='通常練習'?'selected':''}>通常練習</option><option ${p.type==='試合'?'selected':''}>試合</option><option ${p.type==='イベント'?'selected':''}>イベント</option></select></td>
+      <td><input type="text" class="pt-note" data-id="${p.id}" value="${escAttr(p.note||'')}" style="width:100px;" ${dis}></td>
+      <td><input type="date" class="pt-startdate" data-id="${p.id}" value="${p.startDate||''}" style="width:130px;" ${dis}></td>
+      <td><input type="date" class="pt-enddate" data-id="${p.id}" value="${p.endDate||''}" style="width:130px;" ${dis}></td>
+      <td><button class="link-danger" data-del-pattern="${p.id}" ${dis}>削除</button></td>
+    </tr>`).join('');
+}
+
+async function handlePatternsChange(e){
+  const id = e.target.dataset.id;
+  if (!id) return;
+  const field = { 'pt-weekday':'weekday','pt-start':'startTime','pt-end':'endTime','pt-location':'locationId','pt-staff':'staffInCharge','pt-target':'targetGroup','pt-type':'type','pt-note':'note','pt-startdate':'startDate','pt-enddate':'endDate' };
+  const cls = [...e.target.classList].find(c => field[c]);
+  if (!cls) return;
+  const key = field[cls];
+  const value = cls === 'pt-weekday' ? Number(e.target.value) : e.target.value;
+  try { await patternsRef.doc(id).set({ [key]: value }, { merge:true }); }
+  catch(err){ console.error(err); alert('保存に失敗しました: ' + err.message); }
+}
+async function handlePatternsClick(e){
+  const id = e.target.dataset.delPattern;
+  if (!id) return;
+  if (!confirm('この定期パターンを削除しますか？(過去の個別の上書き予定は残ります)')) return;
+  try { await patternsRef.doc(id).delete(); }
+  catch(err){ console.error(err); alert('削除に失敗しました: ' + err.message); }
+}
+
+function renderLocationsTable(){
+  const tbody = document.getElementById('locations-tbody');
+  if (!tbody) return;
+  const locs = locationsList || [];
+  const dis = editState.locations ? '' : 'disabled';
+  tbody.innerHTML = locs.map(l => `
+    <tr data-id="${l.id}">
+      <td><input type="text" class="loc-name" data-id="${l.id}" value="${escAttr(l.name)}" ${dis}></td>
+      <td><input type="text" class="loc-address" data-id="${l.id}" value="${escAttr(l.address||'')}" ${dis}></td>
+      <td><input type="text" class="loc-note" data-id="${l.id}" value="${escAttr(l.note||'')}" ${dis}></td>
+      <td><button class="link-danger" data-del-loc="${l.id}" ${dis}>削除</button></td>
+    </tr>`).join('') || '<tr><td colspan="4" class="empty">場所が登録されていません</td></tr>';
+}
+async function saveLocations(){
+  try { await locationsMetaRef.set({ items: locationsList }); markSaved(true); }
+  catch(err){ console.error(err); markSaved(false); }
+}
+
+async function handleLocationsChange(e){
+  const id = e.target.dataset.id;
+  if (!id) return;
+  const loc = (locationsList||[]).find(x => x.id === id);
+  if (!loc) return;
+  if (e.target.classList.contains('loc-name')) loc.name = e.target.value;
+  else if (e.target.classList.contains('loc-address')) loc.address = e.target.value;
+  else if (e.target.classList.contains('loc-note')) loc.note = e.target.value;
+  await saveLocations();
+  populateLocationSelects();
+  renderPatternsTable();
+}
+async function handleLocationsClick(e){
+  const id = e.target.dataset.delLoc;
+  if (!id) return;
+  locationsList = (locationsList||[]).filter(x => x.id !== id);
+  await saveLocations();
+  renderLocationsTable();
+  populateLocationSelects();
+  renderPatternsTable();
+}
+
+function renderStaffTable(){
+  const tbody = document.getElementById('staff-tbody');
+  const empty = document.getElementById('staff-empty');
+  if (!tbody) return;
+  if (staffList.length === 0){ tbody.innerHTML = ''; if (empty) empty.style.display = 'block'; return; }
+  if (empty) empty.style.display = 'none';
+  const dis = editState.staff ? '' : 'disabled';
+  tbody.innerHTML = staffList.map(s => `
+    <tr data-id="${s.id}">
+      <td>${escAttr(s.email || s.id)}</td>
+      <td><select class="stf-role" data-id="${s.id}" ${dis}><option value="staff" ${s.role!=='admin'?'selected':''}>スタッフ</option><option value="admin" ${s.role==='admin'?'selected':''}>管理者</option></select></td>
+      <td><button class="link-danger" data-del-staff="${s.id}" ${dis}>削除</button></td>
+    </tr>`).join('');
+}
+
+async function handleStaffChange(e){
+  const id = e.target.dataset.id;
+  if (!id || !e.target.classList.contains('stf-role')) return;
+  try { await staffRef.doc(id).set({ role: e.target.value }, { merge:true }); }
+  catch(err){ console.error(err); alert('更新に失敗しました: ' + err.message); }
+}
+async function handleStaffClick(e){
+  const id = e.target.dataset.delStaff;
+  if (!id) return;
+  if (!confirm('このアカウントのアクセス権を削除しますか？(ログインアカウント自体は残ります)')) return;
+  try { await staffRef.doc(id).delete(); }
+  catch(err){ console.error(err); alert('削除に失敗しました: ' + err.message); }
+}
+
+async function handleAddStaff(){
+  const statusEl = document.getElementById('add-staff-status');
+  const email = document.getElementById('new-staff-email').value.trim();
+  const password = document.getElementById('new-staff-password').value;
+  const role = document.getElementById('new-staff-role').value;
+  if (!email || !password){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = 'メールアドレスとパスワードの両方を入力してください。'; return; }
+  if (password.length < 6){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = 'パスワードは6文字以上にしてください。'; return; }
+  statusEl.style.color = 'var(--text-secondary)';
+  statusEl.textContent = 'アカウントを発行しています…';
+  try {
+    const cred = await secondaryAuth.createUserWithEmailAndPassword(email, password);
+    const newUid = cred.user.uid;
+    await secondaryAuth.signOut();
+    await staffRef.doc(newUid).set({ role, email, uid: newUid });
+    statusEl.style.color = 'var(--accent-dark)';
+    statusEl.textContent = '✓ ' + email + ' さんのアカウントを発行しました。';
+    document.getElementById('new-staff-email').value = '';
+    document.getElementById('new-staff-password').value = '';
+  } catch(err){
+    console.error(err);
+    statusEl.style.color = 'var(--danger)';
+    statusEl.textContent = '発行に失敗しました: ' + err.message;
+  }
+}
+
+function absenceHistoryData(fy){
+  const months = fiscalMonths(fy);
+  const filterText = (document.getElementById('ah-filter') && document.getElementById('ah-filter').value.trim().toLowerCase()) || '';
+  const byStudent = {};
+  absenceReports.forEach(r => {
+    const name = (r.studentName || '').trim();
+    if (!name) return;
+    if (filterText && name.toLowerCase().indexOf(filterText) === -1) return;
+    const ym = (r.absenceDate || '').slice(0,7);
+    const inRange = months.some(m => m.key === ym);
+    if (!inRange) return;
+    if (!byStudent[name]) byStudent[name] = {};
+    if (!byStudent[name][ym]) byStudent[name][ym] = [];
+    byStudent[name][ym].push(r);
+  });
+  return { months, byStudent };
+}
+
+function renderAbsenceHistory(){
+  const thead = document.getElementById('ah-thead');
+  const tbody = document.getElementById('ah-tbody');
+  const empty = document.getElementById('ah-empty');
+  if (!thead || !tbody) return;
+  const { months, byStudent } = absenceHistoryData(currentFY);
+  thead.innerHTML = '<tr><th>選手名</th>' + months.map(m => `<th>${m.label}</th>`).join('') + '<th>合計</th></tr>';
+  const names = Object.keys(byStudent).sort();
+  if (names.length === 0){
+    tbody.innerHTML = '';
+    if (empty) empty.style.display = 'block';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+  tbody.innerHTML = names.map(name => {
+    let total = 0;
+    const cells = months.map(m => {
+      const list = byStudent[name][m.key] || [];
+      total += list.length;
+      const cellClass = list.length > 0 ? 'style="cursor:pointer;background:var(--accent-bg);color:var(--accent-dark);font-weight:600;"' : '';
+      return `<td ${cellClass} data-ah-name="${escAttr(name)}" data-ah-ym="${m.key}">${list.length > 0 ? list.length : '-'}</td>`;
+    }).join('');
+    return `<tr><td>${escAttr(name)}</td>${cells}<td style="font-weight:700;">${total}</td></tr>`;
+  }).join('');
+}
+
+function renderAbsenceHistoryDetail(name, ym){
+  const container = document.getElementById('ah-detail');
+  if (!container) return;
+  const list = absenceReports.filter(r => (r.studentName||'').trim() === name && (r.absenceDate||'').slice(0,7) === ym);
+  if (list.length === 0){ container.innerHTML = ''; return; }
+  const monthLabel = Number(ym.slice(5,7)) + '月';
+  const rows = list.sort((a,b) => (a.absenceDate||'').localeCompare(b.absenceDate||'')).map(r => `
+    <tr><td>${escAttr(r.absenceDate||'')}</td><td>${escAttr(r.reason||'')}</td><td>${escAttr(r.note||'')}</td></tr>`).join('');
+  container.innerHTML = `<div class="card">
+    <h2>${escAttr(name)}さん ${monthLabel}の欠席詳細</h2>
+    <div class="table-scroll"><table class="mini-table">
+      <thead><tr><th>日付</th><th>理由</th><th>備考</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>
+  </div>`;
+}
+
+function activeCountAtKey(key){ return students.filter(s => s.months[key] === 'active').length; }
+
+function computeMonthly(fy){
+  const months = fiscalMonths(fy);
+  let cumulative = 0;
+  return months.map((mo, i) => {
+    const key = mo.key;
+    const prevKey = i === 0 ? (fy + '-03') : months[i-1].key;
+    const begin = activeCountAtKey(prevKey);
+    const end = activeCountAtKey(key);
+    const newOrResume = students.filter(s => s.months[key] === 'active' && s.months[prevKey] !== 'active').length;
+    const leftOrPaused = students.filter(s => s.months[prevKey] === 'active' && s.months[key] !== 'active').length;
+    const newJoinStudents = students.filter(s => firstActiveKey(s) === key);
+    const tuitionRev = end * Number(settings.tuition);
+    const enrollRev = newJoinStudents.reduce((sum,s) => sum + (s.trial ? 0 : Number(settings.enroll)), 0);
+    const sponsorRev = settings.sponsors.filter(sp => Number(sp.month) === mo.month).reduce((a,sp) => a + Number(sp.amount), 0);
+    const extraRev = settings.extraIncomes.filter(ei => ei.ym === key).reduce((a,ei) => a + Number(ei.amount), 0);
+    const revenue = tuitionRev + enrollRev + sponsorRev + extraRev;
+    const cost = settings.expenses.reduce((a,ex) => a + Number(ex.amount), 0);
+    const profit = revenue - cost;
+    cumulative += profit;
+    return { year:mo.year, month:mo.month, label:mo.label, key, begin, newCount:newOrResume, leaveCount:leftOrPaused, end, tuitionRev, enrollRev, sponsorRev, extraRev, cost, revenue, profit, cumulative };
+  });
+}
+
+function updateFYLabel(){ document.getElementById('fy-label').textContent = currentFY + '年度(' + currentFY + '年4月〜' + (currentFY+1) + '年3月)'; }
+
+function renderKPI(rows){
+  const totalRevenue = rows.reduce((a,r)=>a+r.revenue,0);
+  const totalCost = rows.reduce((a,r)=>a+r.cost,0);
+  const totalProfit = totalRevenue - totalCost;
+  document.getElementById('kpi-current').textContent = activeCountAtKey(currentMonthStr()) + '人';
+  document.getElementById('kpi-revenue').textContent = fmtYen(totalRevenue);
+  document.getElementById('kpi-cost').textContent = fmtYen(totalCost);
+  const profitEl = document.getElementById('kpi-profit');
+  profitEl.textContent = fmtYen(totalProfit);
+  profitEl.classList.toggle('neg', totalProfit < 0);
+}
+function renderMonthlyTable(rows){
+  document.getElementById('monthly-tbody').innerHTML = rows.map(r => `
+    <tr><td>${r.label}</td><td>${r.begin}</td><td>${r.newCount}</td><td>${r.leaveCount}</td><td>${r.end}</td>
+    <td>${fmtYen(r.tuitionRev)}</td><td>${fmtYen(r.enrollRev)}</td><td>${fmtYen(r.sponsorRev)}</td><td>${fmtYen(r.extraRev)}</td>
+    <td>${fmtYen(r.cost)}</td><td>${fmtYen(r.profit)}</td><td>${fmtYen(r.cumulative)}</td></tr>`).join('');
+}
+const FINANCE_METRICS = [
+  { key:'begin', label:'期首人数', unit:'people', color:'#8B5CF6' },
+  { key:'newCount', label:'新規/再開', unit:'people', color:'#D4A017' },
+  { key:'leaveCount', label:'退会/休会', unit:'people', color:'#B3413B' },
+  { key:'end', label:'期末人数', unit:'people', color:'#38A3A5' },
+  { key:'tuitionRev', label:'月謝収入', unit:'yen', color:'#2a78d6' },
+  { key:'enrollRev', label:'入会金収入', unit:'yen', color:'#E85D9E' },
+  { key:'sponsorRev', label:'スポンサー収入', unit:'yen', color:'#6B4226' },
+  { key:'extraRev', label:'臨時収入', unit:'yen', color:'#5B6058' },
+  { key:'cost', label:'支出', unit:'yen', color:'#eb6834' },
+  { key:'profit', label:'単月損益', unit:'yen', color:'#008300' },
+  { key:'cumulative', label:'累計損益', unit:'yen', color:'#154D33' }
+];
+const DEFAULT_FINANCE_KEYS = ['end','tuitionRev','cost','profit'];
+
+function buildFinanceMetricPicker(){
+  document.getElementById('finance-metric-picker').innerHTML = FINANCE_METRICS.map(m => `
+    <label><input type="checkbox" class="finance-metric-cb" value="${m.key}" ${DEFAULT_FINANCE_KEYS.includes(m.key) ? 'checked' : ''}><span class="metric-swatch" style="background:${m.color};"></span>${m.label}</label>`).join('');
+}
+function getSelectedFinanceMetrics(){
+  const keys = Array.from(document.querySelectorAll('.finance-metric-cb:checked')).map(cb => cb.value);
+  return FINANCE_METRICS.filter(m => keys.includes(m.key));
+}
+
+function renderCharts(rows){
+  const labels = rows.map(r => r.label), counts = rows.map(r => r.end);
+  if (chartCount){ chartCount.data.labels = labels; chartCount.data.datasets[0].data = counts; chartCount.update(); }
+  else {
+    chartCount = new Chart(document.getElementById('chartCount'), {
+      type:'line', data:{ labels, datasets:[{ label:'在籍人数', data:counts, stepped:true, borderColor:'#2a78d6', backgroundColor:'#2a78d61A', fill:true, pointRadius:3, pointBackgroundColor:'#2a78d6' }] },
+      options:{ responsive:true, maintainAspectRatio:false, scales:{ y:{ beginAtZero:true, ticks:{ precision:0 } }, x:{ grid:{ display:false } } }, plugins:{ legend:{ display:false } } }
+    });
+  }
+  renderFinanceChart(rows);
+}
+
+function renderFinanceChart(rows){
+  const labels = rows.map(r => r.label);
+  const metrics = getSelectedFinanceMetrics();
+  const datasets = metrics.map(m => ({
+    type:'line', label:m.label, data:rows.map(r => r[m.key]),
+    borderColor:m.color, backgroundColor:m.color,
+    borderDash: m.unit === 'people' ? [5,3] : [],
+    pointRadius:2, tension:0,
+    yAxisID: m.unit === 'people' ? 'y1' : 'y'
+  }));
+  if (chartFinance) chartFinance.destroy();
+  chartFinance = new Chart(document.getElementById('chartFinance'), {
+    type:'line',
+    data:{ labels, datasets },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      scales:{
+        x:{ grid:{ display:false } },
+        y:{ position:'left', title:{ display:true, text:'金額(円)' } },
+        y1:{ position:'right', min:0, max:40, ticks:{ precision:0 }, grid:{ drawOnChartArea:false }, title:{ display:true, text:'人数' } }
+      },
+      plugins:{ legend:{ display:true, position:'bottom' } }
+    }
+  });
+}
+function refreshDashboard(){ const rows = computeMonthly(currentFY); renderKPI(rows); renderMonthlyTable(rows); renderCharts(rows); }
+
+function renderGridHead(){
+  document.getElementById('grid-head-row').innerHTML = '<th class="col-name">氏名</th><th class="col-grade">学年</th><th class="col-trial">体験</th>' +
+    fiscalMonths(currentFY).map(mo => `<th class="cell-month">${mo.label}</th>`).join('') + '<th></th>';
+}
+function renderGrid(){
+  const months = fiscalMonths(currentFY);
+  const tbody = document.getElementById('grid-tbody');
+  const empty = document.getElementById('grid-empty');
+  if (students.length === 0){ tbody.innerHTML = ''; empty.style.display = 'block'; }
+  else {
+    empty.style.display = 'none';
+    tbody.innerHTML = students.map(s => {
+      const grade = studentGradeAtFY(s, currentFY);
+      const cells = months.map(mo => {
+        const st = s.months[mo.key] || null;
+        const cls = st === 'pause' ? 'cell-month pause' : 'cell-month';
+        return `<td class="${cls}" data-id="${s.id}" data-key="${mo.key}">${cellMark(st)}</td>`;
+      }).join('');
+      return `<tr data-row="${s.id}">
+        <td class="col-name"><input type="text" class="in-name" data-id="${s.id}" value="${escAttr(s.name)}"></td>
+        <td class="col-grade"><input type="number" class="in-grade" data-id="${s.id}" value="${grade}" title="${gradeLabel(grade)}"></td>
+        <td class="col-trial"><input type="checkbox" class="in-trial" data-id="${s.id}" ${s.trial ? 'checked' : ''}></td>
+        ${cells}<td><button class="link-danger" data-del="${s.id}">削除</button></td></tr>`;
+    }).join('');
+  }
+  renderGridFooter(months);
+}
+function renderGridFooter(months){
+  const countCells = months.map(mo => `<td>${activeCountAtKey(mo.key)}</td>`).join('');
+  const revCells = months.map(mo => `<td>${fmtYen(activeCountAtKey(mo.key) * Number(settings.tuition))}</td>`).join('');
+  document.getElementById('grid-foot-count').innerHTML = '<td class="col-name">在籍数(★)</td><td class="col-grade"></td><td class="col-trial"></td>' + countCells + '<td></td>';
+  document.getElementById('grid-foot-revenue').innerHTML = '<td class="col-name">月謝収入</td><td class="col-grade"></td><td class="col-trial"></td>' + revCells + '<td></td>';
+}
+function populateGrowthStudentSelect(){
+  const sel = document.getElementById('growth-student');
+  const prevVal = sel.value;
+  sel.innerHTML = students.map(s => `<option value="${s.id}">${escAttr(s.name)}</option>`).join('');
+  if (prevVal && students.some(s => s.id === prevVal)) sel.value = prevVal;
+}
+function renderAll(){
+  updateFYLabel(); renderGridHead(); renderGrid(); refreshDashboard();
+  populateGrowthStudentSelect();
+  if (document.getElementById('growth-month').value) loadGrowthForm();
+  if (document.getElementById('summary-start').value) renderSummary();
+  renderAbsenceHistory();
+}
+
+async function handleGridClick(e){
+  const del = e.target.dataset.del;
+  if (del){
+    if (!confirm('この塾生を削除しますか？(成長記録も削除されます)')) return;
+    await deleteStudentDoc(del);
+    return;
+  }
+  if (e.target.classList.contains('cell-month')){
+    const id = e.target.dataset.id, key = e.target.dataset.key;
+    const s = students.find(x => x.id === id); if (!s) return;
+    const next = cycleStatus(s.months[key] || null);
+    const updated = Object.assign({}, s, { months: Object.assign({}, s.months) });
+    if (next) updated.months[key] = next; else delete updated.months[key];
+    e.target.textContent = cellMark(next);
+    e.target.classList.toggle('pause', next === 'pause');
+    await saveStudent(updated);
+  }
+}
+async function handleGridInput(e){
+  const id = e.target.dataset.id;
+  const s = students.find(x => x.id === id); if (!s) return;
+  if (e.target.classList.contains('in-name')){ await saveStudent(Object.assign({}, s, { name: e.target.value })); }
+  else if (e.target.classList.contains('in-grade')){ const v = Number(e.target.value); if (!isNaN(v)){ e.target.title = gradeLabel(v); await saveStudent(Object.assign({}, s, { gradeRef:v, gradeRefFY: currentFY })); } }
+  else if (e.target.classList.contains('in-trial')){ await saveStudent(Object.assign({}, s, { trial: e.target.checked })); }
+}
+async function handleAddStudent(){
+  await saveStudent({ id: uid(), name:'新しい塾生', trial:false, gradeRef:1, gradeRefFY: currentFY, months:{}, growth:{} });
+}
+async function handleAddSample(){
+  const fy = currentFY;
+  const mk = (offset) => { const m = 4 + offset; return m <= 12 ? fy + '-' + pad(m) : (fy+1) + '-' + pad(m-12); };
+  const fillRange = (obj, from, to, status) => { for (let i = from; i <= to; i++) obj[mk(i)] = status; };
+  const s1 = { id:uid(), name:'山田 蓮', trial:true, gradeRef:3, gradeRefFY:fy, months:{}, growth:{} }; fillRange(s1.months,0,11,'active');
+  const s2 = { id:uid(), name:'佐藤 陽翔', trial:false, gradeRef:5, gradeRefFY:fy, months:{}, growth:{} }; fillRange(s2.months,0,11,'active');
+  const s3 = { id:uid(), name:'田中 悠真', trial:true, gradeRef:2, gradeRefFY:fy, months:{}, growth:{} }; fillRange(s3.months,1,11,'active');
+  const s4 = { id:uid(), name:'鈴木 大和', trial:false, gradeRef:6, gradeRefFY:fy, months:{}, growth:{} };
+  fillRange(s4.months,0,3,'active'); fillRange(s4.months,4,5,'pause'); fillRange(s4.months,6,11,'active');
+  const s5 = { id:uid(), name:'高橋 樹', trial:false, gradeRef:4, gradeRefFY:fy, months:{}, growth:{} }; fillRange(s5.months,2,8,'active');
+
+  const nowYm = currentMonthStr();
+  const ym2 = prevMonthStr(nowYm);
+  const ym1 = prevMonthStr(ym2);
+  const rec = (p,s,me,t,comment) => ({
+    physical:{tenacity:p[0],consistency:p[1],commitment:p[2],selfDiscipline:p[3]},
+    skill:{challenge:s[0],courage:s[1],influence:s[2],proactivity:s[3]},
+    mental:{obsession:me[0],resilience:me[1],pressureTolerance:me[2],responsibility:me[3]},
+    tactics:{ownership:t[0],selfCorrection:t[1],selfAwareness:t[2],collaboration:t[3]},
+    comment
+  });
+
+  s1.growth[ym1] = rec([2,1,2,2],[1,1,1,1],[2,2,1,1],[1,1,1,1], '初回評価。全体的にこれから伸ばしていく段階。');
+  s1.growth[ym2] = rec([2,2,2,2],[2,1,1,2],[2,2,2,1],[1,2,1,1], 'トラップが安定してきた。');
+  s1.growth[nowYm] = rec([2,2,3,2],[2,2,1,2],[3,2,2,2],[2,1,2,2], '貢献意識と勝負への執着が良い。ボールタッチはこれから練習量を増やす。');
+
+  s2.growth[ym1] = rec([1,2,1,1],[1,1,2,1],[1,1,1,2],[1,1,1,1], '基礎体力づくりから開始。');
+  s2.growth[ym2] = rec([2,2,1,2],[2,1,2,1],[2,1,1,2],[1,2,1,1], '徐々にプレーの幅が広がってきた。');
+  s2.growth[nowYm] = rec([2,2,2,2],[2,2,2,2],[2,2,2,2],[2,2,1,2], '安定して成長中。次はタクティクス面を強化したい。');
+
+  s3.growth[ym1] = rec([1,1,1,1],[2,1,1,1],[1,1,1,1],[1,1,1,1], '体験会からの入会直後。');
+  s3.growth[ym2] = rec([1,2,1,2],[2,2,1,1],[1,2,1,1],[1,1,2,1], '積極性が出てきた。');
+  s3.growth[nowYm] = rec([2,2,1,2],[2,2,2,1],[2,2,1,2],[2,1,2,1], '試合中の判断が速くなってきた。');
+
+  s4.growth[ym1] = rec([2,2,2,2],[2,2,2,2],[2,2,2,2],[2,2,1,2], '主力として安定。');
+  s4.growth[ym2] = rec([2,1,2,1],[1,2,1,2],[1,1,2,2],[1,1,1,2], '休会明けで感覚を取り戻し中。');
+  s4.growth[nowYm] = rec([2,2,2,2],[2,2,2,1],[2,2,2,2],[2,1,2,2], '復帰後、徐々にコンディションが戻ってきた。');
+
+  s5.growth[ym1] = rec([2,1,2,1],[1,2,1,1],[2,1,1,1],[1,1,1,2], '課題への取り組みは意欲的。');
+  s5.growth[ym2] = rec([2,2,2,1],[2,2,1,2],[2,2,1,2],[2,1,2,1], 'チーム内で最も伸びている。');
+  s5.growth[nowYm] = rec([3,2,2,2],[2,2,2,2],[2,3,2,2],[2,2,2,2], '5人の中で最も総合スコアが高い。リーダーシップも発揮。');
+
+  await batchAddStudents([s1,s2,s3,s4,s5]);
+}
+async function handleResetStudents(){
+  if (!confirm('登録されている塾生データを全て削除します。よろしいですか？')) return;
+  await replaceAllStudents([]);
+}
+
+function loadSettingsToForm(){
+  document.getElementById('cfg-tuition').value = settings.tuition;
+  document.getElementById('cfg-enroll').value = settings.enroll;
+  renderSponsors(); renderExpenses(); renderExtra(); renderLocationsTable(); populateLocationSelects();
+}
+
+function updateAdminUI(){
+  const locked = document.getElementById('settings-locked-notice');
+  const content = document.getElementById('settings-content-wrapper');
+  const resetBtn = document.getElementById('btn-reset-students');
+  const dashLocked = document.getElementById('dashboard-locked-notice');
+  const dashContent = document.getElementById('dashboard-content-wrapper');
+  if (isAdmin){
+    locked.style.display = 'none';
+    content.style.display = 'block';
+    if (resetBtn) resetBtn.style.display = 'inline-block';
+    dashLocked.style.display = 'none';
+    dashContent.style.display = 'block';
+  } else {
+    locked.style.display = 'block';
+    content.style.display = 'none';
+    if (resetBtn) resetBtn.style.display = 'none';
+    dashLocked.style.display = 'block';
+    dashContent.style.display = 'none';
+  }
+  document.querySelectorAll('.admin-only-tab').forEach(b => b.style.display = isAdmin ? '' : 'none');
+  const activeTab = document.querySelector('.tab-btn.active');
+  if (!isAdmin && activeTab && activeTab.classList.contains('admin-only-tab')){
+    switchTab('grid');
+  }
+}
+
+function renderSponsors(){
+  const dis = editState.sponsors ? '' : 'disabled';
+  document.getElementById('sponsors-tbody').innerHTML = settings.sponsors.map(sp => `
+    <tr data-id="${sp.id}"><td><input type="text" class="sp-name" data-id="${sp.id}" value="${escAttr(sp.name)}" ${dis}></td>
+    <td><input type="number" class="sp-amount" data-id="${sp.id}" value="${sp.amount}" min="0" step="10000" ${dis}></td>
+    <td><select class="sp-month" data-id="${sp.id}" ${dis}>${monthOptions(sp.month)}</select></td>
+    <td><button class="link-danger" data-del="${sp.id}" ${dis}>削除</button></td></tr>`).join('') || '<tr><td colspan="4" class="empty">スポンサーが登録されていません</td></tr>';
+}
+function renderExpenses(){
+  const dis = editState.expenses ? '' : 'disabled';
+  document.getElementById('expenses-tbody').innerHTML = settings.expenses.map(ex => `
+    <tr data-id="${ex.id}"><td><input type="text" class="ex-name" data-id="${ex.id}" value="${escAttr(ex.name)}" ${dis}></td>
+    <td><input type="number" class="ex-amount" data-id="${ex.id}" value="${ex.amount}" min="0" step="1000" ${dis}></td>
+    <td><button class="link-danger" data-del="${ex.id}" ${dis}>削除</button></td></tr>`).join('') || '<tr><td colspan="3" class="empty">支出項目が登録されていません</td></tr>';
+}
+function renderExtra(){
+  const dis = editState.extra ? '' : 'disabled';
+  document.getElementById('extra-tbody').innerHTML = settings.extraIncomes.map(ei => `
+    <tr data-id="${ei.id}"><td><input type="text" class="ei-name" data-id="${ei.id}" value="${escAttr(ei.name)}" ${dis}></td>
+    <td><input type="number" class="ei-amount" data-id="${ei.id}" value="${ei.amount}" min="0" step="1000" ${dis}></td>
+    <td><input type="month" class="ei-ym" data-id="${ei.id}" value="${ei.ym}" ${dis}></td>
+    <td><button class="link-danger" data-del="${ei.id}" ${dis}>削除</button></td></tr>`).join('') || '<tr><td colspan="4" class="empty">臨時収入が登録されていません</td></tr>';
+}
+function monthOptions(selected){ let s=''; for (let m=1;m<=12;m++) s+=`<option value="${m}" ${Number(selected)===m?'selected':''}>${m}月</option>`; return s; }
+
+async function handleTuitionEnrollChange(){
+  settings.tuition = Number(document.getElementById('cfg-tuition').value) || 0;
+  settings.enroll = Number(document.getElementById('cfg-enroll').value) || 0;
+  await saveSettings(); refreshDashboard(); renderGridFooter(fiscalMonths(currentFY));
+}
+
+function togglePricingEdit(editing){
+  editState.pricing = editing;
+  document.getElementById('cfg-tuition').disabled = !editing;
+  document.getElementById('cfg-enroll').disabled = !editing;
+  document.getElementById('btn-edit-pricing').style.display = editing ? 'none' : 'inline-block';
+  document.getElementById('btn-save-pricing').style.display = editing ? 'inline-block' : 'none';
+}
+
+const EDIT_SECTIONS = {
+  sponsors: { render: () => renderSponsors(), addBtn: 'btn-add-sponsor' },
+  expenses: { render: () => renderExpenses(), addBtn: 'btn-add-expense' },
+  extra: { render: () => renderExtra(), addBtn: 'btn-add-extra' },
+  locations: { render: () => renderLocationsTable(), addBtn: 'btn-add-location' },
+  patterns: { render: () => renderPatternsTable(), addBtn: 'btn-add-pattern' },
+  staff: { render: () => renderStaffTable(), addBtn: 'add-staff-form' }
+};
+
+function toggleEditMode(key, editing){
+  editState[key] = editing;
+  const cfg = EDIT_SECTIONS[key];
+  if (cfg){
+    cfg.render();
+    const addBtn = document.getElementById(cfg.addBtn);
+    if (addBtn) addBtn.style.display = editing ? 'inline-block' : 'none';
+  }
+  const editBtn = document.getElementById('btn-edit-' + key);
+  const saveBtn = document.getElementById('btn-save-' + key);
+  if (editBtn) editBtn.style.display = editing ? 'none' : 'inline-block';
+  if (saveBtn) saveBtn.style.display = editing ? 'inline-block' : 'none';
+}
+
+async function handleSponsorsChange(e){
+  const id = e.target.dataset.id; if (!id) return;
+  const sp = settings.sponsors.find(x => x.id === id); if (!sp) return;
+  if (e.target.classList.contains('sp-name')) sp.name = e.target.value;
+  else if (e.target.classList.contains('sp-amount')) sp.amount = Number(e.target.value) || 0;
+  else if (e.target.classList.contains('sp-month')) sp.month = Number(e.target.value);
+  await saveSettings(); refreshDashboard();
+}
+async function handleSponsorsClick(e){ const id = e.target.dataset.del; if (!id) return; settings.sponsors = settings.sponsors.filter(x => x.id !== id); await saveSettings(); renderSponsors(); refreshDashboard(); }
+async function handleExpensesChange(e){
+  const id = e.target.dataset.id; if (!id) return;
+  const ex = settings.expenses.find(x => x.id === id); if (!ex) return;
+  if (e.target.classList.contains('ex-name')) ex.name = e.target.value;
+  else if (e.target.classList.contains('ex-amount')) ex.amount = Number(e.target.value) || 0;
+  await saveSettings(); refreshDashboard(); renderGridFooter(fiscalMonths(currentFY));
+}
+async function handleExpensesClick(e){ const id = e.target.dataset.del; if (!id) return; settings.expenses = settings.expenses.filter(x => x.id !== id); await saveSettings(); renderExpenses(); refreshDashboard(); }
+async function handleExtraChange(e){
+  const id = e.target.dataset.id; if (!id) return;
+  const ei = settings.extraIncomes.find(x => x.id === id); if (!ei) return;
+  if (e.target.classList.contains('ei-name')) ei.name = e.target.value;
+  else if (e.target.classList.contains('ei-amount')) ei.amount = Number(e.target.value) || 0;
+  else if (e.target.classList.contains('ei-ym')) ei.ym = e.target.value;
+  await saveSettings(); refreshDashboard();
+}
+async function handleExtraClick(e){ const id = e.target.dataset.del; if (!id) return; settings.extraIncomes = settings.extraIncomes.filter(x => x.id !== id); await saveSettings(); renderExtra(); refreshDashboard(); }
+
+function downloadJSON(){
+  const data = JSON.stringify({ version:2, exportedAt:new Date().toISOString(), students, settings }, null, 2);
+  const blob = new Blob([data], { type:'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'タクマ塾岩国校_バックアップ_' + currentMonthStr() + '.json';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+async function handleImportFile(e){
+  const statusEl = document.getElementById('import-status');
+  const file = e.target.files[0];
+  if (!file) return;
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text);
+    if (!data.students || !data.settings) throw new Error('ファイルの形式が正しくありません');
+    if (!confirm('現在表示中のデータを、読み込んだバックアップの内容で上書きします。よろしいですか？')){ e.target.value = ''; return; }
+    const importedStudents = data.students;
+    importedStudents.forEach(s => { if (!s.growth) s.growth = {}; if (!s.months) s.months = {}; });
+    settings = Object.assign(defaultSettings(), data.settings);
+    await replaceAllStudents(importedStudents);
+    await saveSettings();
+    statusEl.textContent = 'バックアップから復元しました(' + (data.exportedAt || '') + ')。';
+    statusEl.style.color = 'var(--accent-dark)';
+  } catch(err){
+    statusEl.textContent = '読み込みに失敗しました: ' + (err && err.message ? err.message : String(err));
+    statusEl.style.color = 'var(--danger)';
+  }
+  e.target.value = '';
+}
+
+function csvField(v){ return '"' + String(v).replace(/"/g,'""') + '"'; }
+function buildCSV(){
+  const months = fiscalMonths(currentFY);
+  const lines = [];
+  lines.push([csvField('■ 階段図 ' + currentFY + '年度')].join(','));
+  lines.push(['氏名','学年','体験会経由'].concat(months.map(m=>m.label)).map(csvField).join(','));
+  students.forEach(s => { const grade = gradeLabel(studentGradeAtFY(s, currentFY)); lines.push([s.name, grade, s.trial?'○':''].concat(months.map(m => cellMark(s.months[m.key]))).map(csvField).join(',')); });
+  lines.push(''); lines.push([csvField('■ 単価設定')].join(','));
+  lines.push(['月謝単価(円)', settings.tuition].map(csvField).join(','));
+  lines.push(['入会金(円)', settings.enroll].map(csvField).join(','));
+  lines.push(''); lines.push([csvField('■ スポンサー')].join(','));
+  lines.push(['名称','年間金額(円)','徴収月'].map(csvField).join(','));
+  settings.sponsors.forEach(sp => lines.push([sp.name, sp.amount, sp.month+'月'].map(csvField).join(',')));
+  lines.push(''); lines.push([csvField('■ 支出項目')].join(','));
+  lines.push(['項目名','金額(円/月)'].map(csvField).join(','));
+  settings.expenses.forEach(ex => lines.push([ex.name, ex.amount].map(csvField).join(',')));
+  lines.push(''); lines.push([csvField('■ 臨時収入')].join(','));
+  lines.push(['内容','金額(円)','発生年月'].map(csvField).join(','));
+  settings.extraIncomes.forEach(ei => lines.push([ei.name, ei.amount, ei.ym].map(csvField).join(',')));
+  lines.push(''); lines.push([csvField('■ ' + currentFY + '年度 月次内訳')].join(','));
+  lines.push(['月','期首人数','新規/再開','退会/休会','期末人数','月謝収入','入会金収入','スポンサー収入','臨時収入','支出','単月損益','累計損益'].map(csvField).join(','));
+  computeMonthly(currentFY).forEach(r => lines.push([r.label,r.begin,r.newCount,r.leaveCount,r.end,r.tuitionRev,r.enrollRev,r.sponsorRev,r.extraRev,r.cost,r.profit,r.cumulative].map(csvField).join(',')));
+  return lines.join('\n');
+}
+function downloadCSV(){
+  const csv = buildCSV();
+  const blob = new Blob(['\uFEFF' + csv], { type:'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'タクマ塾岩国校_' + currentFY + '年度.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+
+/* ---------- Growth: ability matrix ---------- */
+function buildGrowthInputsHTML(){
+  return ABILITY_DEFS.map(ab => `
+    <div class="ability-block">
+      <div class="ability-head">
+        <span class="ability-title">${ab.label}</span>
+        <span class="ability-weight">指導比率 ${ab.weight}%</span>
+        <span class="ability-subtotal" id="subtotal-${ab.key}">小計: - / 12</span>
+      </div>
+      <div class="ability-items">
+        ${ab.items.map(it => `
+          <div class="item-row">
+            <label>${it.ja}(${it.en})</label>
+            <select class="ability-select" data-ability="${ab.key}" data-item="${it.key}">
+              <option value="1">1(要改善)</option><option value="2">2(標準)</option><option value="3">3(優秀)</option>
+            </select>
+          </div>`).join('')}
+      </div>
+    </div>`).join('');
+}
+function abilityTotal(rec, abilityKey){
+  const ab = ABILITY_DEFS.find(a => a.key === abilityKey);
+  const o = (rec && rec[abilityKey]) || {};
+  return ab.items.reduce((sum,it) => sum + (Number(o[it.key]) || 0), 0);
+}
+function overallScore(rec){
+  let total = 0;
+  ABILITY_DEFS.forEach(ab => { const pct = abilityTotal(rec, ab.key) / 12 * 100; total += pct * (ab.weight/100); });
+  return total;
+}
+function collectFormRec(){
+  const rec = { comment: document.getElementById('g-comment').value };
+  ABILITY_DEFS.forEach(ab => {
+    rec[ab.key] = {};
+    ab.items.forEach(it => {
+      const sel = document.querySelector(`select[data-ability="${ab.key}"][data-item="${it.key}"]`);
+      rec[ab.key][it.key] = Number(sel.value);
+    });
+  });
+  return rec;
+}
+function updateSubtotalsAndScore(){
+  const rec = collectFormRec();
+  ABILITY_DEFS.forEach(ab => { document.getElementById('subtotal-' + ab.key).textContent = '小計: ' + abilityTotal(rec, ab.key) + ' / 12'; });
+  document.getElementById('overall-score').textContent = '総合スコア(指導比率加重): ' + overallScore(rec).toFixed(1) + ' 点 / 100点';
+  return rec;
+}
+
+function findMostRecentKey(s, ym){
+  if (!s.growth) return null;
+  const keys = Object.keys(s.growth).filter(k => k < ym).sort();
+  return keys.length ? keys[keys.length - 1] : null;
+}
+
+function loadGrowthForm(){
+  const sid = document.getElementById('growth-student').value;
+  const ym = document.getElementById('growth-month').value;
+  const s = students.find(x => x.id === sid);
+  const statusEl = document.getElementById('growth-status-line');
+  const exactRec = (s && s.growth && s.growth[ym]) || null;
+  let sourceRec = exactRec;
+  let sourceKey = null;
+  if (!exactRec && s){
+    sourceKey = findMostRecentKey(s, ym);
+    if (sourceKey) sourceRec = s.growth[sourceKey];
+  }
+  ABILITY_DEFS.forEach(ab => ab.items.forEach(it => {
+    const sel = document.querySelector(`select[data-ability="${ab.key}"][data-item="${it.key}"]`);
+    const val = sourceRec && sourceRec[ab.key] ? sourceRec[ab.key][it.key] : null;
+    sel.value = val || 2;
+  }));
+  document.getElementById('g-comment').value = exactRec ? (exactRec.comment || '') : '';
+  if (!s){ statusEl.textContent = ''; }
+  else if (exactRec){ statusEl.textContent = ym + ' に保存済みの評価を表示しています。'; statusEl.style.color = 'var(--text-muted)'; }
+  else if (sourceKey){ statusEl.textContent = ym + ' はまだ未保存です。直近の評価(' + sourceKey + ')の数値を初期値として表示しています。「保存」を押すと ' + ym + ' の記録として新規登録されます。'; statusEl.style.color = 'var(--accent-dark)'; }
+  else { statusEl.textContent = 'この選手はまだ評価記録がありません(初回評価)。'; statusEl.style.color = 'var(--text-muted)'; }
+  updateSubtotalsAndScore();
+  renderRadarChart();
+}
+
+async function handleSaveGrowth(){
+  const sid = document.getElementById('growth-student').value;
+  const ym = document.getElementById('growth-month').value;
+  const s = students.find(x => x.id === sid);
+  if (!s || !ym) return;
+  const updated = Object.assign({}, s, { growth: Object.assign({}, s.growth) });
+  updated.growth[ym] = collectFormRec();
+  await saveStudent(updated);
+  const el = document.getElementById('growth-saved');
+  el.style.display = 'inline'; setTimeout(() => el.style.display = 'none', 1800);
+  const now = new Date();
+  const t = pad(now.getHours()) + ':' + pad(now.getMinutes()) + ':' + pad(now.getSeconds());
+  const statusEl = document.getElementById('growth-status-line');
+  statusEl.textContent = '✓ ' + t + ' に ' + ym + ' の評価を保存しました。';
+  statusEl.style.color = 'var(--accent-dark)';
+  renderRadarChart();
+  renderSummary();
+}
+
+function radarLabelsAndTotals(rec){ return { labels: ABILITY_DEFS.map(ab=>ab.short), totals: ABILITY_DEFS.map(ab=>abilityTotal(rec, ab.key)) }; }
+
+function renderRadarChart(){
+  const sid = document.getElementById('growth-student').value;
+  const ym = document.getElementById('growth-month').value;
+  const s = students.find(x => x.id === sid);
+  if (!s || !ym) return;
+  const rec = collectFormRec();
+  const { labels, totals } = radarLabelsAndTotals(rec);
+  const datasets = [{ label:ym, data:totals, borderColor:'#2a78d6', backgroundColor:'#2a78d633', pointBackgroundColor:'#2a78d6' }];
+  const prevRec = s.growth && s.growth[prevMonthStr(ym)];
+  if (prevRec) datasets.push({ label:prevMonthStr(ym), data:radarLabelsAndTotals(prevRec).totals, borderColor:'#C7C3B4', backgroundColor:'#C7C3B41A', pointBackgroundColor:'#C7C3B4', borderDash:[4,4] });
+  if (chartRadar){ chartRadar.data.labels = labels; chartRadar.data.datasets = datasets; chartRadar.update(); }
+  else {
+    chartRadar = new Chart(document.getElementById('chartRadar'), {
+      type:'radar', data:{ labels, datasets },
+      options:{ responsive:true, maintainAspectRatio:false, scales:{ r:{ min:0, max:12, ticks:{ stepSize:3 } } }, plugins:{ legend:{ display:true, position:'bottom' } } }
+    });
+  }
+}
+
+function scoreColor(pct){
+  if (pct >= 75) return '#DCEEE0';
+  if (pct >= 50) return '#FCEFC7';
+  return '#F6DEDC';
+}
+
+function monthsWindow(startYm, count){
+  let [y,m] = startYm.split('-').map(Number);
+  const arr = [];
+  for (let i = 0; i < count; i++){ arr.push(y + '-' + pad(m)); m++; if (m > 12){ m = 1; y++; } }
+  return arr;
+}
+function monthsAgo(ym, n){
+  let [y,m] = ym.split('-').map(Number);
+  m -= n;
+  while (m < 1){ m += 12; y--; }
+  return y + '-' + pad(m);
+}
+const SUMMARY_WINDOW = 6;
+
+function renderSummary(){
+  const startYm = document.getElementById('summary-start').value;
+  if (!startYm) return;
+  const months = monthsWindow(startYm, SUMMARY_WINDOW);
+  const thead = document.getElementById('summary-thead');
+  thead.innerHTML = '<tr><th>選手</th><th>学年</th><th>能力</th>' + months.map(ym => `<th>${Number(ym.slice(5,7))}月</th>`).join('') + '</tr>';
+
+  const withDataCount = students.filter(s => s.growth && Object.keys(s.growth).length > 0).length;
+  const diagEl = document.getElementById('summary-diagnostic');
+  diagEl.textContent = '現在、' + students.length + '名中 ' + withDataCount + '名の選手に成長データ(いずれかの月の評価)があります。';
+  diagEl.style.color = (withDataCount < students.length) ? 'var(--danger)' : 'var(--text-muted)';
+
+  const tbody = document.getElementById('summary-tbody');
+  if (students.length === 0){
+    tbody.innerHTML = `<tr><td colspan="${3 + months.length}" class="empty">塾生が登録されていません</td></tr>`;
+  } else {
+    const fy = fyOfYm(startYm);
+    tbody.innerHTML = students.map(s => {
+      try {
+        const gradeTxt = gradeLabel(studentGradeAtFY(s, fy));
+        return ABILITY_DEFS.map((ab, i) => {
+          const nameCell = i === 0 ? `<td rowspan="4">${escAttr(s.name)}</td><td rowspan="4">${gradeTxt}</td>` : '';
+          const cells = months.map(ym => {
+            const rec = s.growth && s.growth[ym];
+            if (!rec) return `<td data-id="${s.id}" data-ym="${ym}" style="cursor:pointer;color:var(--text-muted);">-</td>`;
+            const t = abilityTotal(rec, ab.key);
+            return `<td data-id="${s.id}" data-ym="${ym}" style="cursor:pointer;background:${scoreColor(t/12*100)};">${t}</td>`;
+          }).join('');
+          return `<tr>${nameCell}<td>${ab.short}</td>${cells}</tr>`;
+        }).join('');
+      } catch(err){
+        console.error('サマリー行の生成に失敗しました:', s && s.name, err);
+        return `<tr><td>${escAttr(s && s.name || '(不明)')}</td><td colspan="${2 + months.length}" style="color:var(--danger);">表示エラー: ${escAttr(err.message)}</td></tr>`;
+      }
+    }).join('');
+  }
+  const lastYm = months[months.length - 1];
+  const rankingRows = students.map(s => ({ s, rec: (s.growth && s.growth[lastYm]) || null }));
+  renderRankingChart(rankingRows, lastYm);
+
+  const now = new Date();
+  document.getElementById('summary-updated').textContent = '最終更新: ' + pad(now.getHours()) + ':' + pad(now.getMinutes()) + ':' + pad(now.getSeconds());
+}
+
+function renderRankingChart(rowsData, ym){
+  const withScore = rowsData.filter(r => r.rec).map(r => ({ name:r.s.name, score: Math.round(overallScore(r.rec)*10)/10 })).sort((a,b)=>b.score-a.score);
+  const canvas = document.getElementById('chartRanking');
+  canvas.parentElement.style.height = Math.max(160, withScore.length * 34 + 40) + 'px';
+  const labels = withScore.map(x=>x.name);
+  const data = withScore.map(x=>x.score);
+  if (chartRanking){ chartRanking.data.labels = labels; chartRanking.data.datasets[0].data = data; chartRanking.update(); }
+  else {
+    chartRanking = new Chart(canvas, {
+      type:'bar',
+      data:{ labels, datasets:[{ label:'総合スコア', data, backgroundColor:'#2a78d6' }] },
+      options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, scales:{ x:{ min:0, max:100 } }, plugins:{ legend:{ display:false } } }
+    });
+  }
+}
+
+async function renderChartToImage(labels, datasets){
+  const canvas = document.createElement('canvas');
+  canvas.width = 440; canvas.height = 440;
+  canvas.style.position = 'fixed'; canvas.style.left = '-9999px';
+  document.body.appendChild(canvas);
+  const chart = new Chart(canvas, {
+    type:'radar', data:{ labels, datasets },
+    options:{ responsive:false, animation:false, scales:{ r:{ min:0, max:12, ticks:{ stepSize:3 } } }, plugins:{ legend:{ display:true, position:'bottom' } } }
+  });
+  await new Promise(r => setTimeout(r, 80));
+  const img = canvas.toDataURL('image/png');
+  chart.destroy(); document.body.removeChild(canvas);
+  return img;
+}
+
+function generatePageHTML(s, ym, rec, chartImg, fy){
+  const blocks = ABILITY_DEFS.map(ab => {
+    const total = abilityTotal(rec, ab.key);
+    const rows = ab.items.map(it => `<div style="display:flex;justify-content:space-between;font-size:11px;padding:2px 0;"><span>${it.ja}(${it.en})</span><span>${rec[ab.key][it.key]} / 3</span></div>`).join('');
+    return `<div style="border:1px solid #DEDBCF;border-radius:8px;padding:10px 12px;">
+      <div style="font-size:12px;font-weight:600;margin-bottom:6px;">${ab.label}<span style="font-weight:400;color:#5B6058;"> (指導比率${ab.weight}%)</span></div>
+      ${rows}
+      <div style="font-size:12px;font-weight:600;margin-top:6px;border-top:1px solid #EFEDE4;padding-top:6px;">小計: ${total} / 12</div>
+    </div>`;
+  }).join('');
+  return `<div style="width:794px;min-height:1123px;background:#fff;padding:50px 55px;font-family:'Hiragino Sans','Yu Gothic',sans-serif;color:#1E241F;box-sizing:border-box;">
+    <div style="font-size:24px;font-weight:700;margin-bottom:4px;">${escAttr(s.name)} 成長レポート</div>
+    <div style="font-size:13px;color:#5B6058;margin-bottom:18px;">対象月: ${ym} ／ 学年: ${escAttr(gradeLabel(studentGradeAtFY(s, fy)))} ／ 総合スコア(指導比率加重): ${overallScore(rec).toFixed(1)} 点 / 100点</div>
+    <img src="${chartImg}" style="width:320px;height:320px;display:block;margin:0 auto 18px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px;">${blocks}</div>
+    <div style="font-size:13px;font-weight:600;margin-bottom:6px;">特記事項</div>
+    <div style="font-size:13px;line-height:1.8;white-space:pre-wrap;">${escAttr(rec.comment || '(なし)')}</div>
+  </div>`;
+}
+
+async function buildReportDoc(targets, ym){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit:'mm', format:'a4' });
+  const area = document.getElementById('pdf-render-area');
+  const fy = fyOfYm(ym);
+  for (let i = 0; i < targets.length; i++){
+    const s = targets[i];
+    const rec = s.growth[ym];
+    const prevRec = s.growth[prevMonthStr(ym)] || null;
+    const { labels, totals } = radarLabelsAndTotals(rec);
+    const datasets = [{ label:ym, data:totals, borderColor:'#2a78d6', backgroundColor:'#2a78d633', pointBackgroundColor:'#2a78d6' }];
+    if (prevRec) datasets.push({ label:prevMonthStr(ym), data:radarLabelsAndTotals(prevRec).totals, borderColor:'#C7C3B4', backgroundColor:'#C7C3B41A', pointBackgroundColor:'#C7C3B4', borderDash:[4,4] });
+    const chartImg = await renderChartToImage(labels, datasets);
+    area.innerHTML = generatePageHTML(s, ym, rec, chartImg, fy);
+    await new Promise(r => setTimeout(r, 60));
+    const canvas = await html2canvas(area.firstElementChild, { scale:2 });
+    const imgData = canvas.toDataURL('image/png');
+    if (i > 0) doc.addPage();
+    doc.addImage(imgData, 'PNG', 0, 0, 210, 297);
+  }
+  area.innerHTML = '';
+  return doc;
+}
+
+async function exportGrowthPDF(){
+  const btn = document.getElementById('btn-export-pdf');
+  const statusEl = document.getElementById('pdf-status');
+  const ym = document.getElementById('pdf-month').value;
+  if (!ym){ statusEl.textContent = '対象月を選択してください。'; statusEl.style.color = 'var(--danger)'; return; }
+  const targets = students.filter(s => s.growth && s.growth[ym]);
+  if (targets.length === 0){ statusEl.textContent = 'この月のデータが入力されている選手がいません。'; statusEl.style.color = 'var(--danger)'; return; }
+  btn.disabled = true; statusEl.textContent = 'PDFを作成しています…'; statusEl.style.color = 'var(--text-secondary)';
+  try {
+    const doc = await buildReportDoc(targets, ym);
+    doc.save('タクマ塾岩国校_成長レポート_' + ym + '.pdf');
+    statusEl.textContent = 'PDFを作成しました(' + targets.length + '名分)。'; statusEl.style.color = 'var(--accent-dark)';
+  } catch(e){ console.error(e); statusEl.textContent = 'PDF作成に失敗しました: ' + (e && e.message ? e.message : String(e)); statusEl.style.color = 'var(--danger)'; }
+  finally { btn.disabled = false; }
+}
+
+async function downloadSingleReport(){
+  const statusEl = document.getElementById('single-status');
+  const sid = document.getElementById('growth-student').value;
+  const ym = document.getElementById('growth-month').value;
+  const s = students.find(x => x.id === sid);
+  if (!s || !s.growth || !s.growth[ym]){ statusEl.textContent = '先に「この月の評価を保存」を押してください。'; statusEl.style.color = 'var(--danger)'; return; }
+  statusEl.textContent = 'PDFを作成しています…'; statusEl.style.color = 'var(--text-secondary)';
+  try {
+    const doc = await buildReportDoc([s], ym);
+    doc.save('タクマ塾岩国校_' + s.name + '_成長レポート_' + ym + '.pdf');
+    statusEl.textContent = 'PDFを保存しました。'; statusEl.style.color = 'var(--accent-dark)';
+  } catch(e){ console.error(e); statusEl.textContent = 'PDF作成に失敗しました: ' + (e && e.message ? e.message : String(e)); statusEl.style.color = 'var(--danger)'; }
+}
+
+async function shareSingleReport(){
+  const statusEl = document.getElementById('single-status');
+  const sid = document.getElementById('growth-student').value;
+  const ym = document.getElementById('growth-month').value;
+  const s = students.find(x => x.id === sid);
+  if (!s || !s.growth || !s.growth[ym]){ statusEl.textContent = '先に「この月の評価を保存」を押してください。'; statusEl.style.color = 'var(--danger)'; return; }
+  if (!navigator.share || !navigator.canShare){ statusEl.textContent = 'お使いの端末・ブラウザは直接共有に対応していません。PDFを保存してLINEなどに手動で添付してください。'; statusEl.style.color = 'var(--danger)'; return; }
+  statusEl.textContent = 'PDFを準備しています…'; statusEl.style.color = 'var(--text-secondary)';
+  try {
+    const doc = await buildReportDoc([s], ym);
+    const blob = doc.output('blob');
+    const file = new File([blob], s.name + '_成長レポート_' + ym + '.pdf', { type:'application/pdf' });
+    if (navigator.canShare({ files:[file] })){
+      await navigator.share({ files:[file], title: s.name + ' 成長レポート', text: ym + 'の成長レポートです。' });
+      statusEl.textContent = '共有シートを開きました。'; statusEl.style.color = 'var(--accent-dark)';
+    } else {
+      statusEl.textContent = 'お使いの端末はファイル共有に対応していません。PDFを保存してLINEなどに手動で添付してください。'; statusEl.style.color = 'var(--danger)';
+    }
+  } catch(e){
+    if (e && e.name === 'AbortError'){ statusEl.textContent = '共有をキャンセルしました。'; statusEl.style.color = 'var(--text-secondary)'; }
+    else { console.error(e); statusEl.textContent = '共有に失敗しました: ' + (e && e.message ? e.message : String(e)); statusEl.style.color = 'var(--danger)'; }
+  }
+}
+
+function switchTab(name){
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + name));
+  if (name === 'summary') renderSummary();
+  else if (name === 'growth') { populateGrowthStudentSelect(); loadGrowthForm(); }
+  else if (name === 'dashboard') refreshDashboard();
+  else if (name === 'grid') renderGrid();
+  else if (name === 'absenceHistory') renderAbsenceHistory();
+}
+
+async function loadBranchName(){
+  try {
+    const doc = await schoolsRef.doc(ACADEMY_ID).get();
+    const name = doc.exists ? doc.data().name : null;
+    document.getElementById('branch-title').textContent = (name || ACADEMY_ID) + ' 収支・塾生管理システム';
+    document.getElementById('login-branch-title').textContent = (name || ACADEMY_ID) + ' 管理システム';
+    if (!doc.exists){
+      document.getElementById('login-error').textContent = ACADEMY_ID === '_unspecified'
+        ? '校舎が指定されていません。入口の画面からログインし直してください。'
+        : 'この校舎(' + ACADEMY_ID + ')は登録されていません。URLをご確認ください。';
+    }
+  } catch(e){ console.error(e); }
+}
+
+function initUI(){
+  const today = new Date();
+  currentFY = fiscalYearOf(today.getFullYear(), today.getMonth()+1);
+  const base = window.location.origin + window.location.pathname.replace(/school\.html$/, '');
+  document.getElementById('url-absence').value = base + 'absence-form.html';
+  document.getElementById('url-calendar').value = base + 'calendar-view.html';
+  document.getElementById('growth-inputs').innerHTML = buildGrowthInputsHTML();
+  buildFinanceMetricPicker();
+  document.getElementById('finance-metric-picker').addEventListener('change', () => renderFinanceChart(computeMonthly(currentFY)));
+  document.getElementById('growth-month').value = currentMonthStr();
+  document.getElementById('pdf-month').value = currentMonthStr();
+  document.getElementById('summary-start').value = monthsAgo(currentMonthStr(), SUMMARY_WINDOW - 1);
+
+  document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
+  document.getElementById('fy-prev').addEventListener('click', () => { currentFY--; renderAll(); });
+  document.getElementById('fy-next').addEventListener('click', () => { currentFY++; renderAll(); });
+
+  document.getElementById('grid-tbody').addEventListener('click', handleGridClick);
+  document.getElementById('grid-tbody').addEventListener('input', handleGridInput);
+  document.getElementById('btn-add-student').addEventListener('click', handleAddStudent);
+  document.getElementById('btn-sample').addEventListener('click', handleAddSample);
+  document.getElementById('btn-reset-students').addEventListener('click', handleResetStudents);
+
+  document.getElementById('cfg-tuition').addEventListener('change', handleTuitionEnrollChange);
+  document.getElementById('cfg-enroll').addEventListener('change', handleTuitionEnrollChange);
+  document.getElementById('btn-edit-pricing').addEventListener('click', () => togglePricingEdit(true));
+  document.getElementById('btn-save-pricing').addEventListener('click', async () => { await handleTuitionEnrollChange(); togglePricingEdit(false); });
+  document.getElementById('sponsors-tbody').addEventListener('input', handleSponsorsChange);
+  document.getElementById('sponsors-tbody').addEventListener('change', handleSponsorsChange);
+  document.getElementById('sponsors-tbody').addEventListener('click', handleSponsorsClick);
+  document.getElementById('btn-add-sponsor').addEventListener('click', async () => { settings.sponsors.push({ id:uid(), name:'新しいスポンサー', amount:0, month:4 }); await saveSettings(); });
+  document.getElementById('btn-edit-sponsors').addEventListener('click', () => toggleEditMode('sponsors', true));
+  document.getElementById('btn-save-sponsors').addEventListener('click', () => toggleEditMode('sponsors', false));
+  document.getElementById('expenses-tbody').addEventListener('input', handleExpensesChange);
+  document.getElementById('expenses-tbody').addEventListener('click', handleExpensesClick);
+  document.getElementById('btn-add-expense').addEventListener('click', async () => { settings.expenses.push({ id:uid(), name:'新しい支出項目', amount:0 }); await saveSettings(); });
+  document.getElementById('btn-edit-expenses').addEventListener('click', () => toggleEditMode('expenses', true));
+  document.getElementById('btn-save-expenses').addEventListener('click', () => toggleEditMode('expenses', false));
+  document.getElementById('extra-tbody').addEventListener('input', handleExtraChange);
+  document.getElementById('extra-tbody').addEventListener('change', handleExtraChange);
+  document.getElementById('extra-tbody').addEventListener('click', handleExtraClick);
+  document.getElementById('btn-add-extra').addEventListener('click', async () => { settings.extraIncomes.push({ id:uid(), name:'新しい臨時収入', amount:0, ym:currentMonthStr() }); await saveSettings(); });
+  document.getElementById('btn-edit-extra').addEventListener('click', () => toggleEditMode('extra', true));
+  document.getElementById('btn-save-extra').addEventListener('click', () => toggleEditMode('extra', false));
+  document.getElementById('locations-tbody').addEventListener('input', handleLocationsChange);
+  document.getElementById('locations-tbody').addEventListener('click', handleLocationsClick);
+  document.getElementById('btn-add-location').addEventListener('click', async () => { locationsList = (locationsList||[]).concat([{ id:uid(), name:'新しい場所', address:'', note:'' }]); await saveLocations(); renderLocationsTable(); populateLocationSelects(); renderPatternsTable(); });
+  document.getElementById('btn-edit-locations').addEventListener('click', () => toggleEditMode('locations', true));
+  document.getElementById('btn-save-locations').addEventListener('click', () => toggleEditMode('locations', false));
+  document.getElementById('staff-tbody').addEventListener('change', handleStaffChange);
+  document.getElementById('staff-tbody').addEventListener('click', handleStaffClick);
+  document.getElementById('btn-add-staff').addEventListener('click', handleAddStaff);
+  document.getElementById('btn-edit-staff').addEventListener('click', () => toggleEditMode('staff', true));
+  document.getElementById('btn-save-staff').addEventListener('click', () => toggleEditMode('staff', false));
+
+  const today0 = new Date();
+  calViewYear = today0.getFullYear();
+  calViewMonth = today0.getMonth();
+  document.getElementById('new-occ-date').value = currentMonthStr() + '-' + pad(today0.getDate());
+
+  document.getElementById('btn-view-list').addEventListener('click', () => {
+    document.getElementById('btn-view-list').classList.add('active');
+    document.getElementById('btn-view-grid').classList.remove('active');
+    document.getElementById('calendar-list-view').style.display = 'block';
+    document.getElementById('calendar-grid-view').style.display = 'none';
+  });
+  document.getElementById('btn-view-grid').addEventListener('click', () => {
+    document.getElementById('btn-view-grid').classList.add('active');
+    document.getElementById('btn-view-list').classList.remove('active');
+    document.getElementById('calendar-list-view').style.display = 'none';
+    document.getElementById('calendar-grid-view').style.display = 'block';
+    renderCalGrid();
+  });
+  document.getElementById('cal-prev-month').addEventListener('click', () => { calViewMonth--; if (calViewMonth < 0){ calViewMonth = 11; calViewYear--; } renderCalGrid(); });
+  document.getElementById('cal-next-month').addEventListener('click', () => { calViewMonth++; if (calViewMonth > 11){ calViewMonth = 0; calViewYear++; } renderCalGrid(); });
+  document.getElementById('cal-grid').addEventListener('click', (e) => {
+    const cell = e.target.closest('.cal-day[data-date]');
+    if (!cell) return;
+    calSelectedDate = cell.dataset.date;
+    renderCalGrid();
+    renderCalDayDetail(calSelectedDate);
+  });
+  document.getElementById('calendar-list').addEventListener('click', (e) => {
+    const editKey = e.target.dataset.editOcc;
+    const delKey = e.target.dataset.deleteOcc;
+    if (editKey) openOccurrenceEditor(editKey);
+    else if (delKey) handleDeleteOccurrenceFromList(delKey);
+  });
+  document.getElementById('cal-day-detail').addEventListener('click', (e) => {
+    const editKey = e.target.dataset.editOcc;
+    const delKey = e.target.dataset.deleteOcc;
+    if (editKey) openOccurrenceEditor(editKey);
+    else if (delKey) handleDeleteOccurrenceFromList(delKey);
+  });
+  document.getElementById('btn-save-occ').addEventListener('click', handleSaveOccurrence);
+  document.getElementById('btn-reset-occ').addEventListener('click', handleResetOccurrence);
+  document.getElementById('btn-delete-occ').addEventListener('click', handleDeleteOccurrence);
+  document.getElementById('btn-add-occ').addEventListener('click', handleAddStandaloneOccurrence);
+  document.getElementById('btn-add-pattern').addEventListener('click', async () => {
+    await patternsRef.add({ weekday:2, startTime:'17:00', endTime:'19:00', locationId:null, staffInCharge:'', targetGroup:'全学年', type:'通常練習', note:'' });
+  });
+  document.getElementById('btn-edit-patterns').addEventListener('click', () => toggleEditMode('patterns', true));
+  document.getElementById('btn-save-patterns').addEventListener('click', () => toggleEditMode('patterns', false));
+  document.getElementById('patterns-tbody').addEventListener('change', handlePatternsChange);
+  document.getElementById('patterns-tbody').addEventListener('click', handlePatternsClick);
+  document.getElementById('btn-download-csv').addEventListener('click', downloadCSV);
+  document.getElementById('btn-export-json').addEventListener('click', downloadJSON);
+  document.getElementById('btn-import-json-trigger').addEventListener('click', () => document.getElementById('import-file').click());
+  document.getElementById('import-file').addEventListener('change', handleImportFile);
+
+  document.getElementById('growth-student').addEventListener('change', loadGrowthForm);
+  document.getElementById('growth-month').addEventListener('change', loadGrowthForm);
+  document.getElementById('growth-inputs').addEventListener('change', (e) => { if (e.target.classList.contains('ability-select')){ updateSubtotalsAndScore(); renderRadarChart(); } });
+  document.getElementById('btn-save-growth').addEventListener('click', handleSaveGrowth);
+  document.getElementById('btn-export-pdf').addEventListener('click', exportGrowthPDF);
+  document.getElementById('btn-download-single').addEventListener('click', downloadSingleReport);
+  document.getElementById('btn-share-single').addEventListener('click', shareSingleReport);
+
+  document.getElementById('summary-start').addEventListener('change', renderSummary);
+  document.getElementById('absence-tbody').addEventListener('click', handleAbsenceClick);
+  document.getElementById('btn-delete-acknowledged').addEventListener('click', handleDeleteAcknowledged);
+  document.getElementById('ah-filter').addEventListener('input', renderAbsenceHistory);
+  document.getElementById('ah-tbody').addEventListener('click', (e) => {
+    const name = e.target.dataset.ahName;
+    const ym = e.target.dataset.ahYm;
+    if (name && ym) renderAbsenceHistoryDetail(name, ym);
+  });
+  document.getElementById('btn-refresh-summary').addEventListener('click', renderSummary);
+  document.getElementById('summary-tbody').addEventListener('click', (e) => {
+    const td = e.target.closest('td[data-id]');
+    if (!td) return;
+    const id = td.dataset.id;
+    const ym = td.dataset.ym;
+    switchTab('growth');
+    document.getElementById('growth-student').value = id;
+    document.getElementById('growth-month').value = ym;
+    loadGrowthForm();
+  });
+
+  document.getElementById('btn-login').addEventListener('click', handleLogin);
+  document.getElementById('login-password').addEventListener('keydown', (e) => { if (e.key === 'Enter') handleLogin(); });
+  document.getElementById('btn-logout').addEventListener('click', () => auth.signOut());
+  document.getElementById('btn-forgot-password').addEventListener('click', handleForgotPassword);
+}
+
+async function handleLogin(){
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errEl = document.getElementById('login-error');
+  errEl.textContent = '';
+  try {
+    await auth.signInWithEmailAndPassword(email, password);
+  } catch(e){
+    errEl.textContent = 'ログインに失敗しました: ' + e.message;
+  }
+}
+
+async function handleForgotPassword(){
+  const statusEl = document.getElementById('forgot-password-status');
+  const email = document.getElementById('login-email').value.trim();
+  if (!email){
+    statusEl.style.color = 'var(--danger)';
+    statusEl.textContent = 'まずメールアドレス欄に、ご自身のログイン用メールアドレスを入力してください。';
+    return;
+  }
+  statusEl.style.color = 'var(--text-secondary)';
+  statusEl.textContent = '送信しています…';
+  try {
+    await auth.sendPasswordResetEmail(email);
+    statusEl.style.color = 'var(--accent-dark)';
+    statusEl.textContent = '✓ パスワード再設定用のメールを送信しました。メールボックス(迷惑メールフォルダも)をご確認ください。';
+  } catch(err){
+    console.error(err);
+    statusEl.style.color = 'var(--danger)';
+    statusEl.textContent = '送信に失敗しました: ' + (err && err.message ? err.message : String(err));
+  }
+}
+
+initUI();
+loadBranchName();
+auth.onAuthStateChanged(async (user) => {
+  if (user && user.isAnonymous){
+    // 欠席連絡フォームやカレンダー閲覧ページ(同じドメイン)から
+    // 匿名セッションが引き継がれてしまった場合の保護。スタッフ用アプリでは無効。
+    await auth.signOut();
+    return;
+  }
+  currentUser = user;
+  if (user){
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app-root').style.display = 'block';
+    await resolveRole(user.uid);
+    attachListeners();
+  } else {
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('app-root').style.display = 'none';
+    detachListeners();
+  }
+});
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(err => console.error('Service Worker登録失敗:', err));
+  });
+}
+</script>
+</body>
+</html>
