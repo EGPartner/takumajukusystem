@@ -234,19 +234,21 @@
 
       <div class="card" id="hqadmin-manage-section" style="display:none;">
         <h2 style="font-size:15px;margin:0 0 4px;">運用管理者</h2>
-        <p class="status" style="margin-top:0;color:var(--text-muted);">全校舎の統合スケジュール・欠席連絡・校舎管理ができる権限です。追加・削除はシステム管理者のみ行えます。ここで発行したアカウントは、hq.htmlにログインして運用管理者として利用できます。「削除」はアクセス権のみ外し、ログインアカウント自体は残ります。</p>
+        <p class="status" style="margin-top:0;color:var(--text-muted);">全校舎の統合スケジュール・欠席連絡・校舎管理ができる権限です。追加・削除はシステム管理者のみ行えます。「削除」はアクセス権のみ外し、ログインアカウント自体は残ります。</p>
         <div style="overflow-x:auto;">
           <table class="mini-table">
             <thead><tr><th>メールアドレス</th><th></th></tr></thead>
             <tbody id="hqadmin-tbody"></tbody>
           </table>
         </div>
-        <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
-          <div class="row2">
-            <div class="field"><label>メールアドレス</label><input type="text" id="new-hqadmin-email" placeholder="例: staff@example.com"></div>
-            <div class="field"><label>初期パスワード</label><input type="text" id="new-hqadmin-password" placeholder="6文字以上"></div>
+        <div style="margin-top:16px;padding:14px;border:1px solid var(--accent);border-radius:10px;background:var(--accent-bg);">
+          <p style="font-weight:700;font-size:13px;margin:0 0 4px;color:var(--accent-dark);">◆ ここは新しいログイン情報を作る機能です(ログイン画面ではありません)</p>
+          <p class="status" style="margin-top:0;">入力した内容が、その人の新しいメールアドレス・パスワードになります。作成後、この2つをそのまま本人に伝えてください。<br>※このメールアドレスがすでに(他の校のスタッフなどとして)登録済みの場合は、エラーになり作成できません。</p>
+          <div class="row2" style="margin-top:10px;">
+            <div class="field"><label>新しいメールアドレス</label><input type="text" id="new-hqadmin-email" placeholder="例: staff@example.com"></div>
+            <div class="field"><label>新しい初期パスワード</label><input type="text" id="new-hqadmin-password" placeholder="6文字以上"></div>
           </div>
-          <div class="btn-row"><button class="primary" id="btn-add-hqadmin" style="width:auto;">運用管理者として発行する</button></div>
+          <div class="btn-row"><button class="primary" id="btn-add-hqadmin" style="width:auto;">この内容で新規アカウントを作成する</button></div>
           <p class="status" id="add-hqadmin-status"></p>
         </div>
       </div>
