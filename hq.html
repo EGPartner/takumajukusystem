@@ -36,6 +36,24 @@
   .absence-row:last-child{border-bottom:none;}
   .badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:20px;background:var(--accent-bg);color:var(--accent-dark);font-weight:600;}
   .badge.muted{background:#F0EFE9;color:var(--text-muted);}
+  .field{margin-bottom:14px;}
+  select, input[type=date], input[type=time], textarea{width:100%;padding:10px 11px;border:1px solid var(--border-strong);border-radius:8px;font-size:16px;background:var(--surface);color:var(--text-primary);font-family:inherit;}
+  .row2{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;}
+  .cal-row{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px;}
+  .cal-row:last-child{border-bottom:none;}
+  .cal-row.cancelled{opacity:0.5;}
+  .cal-row .cr-date{width:56px;flex:0 0 56px;font-weight:700;}
+  .cal-row .cr-time{width:88px;flex:0 0 88px;color:var(--text-secondary);}
+  .cal-row .cr-body{flex:1 1 auto;}
+  .cal-row .cr-school{font-weight:700;color:var(--accent-dark);}
+  .cal-row .cr-loc, .cal-row .cr-staff{color:var(--text-secondary);font-size:12px;}
+  .cal-row .cr-actions{flex:0 0 auto;display:flex;flex-direction:column;gap:6px;}
+  .checkbox-row{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+  .checkbox-row input{width:auto;}
+  .mini-table{width:100%;border-collapse:collapse;font-size:12px;}
+  .mini-table th,.mini-table td{padding:6px 5px;text-align:left;border-bottom:1px solid var(--border);}
+  .link-danger{background:none;border:none;color:var(--danger);font-size:12px;cursor:pointer;width:auto;padding:2px 4px;}
+  .ghost-small{padding:6px 10px;font-size:12px;width:auto;background:none;border:1px solid var(--border-strong);border-radius:6px;color:var(--text-primary);cursor:pointer;}
 </style>
 </head>
 <body>
@@ -68,6 +86,84 @@
     <div class="card">
       <h2 style="font-size:15px;margin:0 0 12px;">全校舎の欠席連絡</h2>
       <div id="absence-list"><div class="empty">読み込み中…</div></div>
+    </div>
+
+    <div class="card">
+      <h2 style="font-size:15px;margin:0 0 4px;">統合スケジュール(全校舎)</h2>
+      <p class="status" style="margin-top:0;color:var(--text-muted);">今日から60日間の予定を、校舎をまたいでまとめて確認・編集できます。校舎ごとのページを行き来する必要はありません。</p>
+      <div id="hq-calendar-list"><div class="empty">読み込み中…</div></div>
+    </div>
+
+    <div class="card">
+      <h2 style="font-size:15px;margin:0 0 4px;">この日だけの予定を編集</h2>
+      <p class="status" id="hq-occ-hint" style="margin-top:0;color:var(--text-muted);">上の一覧から「編集」を押すと、ここに内容が表示されます。</p>
+      <div id="hq-occ-editor" style="display:none;">
+        <div class="row2">
+          <div class="field"><label>校舎</label><input type="text" id="hq-occ-school" disabled></div>
+          <div class="field"><label>日付</label><input type="text" id="hq-occ-date" disabled></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label>種別</label>
+            <select id="hq-occ-type"><option value="通常練習">通常練習</option><option value="試合">試合</option><option value="イベント">イベント</option></select>
+          </div>
+          <div class="field"><label>場所</label><select id="hq-occ-location"></select></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label>開始時刻</label><input type="time" id="hq-occ-start"></div>
+          <div class="field"><label>終了時刻</label><input type="time" id="hq-occ-end"></div>
+        </div>
+        <div class="field"><label>担当スタッフ</label><input type="text" id="hq-occ-staff"></div>
+        <div class="field"><label>対象学年/グループ</label><input type="text" id="hq-occ-target"></div>
+        <div class="field"><label>備考</label><textarea id="hq-occ-note" rows="2"></textarea></div>
+        <div class="checkbox-row"><input type="checkbox" id="hq-occ-cancelled"><label for="hq-occ-cancelled">この日は中止にする</label></div>
+        <div class="btn-row">
+          <button class="primary" id="hq-btn-save-occ" style="width:auto;">保存</button>
+          <button class="ghost-small" id="hq-btn-reset-occ" style="display:none;">上書きを解除</button>
+          <button class="link-danger" id="hq-btn-delete-occ" style="display:none;">この単発予定を削除</button>
+        </div>
+        <p class="status" id="hq-occ-status"></p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 style="font-size:15px;margin:0 0 4px;">単発予定を追加</h2>
+      <div class="row2">
+        <div class="field"><label>校舎</label><select id="hq-new-occ-school"></select></div>
+        <div class="field"><label>日付</label><input type="date" id="hq-new-occ-date"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>種別</label>
+          <select id="hq-new-occ-type"><option value="試合">試合</option><option value="イベント">イベント</option><option value="通常練習">通常練習</option></select>
+        </div>
+        <div class="field"><label>場所</label><select id="hq-new-occ-location"></select></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>開始時刻</label><input type="time" id="hq-new-occ-start"></div>
+        <div class="field"><label>終了時刻</label><input type="time" id="hq-new-occ-end"></div>
+      </div>
+      <div class="field"><label>担当スタッフ</label><input type="text" id="hq-new-occ-staff"></div>
+      <div class="field"><label>対象学年/グループ</label><input type="text" id="hq-new-occ-target"></div>
+      <div class="field"><label>備考</label><textarea id="hq-new-occ-note" rows="2"></textarea></div>
+      <div class="btn-row"><button class="primary" id="hq-btn-add-occ" style="width:auto;">追加する</button></div>
+      <p class="status" id="hq-add-occ-status"></p>
+    </div>
+
+    <div class="card">
+      <h2 style="font-size:15px;margin:0 0 4px;">定期パターン一覧(全校舎)</h2>
+      <div style="overflow-x:auto;">
+        <table class="mini-table">
+          <thead><tr><th>校舎</th><th>曜日</th><th>時間</th><th>種別</th><th></th></tr></thead>
+          <tbody id="hq-patterns-tbody"></tbody>
+        </table>
+      </div>
+      <div class="row2" style="margin-top:12px;">
+        <div class="field"><label>新規パターンを追加する校舎</label><select id="hq-new-pattern-school"></select></div>
+        <div class="field"><label>曜日</label>
+          <select id="hq-new-pattern-weekday"><option value="0">日曜</option><option value="1">月曜</option><option value="2" selected>火曜</option><option value="3">水曜</option><option value="4">木曜</option><option value="5">金曜</option><option value="6">土曜</option></select>
+        </div>
+      </div>
+      <div class="btn-row"><button class="primary" id="hq-btn-add-pattern" style="width:auto;">+ このパターンを追加</button></div>
+      <p class="status" id="hq-add-pattern-status"></p>
     </div>
 
     <div class="card">
@@ -150,7 +246,11 @@ async function loadSchools(){
   try {
     const snap = await schoolsRef.get();
     schoolsMap = {};
-    snap.docs.forEach(d => { schoolsMap[d.id] = d.data().name || d.id; });
+    schoolsArr = snap.docs.map(d => ({ id:d.id, name: d.data().name || d.id }));
+    schoolsArr.forEach(s => { schoolsMap[s.id] = s.name; });
+    populateSchoolSelects();
+    renderHQCalendarList();
+    renderHQPatternsTable();
     if (snap.empty){ container.innerHTML = '<div class="empty">まだ校舎が登録されていません。</div>'; return; }
     const base = window.location.origin + window.location.pathname.replace(/hq\.html$/, '');
     const rows = await Promise.all(snap.docs.map(async (doc) => {
@@ -187,14 +287,290 @@ async function loadAbsenceReports(){
       const academyId = d.ref.parent.parent.id;
       const schoolName = schoolsMap[academyId] || academyId;
       const statusBadge = r.status === 'new' ? '<span class="badge">未確認</span>' : '<span class="badge muted">確認済み</span>';
+      const ackBtn = r.status === 'new' ? `<button class="ghost-small" data-ack="${academyId}|${d.id}">確認済みにする</button>` : '';
       return `<div class="absence-row">
-        <strong>${escAttr(schoolName)}</strong>${statusBadge}<br>
+        <strong>${escAttr(schoolName)}</strong> ${statusBadge}<br>
         ${escAttr(r.studentName||'')} ／ ${escAttr(r.absenceDate||'')} ／ ${escAttr(r.reason||'')}
+        ${ackBtn ? '<div style="margin-top:6px;">' + ackBtn + '</div>' : ''}
       </div>`;
     }).join('');
   } catch(e){
     container.innerHTML = '<div class="empty">読み込みに失敗しました: ' + escAttr(e.message) + '</div>';
   }
+}
+
+document.getElementById('absence-list').addEventListener('click', async (e) => {
+  const key = e.target.dataset.ack;
+  if (!key) return;
+  const [academyId, reportId] = key.split('|');
+  try {
+    await db.collection('academies').doc(academyId).collection('absenceReports').doc(reportId).update({ status:'acknowledged' });
+    loadAbsenceReports();
+  } catch(err){ alert('更新に失敗しました: ' + err.message); }
+});
+
+// ---- 統合スケジュール管理 ----
+const WEEKDAY_LABELS = ['日','月','火','水','木','金','土'];
+const WEEKDAY_NAMES = ['日曜','月曜','火曜','水曜','木曜','金曜','土曜'];
+let allPatterns = [];
+let allEvents = [];
+let allLocations = {};
+let schoolsArr = [];
+let unsubPatternsGroup = null, unsubEventsGroup = null, unsubMetaGroup = null;
+
+function dateStrOf(d){ return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()); }
+function weekdayOf(dateStr){ return new Date(dateStr + 'T00:00:00').getDay(); }
+function locationNameFor(academyId, locationId){
+  const list = allLocations[academyId] || [];
+  const l = list.find(x => x.id === locationId);
+  return l ? l.name : '';
+}
+function schoolNameFor(academyId){ return schoolsMap[academyId] || academyId; }
+
+function occurrencesForSchoolDate(academyId, dateStr){
+  const wd = weekdayOf(dateStr);
+  const results = [];
+  allPatterns.filter(p => p.academyId === academyId && Number(p.weekday) === wd
+    && (!p.startDate || dateStr >= p.startDate) && (!p.endDate || dateStr <= p.endDate)
+  ).forEach(p => {
+    const override = allEvents.find(e => e.academyId === academyId && e.date === dateStr && e.patternId === p.id);
+    const merged = Object.assign({}, p, override || {});
+    results.push({
+      academyId, date:dateStr, patternId:p.id, eventId: override ? override.id : null,
+      cancelled: !!(override && override.cancelled),
+      startTime: merged.startTime, endTime: merged.endTime, locationId: merged.locationId,
+      staffInCharge: merged.staffInCharge, targetGroup: merged.targetGroup, type: merged.type, note: merged.note
+    });
+  });
+  allEvents.filter(e => e.academyId === academyId && e.date === dateStr && !e.patternId).forEach(e => {
+    results.push({
+      academyId, date:dateStr, patternId:null, eventId:e.id, cancelled: !!e.cancelled,
+      startTime:e.startTime, endTime:e.endTime, locationId:e.locationId,
+      staffInCharge:e.staffInCharge, targetGroup:e.targetGroup, type:e.type, note:e.note
+    });
+  });
+  return results;
+}
+
+function occurrencesForAllDate(dateStr){
+  let results = [];
+  schoolsArr.forEach(s => { results = results.concat(occurrencesForSchoolDate(s.id, dateStr)); });
+  results.sort((a,b) => (a.startTime||'').localeCompare(b.startTime||''));
+  return results;
+}
+
+function calRowHTML(o){
+  const d = new Date(o.date + 'T00:00:00');
+  const dateLabel = (d.getMonth()+1) + '/' + d.getDate() + '(' + WEEKDAY_LABELS[d.getDay()] + ')';
+  const cancelledTag = o.cancelled ? ' <span class="badge muted">中止</span>' : '';
+  const key = o.academyId + '|' + o.date + '|' + (o.patternId||'') + '|' + (o.eventId||'');
+  return `<div class="cal-row ${o.cancelled ? 'cancelled' : ''}">
+    <div class="cr-date">${dateLabel}</div>
+    <div class="cr-time">${escAttr(o.startTime||'')}${o.endTime ? '〜'+escAttr(o.endTime) : ''}</div>
+    <div class="cr-body">
+      <div class="cr-school">${escAttr(schoolNameFor(o.academyId))}</div>
+      <div>${escAttr(o.type||'')}${cancelledTag}</div>
+      <div class="cr-loc">📍 ${escAttr(locationNameFor(o.academyId, o.locationId) || '場所未設定')}</div>
+      <div class="cr-staff">担当: ${escAttr(o.staffInCharge||'-')} ／ 対象: ${escAttr(o.targetGroup||'-')}</div>
+    </div>
+    <div class="cr-actions"><button class="ghost-small" data-edit-occ="${key}">編集</button></div>
+  </div>`;
+}
+
+function renderHQCalendarList(){
+  const container = document.getElementById('hq-calendar-list');
+  if (!container) return;
+  const today = new Date();
+  const rows = [];
+  for (let i = 0; i < 60; i++){
+    const d = new Date(today); d.setDate(d.getDate() + i);
+    occurrencesForAllDate(dateStrOf(d)).forEach(o => rows.push(o));
+  }
+  container.innerHTML = rows.length === 0 ? '<div class="empty">今後60日間の予定はありません。</div>' : rows.map(calRowHTML).join('');
+}
+
+function populateSchoolSelects(){
+  const opts = schoolsArr.map(s => `<option value="${escAttr(s.id)}">${escAttr(s.name)}</option>`).join('');
+  ['hq-new-occ-school','hq-new-pattern-school'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = opts;
+  });
+  populateLocationSelectFor('hq-new-occ-location', document.getElementById('hq-new-occ-school') ? document.getElementById('hq-new-occ-school').value : null);
+}
+function populateLocationSelectFor(selectId, academyId){
+  const el = document.getElementById(selectId);
+  if (!el) return;
+  const list = allLocations[academyId] || [];
+  el.innerHTML = '<option value="">(未選択)</option>' + list.map(l => `<option value="${escAttr(l.id)}">${escAttr(l.name)}</option>`).join('');
+}
+
+function renderHQPatternsTable(){
+  const tbody = document.getElementById('hq-patterns-tbody');
+  if (!tbody) return;
+  if (allPatterns.length === 0){ tbody.innerHTML = '<tr><td colspan="5" class="status">定期パターンがありません</td></tr>'; return; }
+  const sorted = [...allPatterns].sort((a,b) => schoolNameFor(a.academyId).localeCompare(schoolNameFor(b.academyId)) || Number(a.weekday)-Number(b.weekday));
+  tbody.innerHTML = sorted.map(p => `
+    <tr>
+      <td>${escAttr(schoolNameFor(p.academyId))}</td>
+      <td>${WEEKDAY_NAMES[Number(p.weekday)]||''}</td>
+      <td>${escAttr(p.startTime||'')}〜${escAttr(p.endTime||'')}</td>
+      <td>${escAttr(p.type||'')}</td>
+      <td><button class="link-danger" data-del-pattern="${p.academyId}|${p.id}">削除</button></td>
+    </tr>`).join('');
+}
+
+function openHQOccEditor(key){
+  const [academyId, dateStr, patternId, eventId] = key.split('|');
+  const occ = occurrencesForSchoolDate(academyId, dateStr).find(o => (o.patternId||'') === patternId);
+  if (!occ) return;
+  document.getElementById('hq-occ-editor').style.display = 'block';
+  document.getElementById('hq-occ-hint').style.display = 'none';
+  document.getElementById('hq-occ-school').value = schoolNameFor(academyId);
+  document.getElementById('hq-occ-date').value = dateStr;
+  document.getElementById('hq-occ-type').value = occ.type || '通常練習';
+  document.getElementById('hq-occ-start').value = occ.startTime || '';
+  document.getElementById('hq-occ-end').value = occ.endTime || '';
+  populateLocationSelectFor('hq-occ-location', academyId);
+  document.getElementById('hq-occ-location').value = occ.locationId || '';
+  document.getElementById('hq-occ-staff').value = occ.staffInCharge || '';
+  document.getElementById('hq-occ-target').value = occ.targetGroup || '';
+  document.getElementById('hq-occ-note').value = occ.note || '';
+  document.getElementById('hq-occ-cancelled').checked = occ.cancelled;
+  document.getElementById('hq-occ-editor').dataset.academyId = academyId;
+  document.getElementById('hq-occ-editor').dataset.date = dateStr;
+  document.getElementById('hq-occ-editor').dataset.patternId = patternId || '';
+  document.getElementById('hq-occ-editor').dataset.eventId = eventId || '';
+  document.getElementById('hq-btn-reset-occ').style.display = (patternId && eventId) ? 'inline-block' : 'none';
+  document.getElementById('hq-btn-delete-occ').style.display = (!patternId && eventId) ? 'inline-block' : 'none';
+  document.getElementById('hq-occ-status').textContent = '';
+}
+
+document.getElementById('hq-calendar-list').addEventListener('click', (e) => {
+  const key = e.target.dataset.editOcc;
+  if (key) openHQOccEditor(key);
+});
+
+document.getElementById('hq-btn-save-occ').addEventListener('click', async () => {
+  const editor = document.getElementById('hq-occ-editor');
+  const academyId = editor.dataset.academyId;
+  const dateStr = editor.dataset.date;
+  const patternId = editor.dataset.patternId || null;
+  const eventId = editor.dataset.eventId || null;
+  const statusEl = document.getElementById('hq-occ-status');
+  const payload = {
+    date: dateStr, patternId: patternId || null,
+    type: document.getElementById('hq-occ-type').value,
+    startTime: document.getElementById('hq-occ-start').value,
+    endTime: document.getElementById('hq-occ-end').value,
+    locationId: document.getElementById('hq-occ-location').value || null,
+    staffInCharge: document.getElementById('hq-occ-staff').value,
+    targetGroup: document.getElementById('hq-occ-target').value,
+    note: document.getElementById('hq-occ-note').value,
+    cancelled: document.getElementById('hq-occ-cancelled').checked
+  };
+  const eventsRef = db.collection('academies').doc(academyId).collection('scheduleEvents');
+  try {
+    if (patternId){ await eventsRef.doc(patternId + '_' + dateStr).set(payload, { merge:true }); }
+    else if (eventId){ await eventsRef.doc(eventId).set(payload, { merge:true }); }
+    else { await eventsRef.add(payload); }
+    statusEl.style.color = 'var(--accent-dark)';
+    statusEl.textContent = '✓ 保存しました。';
+  } catch(err){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = '保存に失敗しました: ' + err.message; }
+});
+document.getElementById('hq-btn-reset-occ').addEventListener('click', async () => {
+  const editor = document.getElementById('hq-occ-editor');
+  const academyId = editor.dataset.academyId, dateStr = editor.dataset.date, patternId = editor.dataset.patternId;
+  if (!patternId) return;
+  if (!confirm('この日だけの変更を取り消しますか？')) return;
+  try {
+    await db.collection('academies').doc(academyId).collection('scheduleEvents').doc(patternId + '_' + dateStr).delete();
+    editor.style.display = 'none';
+    document.getElementById('hq-occ-hint').style.display = 'block';
+  } catch(err){ alert('失敗しました: ' + err.message); }
+});
+document.getElementById('hq-btn-delete-occ').addEventListener('click', async () => {
+  const editor = document.getElementById('hq-occ-editor');
+  const academyId = editor.dataset.academyId, eventId = editor.dataset.eventId;
+  if (!eventId) return;
+  if (!confirm('この単発予定を削除しますか？')) return;
+  try {
+    await db.collection('academies').doc(academyId).collection('scheduleEvents').doc(eventId).delete();
+    editor.style.display = 'none';
+    document.getElementById('hq-occ-hint').style.display = 'block';
+  } catch(err){ alert('失敗しました: ' + err.message); }
+});
+
+document.getElementById('hq-new-occ-school').addEventListener('change', (e) => {
+  populateLocationSelectFor('hq-new-occ-location', e.target.value);
+});
+document.getElementById('hq-btn-add-occ').addEventListener('click', async () => {
+  const statusEl = document.getElementById('hq-add-occ-status');
+  const academyId = document.getElementById('hq-new-occ-school').value;
+  const date = document.getElementById('hq-new-occ-date').value;
+  if (!academyId){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = '校舎を選択してください。'; return; }
+  if (!date){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = '日付を選択してください。'; return; }
+  const payload = {
+    date, patternId: null,
+    type: document.getElementById('hq-new-occ-type').value,
+    startTime: document.getElementById('hq-new-occ-start').value,
+    endTime: document.getElementById('hq-new-occ-end').value,
+    locationId: document.getElementById('hq-new-occ-location').value || null,
+    staffInCharge: document.getElementById('hq-new-occ-staff').value,
+    targetGroup: document.getElementById('hq-new-occ-target').value,
+    note: document.getElementById('hq-new-occ-note').value,
+    cancelled: false
+  };
+  try {
+    await db.collection('academies').doc(academyId).collection('scheduleEvents').add(payload);
+    statusEl.style.color = 'var(--accent-dark)';
+    statusEl.textContent = '✓ 追加しました。';
+  } catch(err){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = '追加に失敗しました: ' + err.message; }
+});
+
+document.getElementById('hq-patterns-tbody').addEventListener('click', async (e) => {
+  const key = e.target.dataset.delPattern;
+  if (!key) return;
+  const [academyId, patternId] = key.split('|');
+  if (!confirm('この定期パターンを削除しますか？')) return;
+  try { await db.collection('academies').doc(academyId).collection('schedulePatterns').doc(patternId).delete(); }
+  catch(err){ alert('削除に失敗しました: ' + err.message); }
+});
+document.getElementById('hq-btn-add-pattern').addEventListener('click', async () => {
+  const statusEl = document.getElementById('hq-add-pattern-status');
+  const academyId = document.getElementById('hq-new-pattern-school').value;
+  const weekday = Number(document.getElementById('hq-new-pattern-weekday').value);
+  if (!academyId){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = '校舎を選択してください。'; return; }
+  try {
+    await db.collection('academies').doc(academyId).collection('schedulePatterns').add({
+      weekday, startTime:'17:00', endTime:'19:00', locationId:null, staffInCharge:'', targetGroup:'全学年', type:'通常練習', note:''
+    });
+    statusEl.style.color = 'var(--accent-dark)';
+    statusEl.textContent = '✓ 追加しました。曜日・時間などは各校の管理画面から調整できます。';
+  } catch(err){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = '追加に失敗しました: ' + err.message; }
+});
+
+function attachHQCalendarListeners(){
+  detachHQCalendarListeners();
+  unsubPatternsGroup = db.collectionGroup('schedulePatterns').onSnapshot(snap => {
+    allPatterns = snap.docs.map(d => Object.assign({ id:d.id, academyId: d.ref.parent.parent.id }, d.data()));
+    renderHQCalendarList();
+    renderHQPatternsTable();
+  }, err => console.error(err));
+  unsubEventsGroup = db.collectionGroup('scheduleEvents').onSnapshot(snap => {
+    allEvents = snap.docs.map(d => Object.assign({ id:d.id, academyId: d.ref.parent.parent.id }, d.data()));
+    renderHQCalendarList();
+  }, err => console.error(err));
+  unsubMetaGroup = db.collectionGroup('meta').onSnapshot(snap => {
+    const map = {};
+    snap.docs.forEach(d => { if (d.id === 'locations') map[d.ref.parent.parent.id] = d.data().items || []; });
+    allLocations = map;
+    renderHQCalendarList();
+  }, err => console.error(err));
+}
+function detachHQCalendarListeners(){
+  if (unsubPatternsGroup){ unsubPatternsGroup(); unsubPatternsGroup = null; }
+  if (unsubEventsGroup){ unsubEventsGroup(); unsubEventsGroup = null; }
+  if (unsubMetaGroup){ unsubMetaGroup(); unsubMetaGroup = null; }
 }
 
 auth.onAuthStateChanged(async (user) => {
@@ -203,6 +579,7 @@ auth.onAuthStateChanged(async (user) => {
   if (!user){
     document.getElementById('login-card').style.display = 'block';
     document.getElementById('main-content').style.display = 'none';
+    detachHQCalendarListeners();
     return;
   }
   let isHQ = false;
@@ -217,8 +594,10 @@ auth.onAuthStateChanged(async (user) => {
   document.getElementById('login-card').style.display = 'none';
   document.getElementById('main-content').style.display = 'block';
   document.getElementById('who').textContent = user.email + '(本部管理者)';
+  document.getElementById('hq-new-occ-date').value = (() => { const d = new Date(); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); })();
   await loadSchools();
   loadAbsenceReports();
+  attachHQCalendarListeners();
 });
 </script>
 </body>
