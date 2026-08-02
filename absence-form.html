@@ -31,7 +31,7 @@
 </head>
 <body>
 <div class="card" id="form-card">
-  <h1>欠席連絡</h1>
+  <h1 id="branch-title">欠席連絡</h1>
   <p class="sub">タクマ塾岩国校の練習を欠席する場合、こちらからご連絡ください。</p>
 
   <div class="field">
@@ -79,12 +79,16 @@ const firebaseConfig = {
   messagingSenderId: "1065956673618",
   appId: "1:1065956673618:web:e765409502a9b87031b78b"
 };
-const ACADEMY_ID = 'takuma-juku-iwakuni';
+const ACADEMY_ID = new URLSearchParams(window.location.search).get('school') || 'takuma-juku-iwakuni';
 
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 const absenceRef = db.collection('academies').doc(ACADEMY_ID).collection('absenceReports');
+const schoolsRef = db.collection('schools');
+schoolsRef.doc(ACADEMY_ID).get().then(doc => {
+  if (doc.exists) document.getElementById('branch-title').textContent = doc.data().name + ' 欠席連絡';
+}).catch(() => {});
 
 let selectedReason = null;
 

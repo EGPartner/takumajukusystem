@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>タクマ塾 本部管理</title>
+<style>
+  :root{
+    --bg:#F6F6F1; --surface:#FFFFFF; --border:#E1E7E7; --border-strong:#C7D2D2;
+    --text-primary:#12181A; --text-secondary:#5B6668; --text-muted:#8A9799;
+    --accent:#0FB8C4; --accent-dark:#0A8A93; --accent-bg:#E3F7F8;
+    --danger:#D6483F; --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:"Hiragino Sans","Yu Gothic",-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text-primary);line-height:1.6;}
+  .wrap{max-width:640px;margin:0 auto;padding:20px 16px 60px;}
+  header{margin-bottom:18px;}
+  header h1{font-size:19px;font-weight:700;margin:0 0 4px;}
+  header p{font-size:13px;color:var(--text-secondary);margin:0;}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:16px;}
+  .field{margin-bottom:14px;}
+  label{font-size:13px;color:var(--text-secondary);display:block;margin-bottom:5px;}
+  input[type=text],input[type=email],input[type=password]{width:100%;padding:10px 11px;border:1px solid var(--border-strong);border-radius:8px;font-size:16px;background:var(--surface);color:var(--text-primary);font-family:inherit;}
+  button{padding:10px 16px;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;}
+  button.primary{background:var(--accent);color:#fff;}
+  button.ghost{background:none;border:1px solid var(--border-strong);color:var(--text-primary);}
+  .btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;}
+  .status{font-size:13px;margin-top:10px;min-height:16px;}
+  .school-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border);gap:10px;}
+  .school-row:last-child{border-bottom:none;}
+  .school-name{font-weight:700;font-size:14px;}
+  .school-meta{font-size:12px;color:var(--text-secondary);}
+  .empty{color:var(--text-muted);font-size:13px;text-align:center;padding:20px 0;}
+  a.link-btn{font-size:13px;color:var(--accent-dark);text-decoration:none;border:1px solid var(--border-strong);padding:7px 12px;border-radius:8px;white-space:nowrap;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>タクマ塾 本部管理</h1>
+    <p>全校舎の一覧・新規登録(本部管理者専用)</p>
+  </header>
+
+  <div class="card" id="login-card">
+    <div class="field"><label for="email">メールアドレス</label><input type="email" id="email"></div>
+    <div class="field"><label for="password">パスワード</label><input type="password" id="password"></div>
+    <div class="btn-row"><button class="primary" id="btn-login">ログイン</button></div>
+    <p class="status" id="login-status"></p>
+  </div>
+
+  <div id="main-content" style="display:none;">
+    <div class="card">
+      <div class="btn-row" style="justify-content:space-between;">
+        <span id="who"></span>
+        <button class="ghost" id="btn-logout">ログアウト</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 style="font-size:15px;margin:0 0 12px;">校舎一覧</h2>
+      <div id="school-list"><div class="empty">読み込み中…</div></div>
+    </div>
+
+    <div class="card">
+      <h2 style="font-size:15px;margin:0 0 4px;">新しい校舎を追加</h2>
+      <p class="status" style="margin-top:0;color:var(--text-muted);">校舎IDは半角英数字とハイフンのみ(例: nara)。あとで変更できません。</p>
+      <div class="field"><label for="new-name">校舎名</label><input type="text" id="new-name" placeholder="例: タクマ塾奈良校"></div>
+      <div class="field"><label for="new-id">校舎ID</label><input type="text" id="new-id" placeholder="例: nara"></div>
+      <div class="btn-row"><button class="primary" id="btn-add-school">追加する</button></div>
+      <p class="status" id="add-status"></p>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyDKTuN49WGP1pFobS6rS_RwDnDvzJe1h00",
+  authDomain: "takuma-juku-iwakuni.firebaseapp.com",
+  projectId: "takuma-juku-iwakuni",
+  storageBucket: "takuma-juku-iwakuni.firebasestorage.app",
+  messagingSenderId: "1065956673618",
+  appId: "1:1065956673618:web:e765409502a9b87031b78b"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+const schoolsRef = db.collection('schools');
+const hqAdminsRef = db.collection('hqAdmins');
+
+let currentUser = null;
+
+function pad(n){ return String(n).padStart(2,'0'); }
+function currentMonthKey(){ const d = new Date(); return d.getFullYear() + '-' + pad(d.getMonth()+1); }
+function escAttr(v){ return String(v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+document.getElementById('btn-login').addEventListener('click', async () => {
+  const statusEl = document.getElementById('login-status');
+  statusEl.style.color = 'var(--text-secondary)';
+  statusEl.textContent = 'ログインしています…';
+  try {
+    await auth.signInWithEmailAndPassword(document.getElementById('email').value.trim(), document.getElementById('password').value);
+  } catch(e){
+    statusEl.style.color = 'var(--danger)';
+    statusEl.textContent = 'ログインに失敗しました: ' + e.message;
+  }
+});
+document.getElementById('btn-logout').addEventListener('click', () => auth.signOut());
+
+document.getElementById('btn-add-school').addEventListener('click', async () => {
+  const statusEl = document.getElementById('add-status');
+  const name = document.getElementById('new-name').value.trim();
+  const id = document.getElementById('new-id').value.trim();
+  if (!name || !id){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = '校舎名と校舎IDの両方を入力してください。'; return; }
+  if (!/^[a-z0-9-]+$/.test(id)){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = '校舎IDは半角英数字とハイフンのみで入力してください。'; return; }
+  statusEl.style.color = 'var(--text-secondary)';
+  statusEl.textContent = '登録しています…';
+  try {
+    const existing = await schoolsRef.doc(id).get();
+    if (existing.exists){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = 'この校舎IDはすでに使われています。'; return; }
+    await schoolsRef.doc(id).set({ name, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+    await db.collection('academies').doc(id).collection('staff').doc(currentUser.uid).set({ role:'admin', email: currentUser.email });
+    statusEl.style.color = 'var(--accent-dark)';
+    statusEl.textContent = '✓ 登録しました。ご自身がこの校舎の管理者として設定されています。';
+    document.getElementById('new-name').value = '';
+    document.getElementById('new-id').value = '';
+    loadSchools();
+  } catch(e){
+    statusEl.style.color = 'var(--danger)';
+    statusEl.textContent = '登録に失敗しました: ' + e.message;
+  }
+});
+
+async function loadSchools(){
+  const container = document.getElementById('school-list');
+  container.innerHTML = '<div class="empty">読み込み中…</div>';
+  try {
+    const snap = await schoolsRef.get();
+    if (snap.empty){ container.innerHTML = '<div class="empty">まだ校舎が登録されていません。</div>'; return; }
+    const base = window.location.origin + window.location.pathname.replace(/hq\.html$/, '');
+    const rows = await Promise.all(snap.docs.map(async (doc) => {
+      const s = doc.data();
+      let count = '-';
+      try {
+        const studentsSnap = await db.collection('academies').doc(doc.id).collection('students')
+          .where('months.' + currentMonthKey(), '==', 'active').get();
+        count = studentsSnap.size;
+      } catch(e){ count = '?'; }
+      const url = base + 'index.html?school=' + encodeURIComponent(doc.id);
+      return `<div class="school-row">
+        <div>
+          <div class="school-name">${escAttr(s.name || doc.id)}</div>
+          <div class="school-meta">ID: ${escAttr(doc.id)} ／ 今月の在籍: ${count}名</div>
+        </div>
+        <a class="link-btn" href="${escAttr(url)}" target="_blank" rel="noopener">開く</a>
+      </div>`;
+    }));
+    container.innerHTML = rows.join('');
+  } catch(e){
+    container.innerHTML = '<div class="empty">読み込みに失敗しました: ' + escAttr(e.message) + '</div>';
+  }
+}
+
+auth.onAuthStateChanged(async (user) => {
+  if (user && user.isAnonymous){ await auth.signOut(); return; }
+  currentUser = user;
+  if (!user){
+    document.getElementById('login-card').style.display = 'block';
+    document.getElementById('main-content').style.display = 'none';
+    return;
+  }
+  let isHQ = false;
+  try { const doc = await hqAdminsRef.doc(user.uid).get(); isHQ = doc.exists; }
+  catch(e){ console.error(e); }
+  if (!isHQ){
+    document.getElementById('login-status').style.color = 'var(--danger)';
+    document.getElementById('login-status').textContent = 'このアカウントには本部管理者権限がありません。';
+    await auth.signOut();
+    return;
+  }
+  document.getElementById('login-card').style.display = 'none';
+  document.getElementById('main-content').style.display = 'block';
+  document.getElementById('who').textContent = user.email + '(本部管理者)';
+  loadSchools();
+});
+</script>
+</body>
+</html>

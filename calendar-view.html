@@ -35,7 +35,7 @@
 <body>
 <div class="wrap">
   <header>
-    <h1>タクマ塾岩国校 活動予定</h1>
+    <h1 id="branch-title">タクマ塾 活動予定</h1>
     <p>今日から60日間の練習・試合・イベント予定です(閲覧専用)。</p>
   </header>
   <div class="card">
@@ -55,12 +55,16 @@ const firebaseConfig = {
   messagingSenderId: "1065956673618",
   appId: "1:1065956673618:web:e765409502a9b87031b78b"
 };
-const ACADEMY_ID = 'takuma-juku-iwakuni';
+const ACADEMY_ID = new URLSearchParams(window.location.search).get('school') || 'takuma-juku-iwakuni';
 
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 const academyRef = db.collection('academies').doc(ACADEMY_ID);
+const schoolsRef = db.collection('schools');
+schoolsRef.doc(ACADEMY_ID).get().then(doc => {
+  if (doc.exists) document.getElementById('branch-title').textContent = doc.data().name + ' 活動予定';
+}).catch(() => {});
 const patternsRef = academyRef.collection('schedulePatterns');
 const eventsRef = academyRef.collection('scheduleEvents');
 const locationsMetaRef = academyRef.collection('meta').doc('locations');

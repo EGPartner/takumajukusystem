@@ -187,7 +187,7 @@
   <header>
     <div class="logo-mark"></div>
     <div>
-      <h1>タクマ塾岩国校 収支・塾生管理システム</h1>
+      <h1 id="branch-title">タクマ塾 収支・塾生管理システム</h1>
       <p>階段図(塾生×月のマス目)で在籍状況を管理すると、収支と選手の成長記録が連動して管理できます。</p>
     </div>
   </header>
@@ -654,12 +654,13 @@ const firebaseConfig = {
   messagingSenderId: "1065956673618",
   appId: "1:1065956673618:web:e765409502a9b87031b78b"
 };
-const ACADEMY_ID = 'takuma-juku-iwakuni';
+const ACADEMY_ID = new URLSearchParams(window.location.search).get('school') || 'takuma-juku-iwakuni';
 
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 const academyRef = db.collection('academies').doc(ACADEMY_ID);
+const schoolsRef = db.collection('schools');
 const studentsRef = academyRef.collection('students');
 const settingsRef = academyRef.collection('meta').doc('settings');
 const locationsMetaRef = academyRef.collection('meta').doc('locations');
@@ -917,10 +918,8 @@ async function handleDeleteOccurrenceFromList(key){
   if (patternId){
     if (!confirm('この日の予定を中止にしますか？(定期パターン自体は残ります)')) return;
     const payload = { date:dateStr, patternId, cancelled:true };
-    try {
-      if (eventId){ await eventsRef.doc(eventId).set(payload, { merge:true }); }
-      else { await eventsRef.add(payload); }
-    } catch(err){ console.error(err); alert('失敗しました: ' + err.message); }
+    try { await eventsRef.doc(patternId + '_' + dateStr).set(payload, { merge:true }); }
+    catch(err){ console.error(err); alert('失敗しました: ' + err.message); }
   } else {
     if (!eventId) return;
     if (!confirm('この単発予定を削除しますか？(元に戻せません)')) return;
@@ -998,7 +997,7 @@ function populateLocationSelects(){
 
 function openOccurrenceEditor(key){
   const [dateStr, patternId, eventId] = key.split('|');
-  const occ = occurrencesForDate(dateStr).find(o => (o.patternId||'') === patternId && (o.eventId||'') === eventId);
+  const occ = occurrencesForDate(dateStr).find(o => (o.patternId||'') === patternId);
   if (!occ) return;
   document.getElementById('occ-editor').style.display = 'block';
   document.getElementById('occ-editor-hint').style.display = 'none';
@@ -1038,8 +1037,14 @@ async function handleSaveOccurrence(){
     cancelled: document.getElementById('occ-cancelled').checked
   };
   try {
-    if (eventId){ await eventsRef.doc(eventId).set(payload, { merge:true }); }
-    else { await eventsRef.add(payload); }
+    if (patternId){
+      // 定期パターンの上書きは「パターンID_日付」で必ず一意にし、重複を防ぐ
+      await eventsRef.doc(patternId + '_' + dateStr).set(payload, { merge:true });
+    } else if (eventId){
+      await eventsRef.doc(eventId).set(payload, { merge:true });
+    } else {
+      await eventsRef.add(payload);
+    }
     statusEl.style.color = 'var(--accent-dark)';
     statusEl.textContent = '✓ 保存しました。';
   } catch(err){
@@ -1051,10 +1056,11 @@ async function handleSaveOccurrence(){
 
 async function handleResetOccurrence(){
   const editor = document.getElementById('occ-editor');
-  const eventId = editor.dataset.eventId;
-  if (!eventId) return;
+  const dateStr = editor.dataset.date;
+  const patternId = editor.dataset.patternId;
+  if (!patternId) return;
   if (!confirm('この日だけの変更を取り消し、通常のパターン通りに戻します。よろしいですか？')) return;
-  try { await eventsRef.doc(eventId).delete(); document.getElementById('occ-editor').style.display = 'none'; document.getElementById('occ-editor-hint').style.display = 'block'; }
+  try { await eventsRef.doc(patternId + '_' + dateStr).delete(); document.getElementById('occ-editor').style.display = 'none'; document.getElementById('occ-editor-hint').style.display = 'block'; }
   catch(err){ console.error(err); alert('失敗しました: ' + err.message); }
 }
 
@@ -1976,6 +1982,17 @@ function switchTab(name){
   else if (name === 'absenceHistory') renderAbsenceHistory();
 }
 
+async function loadBranchName(){
+  try {
+    const doc = await schoolsRef.doc(ACADEMY_ID).get();
+    const name = doc.exists ? doc.data().name : null;
+    document.getElementById('branch-title').textContent = (name || ACADEMY_ID) + ' 収支・塾生管理システム';
+    if (!doc.exists){
+      document.getElementById('login-error').textContent = 'この校舎(' + ACADEMY_ID + ')は登録されていません。URLをご確認ください。';
+    }
+  } catch(e){ console.error(e); }
+}
+
 function initUI(){
   const today = new Date();
   currentFY = fiscalYearOf(today.getFullYear(), today.getMonth()+1);
@@ -2147,6 +2164,7 @@ async function handleForgotPassword(){
 }
 
 initUI();
+loadBranchName();
 auth.onAuthStateChanged(async (user) => {
   if (user && user.isAnonymous){
     // 欠席連絡フォームやカレンダー閲覧ページ(同じドメイン)から
