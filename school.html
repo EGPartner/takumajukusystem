@@ -387,7 +387,19 @@
         </table>
       </div>
       <div id="ah-empty" class="empty" style="display:none;">この年度の欠席記録はありません。</div>
-      <p class="note">選手名は保護者が欠席連絡フォームに自由入力した文字列を基に集計しています。表記の揺れ(スペースの有無など)によって、同一選手が別集計になる場合があります。</p>
+      <p class="note">選手名は保護者が欠席連絡フォームに自由入力した文字列を基に集計しています。表記の揺れがある場合は、下の「表記ゆれをまとめる」から統合できます。</p>
+    </div>
+
+    <div class="card">
+      <h2>表記ゆれをまとめる</h2>
+      <p class="note" style="margin-top:0;">同じ選手なのに表記が違うために別集計になっている場合、ここで統合できます。元の入力データは変更されず、集計・表示だけがまとまります。</p>
+      <div class="table-scroll">
+        <table class="mini-table">
+          <thead><tr><th>入力された表記</th><th>統合先(まとめる名前)</th><th></th></tr></thead>
+          <tbody id="alias-tbody"></tbody>
+        </table>
+      </div>
+      <div id="alias-empty" class="empty" style="display:none;">まとめられる表記はありません。</div>
     </div>
     <div id="ah-detail"></div>
   </div>
@@ -640,6 +652,7 @@ let currentFY;
 let patterns = [];
 let scheduleEvents = [];
 let locationsList = [];
+let nameAliases = {};
 let staffList = [];
 let calViewYear, calViewMonth, calSelectedDate = null;
 let chartCount, chartFinance, chartRadar, chartRanking;
@@ -699,6 +712,7 @@ const schoolsRef = db.collection('schools');
 const studentsRef = academyRef.collection('students');
 const settingsRef = academyRef.collection('meta').doc('settings');
 const locationsMetaRef = academyRef.collection('meta').doc('locations');
+const nameAliasesRef = academyRef.collection('meta').doc('nameAliases');
 const staffRef = academyRef.collection('staff');
 const absenceRef = academyRef.collection('absenceReports');
 const patternsRef = academyRef.collection('schedulePatterns');
@@ -790,6 +804,7 @@ function attachListeners(){
     renderAbsenceList(snap.docs);
     renderCalendarViews();
     renderAbsenceHistory();
+    renderAliasTable();
   }, err => console.error(err));
   unsubPatterns = patternsRef.onSnapshot(snap => {
     patterns = snap.docs.map(d => Object.assign({ id:d.id }, d.data()));
@@ -814,6 +829,11 @@ function attachListeners(){
     staffList = snap.docs.map(d => Object.assign({ id:d.id }, d.data()));
     renderStaffTable();
   }, err => console.error(err));
+  unsubNameAliases = nameAliasesRef.onSnapshot(doc => {
+    nameAliases = doc.exists ? (doc.data().mapping || {}) : {};
+    renderAbsenceHistory();
+    renderAliasTable();
+  }, err => console.error(err));
   unsubEvents = eventsRef.onSnapshot(snap => {
     scheduleEvents = snap.docs.map(d => Object.assign({ id:d.id }, d.data()));
     renderCalendarViews();
@@ -827,12 +847,14 @@ function detachListeners(){
   if (unsubEvents){ unsubEvents(); unsubEvents = null; }
   if (unsubLocationsMeta){ unsubLocationsMeta(); unsubLocationsMeta = null; }
   if (unsubStaffList){ unsubStaffList(); unsubStaffList = null; }
+  if (unsubNameAliases){ unsubNameAliases(); unsubNameAliases = null; }
 }
 let unsubAbsence = null;
 let unsubPatterns = null;
 let unsubEvents = null;
 let unsubLocationsMeta = null;
 let unsubStaffList = null;
+let unsubNameAliases = null;
 
 function renderAbsenceList(docs){
   const tbody = document.getElementById('absence-tbody');
@@ -1280,13 +1302,44 @@ async function handleAddStaff(){
   }
 }
 
+function canonicalStudentName(rawName){
+  return (nameAliases && nameAliases[rawName]) || rawName;
+}
+
+function renderAliasTable(){
+  const tbody = document.getElementById('alias-tbody');
+  const empty = document.getElementById('alias-empty');
+  if (!tbody) return;
+  const rawNames = Array.from(new Set(absenceReports.map(r => (r.studentName||'').trim()).filter(Boolean))).sort();
+  if (rawNames.length === 0){ tbody.innerHTML = ''; if (empty) empty.style.display = 'block'; return; }
+  if (empty) empty.style.display = 'none';
+  // 統合先として選べるのは「まだ他の名前に統合されていない、基準となる名前」だけ(連鎖を避けるため)
+  const canonicalNames = rawNames.filter(n => !nameAliases[n]).sort();
+  tbody.innerHTML = rawNames.map(raw => {
+    const current = nameAliases[raw] || '';
+    const opts = '<option value="">(統合しない・そのまま)</option>' + canonicalNames.filter(c => c !== raw).map(c => `<option value="${escAttr(c)}" ${current===c?'selected':''}>${escAttr(c)}</option>`).join('');
+    return `<tr><td>${escAttr(raw)}</td><td><select class="alias-select" data-raw="${escAttr(raw)}">${opts}</select></td><td></td></tr>`;
+  }).join('');
+}
+
+async function handleAliasChange(e){
+  if (!e.target.classList.contains('alias-select')) return;
+  const raw = e.target.dataset.raw;
+  const target = e.target.value;
+  const newMapping = Object.assign({}, nameAliases);
+  if (target){ newMapping[raw] = target; } else { delete newMapping[raw]; }
+  try { await nameAliasesRef.set({ mapping: newMapping }); }
+  catch(err){ console.error(err); alert('保存に失敗しました: ' + err.message); }
+}
+
 function absenceHistoryData(fy){
   const months = fiscalMonths(fy);
   const filterText = (document.getElementById('ah-filter') && document.getElementById('ah-filter').value.trim().toLowerCase()) || '';
   const byStudent = {};
   absenceReports.forEach(r => {
-    const name = (r.studentName || '').trim();
-    if (!name) return;
+    const raw = (r.studentName || '').trim();
+    if (!raw) return;
+    const name = canonicalStudentName(raw);
     if (filterText && name.toLowerCase().indexOf(filterText) === -1) return;
     const ym = (r.absenceDate || '').slice(0,7);
     const inRange = months.some(m => m.key === ym);
@@ -1327,7 +1380,7 @@ function renderAbsenceHistory(){
 function renderAbsenceHistoryDetail(name, ym){
   const container = document.getElementById('ah-detail');
   if (!container) return;
-  const list = absenceReports.filter(r => (r.studentName||'').trim() === name && (r.absenceDate||'').slice(0,7) === ym);
+  const list = absenceReports.filter(r => canonicalStudentName((r.studentName||'').trim()) === name && (r.absenceDate||'').slice(0,7) === ym);
   if (list.length === 0){ container.innerHTML = ''; return; }
   const monthLabel = Number(ym.slice(5,7)) + '月';
   const rows = list.sort((a,b) => (a.absenceDate||'').localeCompare(b.absenceDate||'')).map(r => `
@@ -1493,6 +1546,7 @@ function renderAll(){
   if (document.getElementById('growth-month').value) loadGrowthForm();
   if (document.getElementById('summary-start').value) renderSummary();
   renderAbsenceHistory();
+  renderAliasTable();
 }
 
 async function handleGridClick(e){
@@ -2078,7 +2132,7 @@ function switchTab(name){
   else if (name === 'growth') { populateGrowthStudentSelect(); loadGrowthForm(); }
   else if (name === 'dashboard') refreshDashboard();
   else if (name === 'grid') renderGrid();
-  else if (name === 'absenceHistory') renderAbsenceHistory();
+  else if (name === 'absenceHistory') { renderAbsenceHistory(); renderAliasTable(); }
 }
 
 async function loadBranchName(){
@@ -2221,6 +2275,7 @@ function initUI(){
   document.getElementById('absence-tbody').addEventListener('click', handleAbsenceClick);
   document.getElementById('btn-delete-acknowledged').addEventListener('click', handleDeleteAcknowledged);
   document.getElementById('ah-filter').addEventListener('input', renderAbsenceHistory);
+  document.getElementById('alias-tbody').addEventListener('change', handleAliasChange);
   document.getElementById('ah-tbody').addEventListener('click', (e) => {
     const name = e.target.dataset.ahName;
     const ym = e.target.dataset.ahYm;
