@@ -38,7 +38,7 @@
   <div class="field"><label for="password">パスワード</label><input type="password" id="password" autocomplete="current-password"></div>
 
   <button class="primary" id="btn-staff">担当者としてログイン</button>
-  <button class="ghost" id="btn-admin">本部管理者としてログイン</button>
+  <button class="ghost" id="btn-admin">運用・システム管理者としてログイン</button>
 
   <p class="status" id="status"></p>
   <div class="branch-list" id="branch-list"></div>
@@ -85,15 +85,16 @@ async function doLogin(mode){
     const uid = cred.user.uid;
 
     if (mode === 'admin'){
-      const hqDoc = await db.collection('hqAdmins').doc(uid).get();
-      if (hqDoc.exists){
+      const sysDoc = await db.collection('systemAdmins').doc(uid).get();
+      const hqDoc = sysDoc.exists ? null : await db.collection('hqAdmins').doc(uid).get();
+      if (sysDoc.exists || (hqDoc && hqDoc.exists)){
         statusEl.style.color = 'var(--accent-dark)';
-        statusEl.textContent = '✓ 本部管理者としてログインしました。移動します…';
+        statusEl.textContent = '✓ ログインしました。移動します…';
         window.location.href = basePath() + 'hq.html';
         return;
       }
       statusEl.style.color = 'var(--danger)';
-      statusEl.textContent = 'このアカウントには本部管理者権限がありません。';
+      statusEl.textContent = 'このアカウントには運用管理者・システム管理者の権限がありません。';
     } else {
       const snap = await db.collectionGroup('staff').where('uid', '==', uid).get();
       if (snap.empty){

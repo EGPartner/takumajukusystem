@@ -7,10 +7,10 @@
 <meta name="theme-color" content="#0A8A93">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="タクマ塾岩国校">
+<meta name="apple-mobile-web-app-title" content="タクマ塾">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
-<title>タクマ塾岩国校 収支・塾生管理システム</title>
+<title>タクマ塾 収支・塾生管理システム</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Noto+Sans+JP:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -634,6 +634,7 @@ let settings = {
   extraIncomes:[]
 };
 let isAdmin = false;
+let currentBranchName = 'タクマ塾';
 let editState = { pricing:false, sponsors:false, expenses:false, extra:false, locations:false, patterns:false, staff:false };
 let currentFY;
 let patterns = [];
@@ -1697,7 +1698,7 @@ function downloadJSON(){
   const blob = new Blob([data], { type:'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url; a.download = 'タクマ塾岩国校_バックアップ_' + currentMonthStr() + '.json';
+  a.href = url; a.download = currentBranchName + '_バックアップ_' + currentMonthStr() + '.json';
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
@@ -1753,7 +1754,7 @@ function downloadCSV(){
   const csv = buildCSV();
   const blob = new Blob(['\uFEFF' + csv], { type:'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href = url; a.download = 'タクマ塾岩国校_' + currentFY + '年度.csv';
+  const a = document.createElement('a'); a.href = url; a.download = currentBranchName + '_' + currentFY + '年度.csv';
   document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
 }
 
@@ -2026,7 +2027,7 @@ async function exportGrowthPDF(){
   btn.disabled = true; statusEl.textContent = 'PDFを作成しています…'; statusEl.style.color = 'var(--text-secondary)';
   try {
     const doc = await buildReportDoc(targets, ym);
-    doc.save('タクマ塾岩国校_成長レポート_' + ym + '.pdf');
+    doc.save(currentBranchName + '_成長レポート_' + ym + '.pdf');
     statusEl.textContent = 'PDFを作成しました(' + targets.length + '名分)。'; statusEl.style.color = 'var(--accent-dark)';
   } catch(e){ console.error(e); statusEl.textContent = 'PDF作成に失敗しました: ' + (e && e.message ? e.message : String(e)); statusEl.style.color = 'var(--danger)'; }
   finally { btn.disabled = false; }
@@ -2041,7 +2042,7 @@ async function downloadSingleReport(){
   statusEl.textContent = 'PDFを作成しています…'; statusEl.style.color = 'var(--text-secondary)';
   try {
     const doc = await buildReportDoc([s], ym);
-    doc.save('タクマ塾岩国校_' + s.name + '_成長レポート_' + ym + '.pdf');
+    doc.save(currentBranchName + '_' + s.name + '_成長レポート_' + ym + '.pdf');
     statusEl.textContent = 'PDFを保存しました。'; statusEl.style.color = 'var(--accent-dark)';
   } catch(e){ console.error(e); statusEl.textContent = 'PDF作成に失敗しました: ' + (e && e.message ? e.message : String(e)); statusEl.style.color = 'var(--danger)'; }
 }
@@ -2084,8 +2085,12 @@ async function loadBranchName(){
   try {
     const doc = await schoolsRef.doc(ACADEMY_ID).get();
     const name = doc.exists ? doc.data().name : null;
-    document.getElementById('branch-title').textContent = (name || ACADEMY_ID) + ' 収支・塾生管理システム';
-    document.getElementById('login-branch-title').textContent = (name || ACADEMY_ID) + ' 管理システム';
+    currentBranchName = name || ACADEMY_ID;
+    document.getElementById('branch-title').textContent = currentBranchName + ' 収支・塾生管理システム';
+    document.getElementById('login-branch-title').textContent = currentBranchName + ' 管理システム';
+    document.title = currentBranchName + ' 収支・塾生管理システム';
+    const appleTitleTag = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+    if (appleTitleTag) appleTitleTag.setAttribute('content', currentBranchName);
     if (!doc.exists){
       document.getElementById('login-error').textContent = ACADEMY_ID === '_unspecified'
         ? '校舎が指定されていません。入口の画面からログインし直してください。'

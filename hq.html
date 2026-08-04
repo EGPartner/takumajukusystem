@@ -354,7 +354,7 @@ async function loadHQAdmins(){
 document.getElementById('hqadmin-tbody').addEventListener('click', async (e) => {
   const uid = e.target.dataset.delHqadmin;
   if (!uid) return;
-  if (!confirm('この本部管理者のアクセス権を削除しますか？(ログインアカウント自体は残ります)')) return;
+  if (!confirm('この運用管理者のアクセス権を削除しますか？(ログインアカウント自体は残ります)')) return;
   try { await hqAdminsRef.doc(uid).delete(); loadHQAdmins(); }
   catch(err){ alert('削除に失敗しました: ' + err.message); }
 });
@@ -373,7 +373,7 @@ document.getElementById('btn-add-hqadmin').addEventListener('click', async () =>
     await secondaryAuth.signOut();
     await hqAdminsRef.doc(newUid).set({ email });
     statusEl.style.color = 'var(--accent-dark)';
-    statusEl.textContent = '✓ ' + email + ' さんを本部管理者として発行しました。';
+    statusEl.textContent = '✓ ' + email + ' さんを運用管理者として発行しました。';
     document.getElementById('new-hqadmin-email').value = '';
     document.getElementById('new-hqadmin-password').value = '';
     loadHQAdmins();
