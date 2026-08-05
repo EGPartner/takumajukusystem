@@ -327,7 +327,8 @@ document.getElementById('btn-add-school').addEventListener('click', async () => 
     statusEl.textContent = '✓ 登録しました。ご自身がこの校舎の管理者として設定されています。';
     document.getElementById('new-name').value = '';
     document.getElementById('new-id').value = '';
-    loadSchools();
+    await loadSchools();
+    attachAbsenceListeners();
   } catch(e){
     statusEl.style.color = 'var(--danger)';
     statusEl.textContent = '登録に失敗しました: ' + e.message;
@@ -438,26 +439,36 @@ async function loadSchools(){
 let absenceDataBySchool = {};
 let selectedAbsenceSchool = null;
 
-async function loadAbsenceReports(){
+let unsubAbsencePerSchool = [];
+
+function attachAbsenceListeners(){
+  detachAbsenceListeners();
   const listContainer = document.getElementById('absence-list');
   const summaryTbody = document.getElementById('hq-absence-summary-tbody');
+  if (schoolsArr.length === 0){
+    listContainer.innerHTML = '<div class="empty">校舎が登録されていません。</div>';
+    summaryTbody.innerHTML = '';
+    return;
+  }
   listContainer.innerHTML = '<div class="empty">読み込み中…</div>';
   summaryTbody.innerHTML = '<tr><td colspan="4" class="status">読み込み中…</td></tr>';
-  if (schoolsArr.length === 0){ listContainer.innerHTML = '<div class="empty">校舎が登録されていません。</div>'; summaryTbody.innerHTML = ''; return; }
-  try {
-    await Promise.all(schoolsArr.map(async (s) => {
-      try {
-        const snap = await db.collection('academies').doc(s.id).collection('absenceReports')
-          .orderBy('absenceDate', 'desc').limit(100).get();
+  unsubAbsencePerSchool = schoolsArr.map(s =>
+    db.collection('academies').doc(s.id).collection('absenceReports')
+      .orderBy('absenceDate', 'desc').limit(100)
+      .onSnapshot(snap => {
         absenceDataBySchool[s.id] = snap.docs.map(d => Object.assign({ id:d.id, academyId:s.id }, d.data()));
-      } catch(e){ console.error('absenceReports load failed for', s.id, e); absenceDataBySchool[s.id] = []; }
-    }));
-    renderHQAbsenceSummary();
-    renderHQAbsenceList();
-    if (selectedAbsenceSchool) showSchoolAbsenceDetail(selectedAbsenceSchool);
-  } catch(e){
-    listContainer.innerHTML = '<div class="empty">読み込みに失敗しました: ' + escAttr(e.message) + '</div>';
-  }
+        renderHQAbsenceSummary();
+        renderHQAbsenceList();
+        if (selectedAbsenceSchool) showSchoolAbsenceDetail(selectedAbsenceSchool);
+      }, err => {
+        console.error('absenceReports listener failed for', s.id, err);
+        absenceDataBySchool[s.id] = [];
+      })
+  );
+}
+function detachAbsenceListeners(){
+  unsubAbsencePerSchool.forEach(u => u());
+  unsubAbsencePerSchool = [];
 }
 
 function renderHQAbsenceSummary(){
@@ -543,7 +554,6 @@ document.getElementById('absence-list').addEventListener('click', async (e) => {
   const [academyId, reportId] = key.split('|');
   try {
     await db.collection('academies').doc(academyId).collection('absenceReports').doc(reportId).update({ status:'acknowledged' });
-    loadAbsenceReports();
   } catch(err){ alert('更新に失敗しました: ' + err.message); }
 });
 
@@ -885,6 +895,7 @@ auth.onAuthStateChanged(async (user) => {
     document.getElementById('login-card').style.display = 'block';
     document.getElementById('main-content').style.display = 'none';
     detachHQCalendarListeners();
+    detachAbsenceListeners();
     return;
   }
   let isHQ = false;
@@ -908,7 +919,7 @@ auth.onAuthStateChanged(async (user) => {
   document.getElementById('hq-new-occ-date').value = (() => { const d = new Date(); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); })();
   await loadSchools();
   if (isSystemAdminUser) loadHQAdmins();
-  loadAbsenceReports();
+  attachAbsenceListeners();
   attachHQCalendarListeners();
 });
 </script>
