@@ -901,10 +901,18 @@ auth.onAuthStateChanged(async (user) => {
   let isHQ = false;
   isSystemAdminUser = false;
   try {
-    const sysDoc = await systemAdminsRef.doc(user.uid).get();
+    const [sysDoc, hqDoc] = await Promise.all([
+      systemAdminsRef.doc(user.uid).get(),
+      hqAdminsRef.doc(user.uid).get()
+    ]);
     isSystemAdminUser = sysDoc.exists;
-    if (isSystemAdminUser){ isHQ = true; }
-    else { const doc = await hqAdminsRef.doc(user.uid).get(); isHQ = doc.exists; }
+    isHQ = sysDoc.exists || hqDoc.exists;
+    if (sysDoc.exists && sysDoc.data().email !== user.email){
+      systemAdminsRef.doc(user.uid).set({ email: user.email }, { merge:true }).catch(e => console.error(e));
+    }
+    if (hqDoc.exists && hqDoc.data().email !== user.email){
+      hqAdminsRef.doc(user.uid).set({ email: user.email }, { merge:true }).catch(e => console.error(e));
+    }
   } catch(e){ console.error(e); }
   if (!isHQ){
     document.getElementById('login-status').style.color = 'var(--danger)';
