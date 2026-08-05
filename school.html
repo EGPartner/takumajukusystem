@@ -415,6 +415,7 @@
 
       <div id="calendar-list-view">
         <p class="note" style="margin-top:0;">今日から60日間の予定です(スクロールしてすべて確認できます)。「編集」で、その日だけ場所・担当・中止などを変更できます。</p>
+        <div class="checkbox-row"><input type="checkbox" id="calendar-show-cancelled"><label for="calendar-show-cancelled">中止になった予定も表示する</label></div>
         <div id="calendar-list"></div>
       </div>
 
@@ -997,15 +998,17 @@ async function handleDeleteOccurrenceFromList(key){
 function renderCalendarList(){
   const container = document.getElementById('calendar-list');
   if (!container) return;
+  const showCancelled = document.getElementById('calendar-show-cancelled') && document.getElementById('calendar-show-cancelled').checked;
   const today = new Date();
   const rows = [];
   for (let i = 0; i < 60; i++){
     const d = new Date(today); d.setDate(d.getDate() + i);
     occurrencesForDate(dateStrOf(d)).forEach(o => rows.push(o));
   }
-  container.innerHTML = rows.length === 0
-    ? '<p class="empty">今後60日間の予定はありません。</p>'
-    : rows.map(calendarRowHTML).join('');
+  const visibleRows = showCancelled ? rows : rows.filter(o => !o.cancelled);
+  container.innerHTML = visibleRows.length === 0
+    ? '<p class="empty">' + (rows.length === 0 ? '今後60日間の予定はありません。' : '表示できる予定がありません(中止になった予定のみです。上のチェックで表示できます)。') + '</p>'
+    : visibleRows.map(calendarRowHTML).join('');
 }
 
 function renderCalGrid(){
@@ -2212,6 +2215,8 @@ function initUI(){
   calViewYear = today0.getFullYear();
   calViewMonth = today0.getMonth();
   document.getElementById('new-occ-date').value = currentMonthStr() + '-' + pad(today0.getDate());
+
+  document.getElementById('calendar-show-cancelled').addEventListener('change', renderCalendarList);
 
   document.getElementById('btn-view-list').addEventListener('click', () => {
     document.getElementById('btn-view-list').classList.add('active');
