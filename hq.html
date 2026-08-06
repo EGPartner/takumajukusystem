@@ -335,6 +335,7 @@ document.getElementById('btn-add-school').addEventListener('click', async () => 
     document.getElementById('new-id').value = '';
     await loadSchools();
     attachAbsenceListeners();
+    attachHQCalendarListeners();
   } catch(e){
     statusEl.style.color = 'var(--danger)';
     statusEl.textContent = '登録に失敗しました: ' + e.message;
@@ -584,7 +585,6 @@ let allPatterns = [];
 let allEvents = [];
 let allLocations = {};
 let schoolsArr = [];
-let unsubPatternsGroup = null, unsubEventsGroup = null;
 
 function dateStrOf(d){ return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()); }
 function weekdayOf(dateStr){ return new Date(dateStr + 'T00:00:00').getDay(); }
@@ -888,17 +888,37 @@ document.getElementById('hq-btn-add-pattern').addEventListener('click', async ()
   } catch(err){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = '追加に失敗しました: ' + err.message; }
 });
 
+let unsubPatternsPerSchool = [];
+let unsubEventsPerSchool = [];
+
 function attachHQCalendarListeners(){
   detachHQCalendarListeners();
-  unsubPatternsGroup = db.collectionGroup('schedulePatterns').onSnapshot(snap => {
-    allPatterns = snap.docs.map(d => Object.assign({ id:d.id, academyId: d.ref.parent.parent.id }, d.data()));
-    renderHQCalendarList();
-    renderHQPatternsTable();
-  }, err => console.error(err));
-  unsubEventsGroup = db.collectionGroup('scheduleEvents').onSnapshot(snap => {
-    allEvents = snap.docs.map(d => Object.assign({ id:d.id, academyId: d.ref.parent.parent.id }, d.data()));
-    renderHQCalendarList();
-  }, err => console.error(err));
+  if (schoolsArr.length === 0) return;
+  unsubPatternsPerSchool = schoolsArr.map(s =>
+    db.collection('academies').doc(s.id).collection('schedulePatterns').onSnapshot(snap => {
+      const others = allPatterns.filter(p => p.academyId !== s.id);
+      const mine = snap.docs.map(d => Object.assign({ id:d.id, academyId: s.id }, d.data()));
+      allPatterns = others.concat(mine);
+      renderHQCalendarList();
+      renderHQPatternsTable();
+    }, err => {
+      console.error('schedulePatterns listener error for', s.id, err);
+      const c = document.getElementById('hq-calendar-list');
+      if (c) c.innerHTML = '<div class="empty" style="color:var(--danger);">定期予定の読み込みに失敗しました(' + escAttr(s.name) + ')。<br>エラー内容: ' + escAttr(err.code || '') + ' ' + escAttr(err.message || String(err)) + '</div>';
+    })
+  );
+  unsubEventsPerSchool = schoolsArr.map(s =>
+    db.collection('academies').doc(s.id).collection('scheduleEvents').onSnapshot(snap => {
+      const others = allEvents.filter(e => e.academyId !== s.id);
+      const mine = snap.docs.map(d => Object.assign({ id:d.id, academyId: s.id }, d.data()));
+      allEvents = others.concat(mine);
+      renderHQCalendarList();
+    }, err => {
+      console.error('scheduleEvents listener error for', s.id, err);
+      const c = document.getElementById('hq-calendar-list');
+      if (c) c.innerHTML = '<div class="empty" style="color:var(--danger);">予定データの読み込みに失敗しました(' + escAttr(s.name) + ')。<br>エラー内容: ' + escAttr(err.code || '') + ' ' + escAttr(err.message || String(err)) + '</div>';
+    })
+  );
   loadAllLocations();
 }
 
@@ -914,8 +934,10 @@ async function loadAllLocations(){
   renderHQCalendarList();
 }
 function detachHQCalendarListeners(){
-  if (unsubPatternsGroup){ unsubPatternsGroup(); unsubPatternsGroup = null; }
-  if (unsubEventsGroup){ unsubEventsGroup(); unsubEventsGroup = null; }
+  unsubPatternsPerSchool.forEach(u => u());
+  unsubPatternsPerSchool = [];
+  unsubEventsPerSchool.forEach(u => u());
+  unsubEventsPerSchool = [];
 }
 
 auth.onAuthStateChanged(async (user) => {
