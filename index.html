@@ -38,7 +38,7 @@
   <div class="field"><label for="password">パスワード</label><input type="password" id="password" autocomplete="current-password"></div>
 
   <button class="primary" id="btn-staff">担当者としてログイン</button>
-  <button class="ghost" id="btn-admin">運用・システム管理者としてログイン</button>
+  <button class="ghost" id="btn-admin">本部管理者としてログイン</button>
 
   <p class="status" id="status"></p>
   <div class="branch-list" id="branch-list"></div>
@@ -85,18 +85,30 @@ async function doLogin(mode){
     const uid = cred.user.uid;
 
     if (mode === 'admin'){
-      const sysDoc = await db.collection('systemAdmins').doc(uid).get();
-      const hqDoc = sysDoc.exists ? null : await db.collection('hqAdmins').doc(uid).get();
-      if (sysDoc.exists || (hqDoc && hqDoc.exists)){
+      // システム管理者・運用管理者のどちらでも本部画面に入れる。片方の読み取り失敗が全体を壊さないよう個別に判定する
+      let isSys = false, isHq = false;
+      try { isSys = (await db.collection('systemAdmins').doc(uid).get()).exists; } catch(e){ console.error('systemAdmins check failed', e); }
+      try { isHq = (await db.collection('hqAdmins').doc(uid).get()).exists; } catch(e){ console.error('hqAdmins check failed', e); }
+      if (isSys || isHq){
         statusEl.style.color = 'var(--accent-dark)';
-        statusEl.textContent = '✓ ログインしました。移動します…';
+        statusEl.textContent = '✓ 本部管理者としてログインしました。移動します…';
         window.location.href = basePath() + 'hq.html';
         return;
       }
       statusEl.style.color = 'var(--danger)';
-      statusEl.textContent = 'このアカウントには運用管理者・システム管理者の権限がありません。';
+      statusEl.textContent = 'このアカウントには本部管理者権限がありません。';
     } else {
-      const snap = await db.collectionGroup('staff').where('uid', '==', uid).get();
+      let snap;
+      try {
+        snap = await db.collectionGroup('staff').where('uid', '==', uid).get();
+      } catch(qe){
+        console.error('staff collectionGroup query failed', qe);
+        statusEl.style.color = 'var(--danger)';
+        statusEl.textContent = qe && qe.code === 'failed-precondition'
+          ? '所属校の検索に必要な設定(コレクショングループインデックス)が未作成です。システム管理者にお問い合わせください。'
+          : '所属校の検索に失敗しました: ' + (qe && qe.message ? qe.message : String(qe));
+        return;
+      }
       if (snap.empty){
         statusEl.style.color = 'var(--danger)';
         statusEl.textContent = 'どの校舎のスタッフとしても登録されていません。管理者にご確認ください。';

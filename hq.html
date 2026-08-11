@@ -243,6 +243,24 @@
         <p class="status" id="add-status"></p>
       </div>
 
+      <div class="card">
+        <h2 style="font-size:15px;margin:0 0 4px;">保護者用URL(全校共通)</h2>
+        <p class="status" style="margin-top:0;color:var(--text-muted);">保護者に案内するURLです。フォーム内で保護者ご自身に校舎を選んでいただく仕組みのため、全校で同じURLを使えます。</p>
+        <div class="field"><label for="hq-url-absence">欠席連絡フォーム</label>
+          <div class="btn-row" style="flex-wrap:nowrap;">
+            <input type="text" id="hq-url-absence" readonly style="flex:1 1 auto;">
+            <button class="ghost-small" data-copy-url="hq-url-absence" style="flex:0 0 auto;">コピー</button>
+          </div>
+        </div>
+        <div class="field" style="margin-bottom:0;"><label for="hq-url-calendar">活動予定の閲覧ページ</label>
+          <div class="btn-row" style="flex-wrap:nowrap;">
+            <input type="text" id="hq-url-calendar" readonly style="flex:1 1 auto;">
+            <button class="ghost-small" data-copy-url="hq-url-calendar" style="flex:0 0 auto;">コピー</button>
+          </div>
+        </div>
+        <p class="status" id="hq-url-copy-status" style="margin-bottom:0;"></p>
+      </div>
+
       <div class="card" id="hqadmin-manage-section" style="display:none;">
         <h2 style="font-size:15px;margin:0 0 4px;">運用管理者</h2>
         <p class="status" style="margin-top:0;color:var(--text-muted);">全校舎の統合スケジュール・欠席連絡・校舎管理ができる権限です。追加・削除はシステム管理者のみ行えます。「削除」はアクセス権のみ外し、ログインアカウント自体は残ります。</p>
@@ -294,6 +312,36 @@ let isSystemAdminUser = false;
 let schoolsMap = {};
 
 function pad(n){ return String(n).padStart(2,'0'); }
+
+// 保護者用URLの表示とコピー
+(function initParentURLs(){
+  const base = window.location.origin + window.location.pathname.replace(/hq\.html$/, '');
+  const absEl = document.getElementById('hq-url-absence');
+  const calEl = document.getElementById('hq-url-calendar');
+  if (absEl) absEl.value = base + 'absence-form.html';
+  if (calEl) calEl.value = base + 'calendar-view.html';
+  document.querySelectorAll('[data-copy-url]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const input = document.getElementById(btn.dataset.copyUrl);
+      const statusEl = document.getElementById('hq-url-copy-status');
+      if (!input) return;
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText){
+          await navigator.clipboard.writeText(input.value);
+        } else {
+          input.select();
+          document.execCommand('copy');
+        }
+        statusEl.style.color = 'var(--accent-dark)';
+        statusEl.textContent = '✓ コピーしました。';
+      } catch(e){
+        input.select();
+        statusEl.style.color = 'var(--text-secondary)';
+        statusEl.textContent = 'コピーできませんでした。URLを選択したので、そのままコピーしてください。';
+      }
+    });
+  });
+})();
 function currentMonthKey(){ const d = new Date(); return d.getFullYear() + '-' + pad(d.getMonth()+1); }
 function escAttr(v){ return String(v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
@@ -424,7 +472,7 @@ async function loadSchools(){
         const url = base + 'school.html?school=' + encodeURIComponent(doc.id);
         return `<div class="school-row">
           <div>
-            <div class="school-name">${escAttr(s.name || doc.id)}</div>
+            <div class="school-name">${escAttr(s.name || doc.id)} <span class="badge" data-school-absence-badge="${escAttr(doc.id)}" style="display:none;"></span></div>
             <div class="school-meta">ID: ${escAttr(doc.id)} ／ 今月の在籍: ${count}名</div>
           </div>
           <a class="link-btn" href="${escAttr(url)}" target="_blank" rel="noopener">開く</a>
@@ -479,6 +527,15 @@ function detachAbsenceListeners(){
 }
 
 function renderHQAbsenceSummary(){
+  // 校舎管理タブの校舎一覧にも未確認バッジを反映する(気になる校舎を開く導線を短くするため)
+  schoolsArr.forEach(s => {
+    const el = document.querySelector('[data-school-absence-badge="' + s.id + '"]');
+    if (el){
+      const n = (absenceDataBySchool[s.id] || []).filter(r => r.status === 'new').length;
+      el.style.display = n > 0 ? 'inline-block' : 'none';
+      el.textContent = '未確認の欠席 ' + n + '件';
+    }
+  });
   const tbody = document.getElementById('hq-absence-summary-tbody');
   if (!tbody) return;
   const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 30);
@@ -950,22 +1007,22 @@ auth.onAuthStateChanged(async (user) => {
     detachAbsenceListeners();
     return;
   }
+  // systemAdmins と hqAdmins は別々に読み、片方の失敗がもう片方の判定を壊さないようにする
   let isHQ = false;
   isSystemAdminUser = false;
+  let hqDocExists = false;
   try {
-    const [sysDoc, hqDoc] = await Promise.all([
-      systemAdminsRef.doc(user.uid).get(),
-      hqAdminsRef.doc(user.uid).get()
-    ]);
+    const sysDoc = await systemAdminsRef.doc(user.uid).get();
     isSystemAdminUser = sysDoc.exists;
-    isHQ = sysDoc.exists || hqDoc.exists;
-    if (sysDoc.exists && sysDoc.data().email !== user.email){
-      systemAdminsRef.doc(user.uid).set({ email: user.email }, { merge:true }).catch(e => console.error(e));
-    }
-    if (hqDoc.exists && hqDoc.data().email !== user.email){
+  } catch(e){ console.error('systemAdmins check failed', e); }
+  try {
+    const hqDoc = await hqAdminsRef.doc(user.uid).get();
+    hqDocExists = hqDoc.exists;
+    if (isSystemAdminUser && hqDoc.exists && hqDoc.data().email !== user.email){
       hqAdminsRef.doc(user.uid).set({ email: user.email }, { merge:true }).catch(e => console.error(e));
     }
-  } catch(e){ console.error(e); }
+  } catch(e){ console.error('hqAdmins check failed', e); }
+  isHQ = isSystemAdminUser || hqDocExists;
   if (!isHQ){
     document.getElementById('login-status').style.color = 'var(--danger)';
     document.getElementById('login-status').textContent = 'このアカウントには運用管理者・システム管理者の権限がありません。';

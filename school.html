@@ -35,6 +35,11 @@
   .tabs{display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:22px;flex-wrap:wrap;}
   .tab-btn{padding:12px 18px;font-size:13.5px;font-weight:600;background:none;border:none;color:var(--text-secondary);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;font-family:inherit;}
   .tab-btn.active{color:var(--accent-dark);border-bottom-color:var(--accent);}
+  .tab-group-label{font-size:10.5px;font-weight:700;letter-spacing:.08em;color:var(--text-muted);align-self:center;padding:0 2px 0 16px;white-space:nowrap;user-select:none;}
+  .tab-group-label:first-child{padding-left:0;}
+  .seg-row{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+  .seg-btn{border:1px solid var(--border-strong);border-radius:20px;padding:6px 16px;font-size:12.5px;font-weight:600;background:var(--surface);color:var(--text-secondary);cursor:pointer;font-family:inherit;border-bottom-width:1px;margin-bottom:0;}
+  .seg-btn.active{background:var(--accent);border-color:var(--accent);color:#fff;}
   .tab-panel{display:none;}
   .tab-panel.active{display:block;}
 
@@ -208,24 +213,25 @@
   </div>
 
   <div class="tabs" role="tablist">
-    <button class="tab-btn admin-only-tab" data-tab="dashboard">ダッシュボード</button>
-    <button class="tab-btn active" data-tab="grid">階段図</button>
-    <button class="tab-btn" data-tab="growth">成長管理</button>
-    <button class="tab-btn" data-tab="summary">成長サマリー</button>
-    <button class="tab-btn" data-tab="absence">欠席連絡</button>
-    <button class="tab-btn" data-tab="absenceHistory">欠席履歴</button>
+    <span class="tab-group-label">運営</span>
+    <button class="tab-btn active" data-tab="absence">欠席・出欠</button>
     <button class="tab-btn" data-tab="calendar">カレンダー</button>
+    <span class="tab-group-label">塾生</span>
+    <button class="tab-btn" data-tab="grid">塾生数</button>
+    <button class="tab-btn" data-tab="growth">成長記録</button>
+    <button class="tab-btn" data-tab="summary">サマリー</button>
+    <span class="tab-group-label admin-only-tab">経営 🔒</span>
+    <button class="tab-btn admin-only-tab" data-tab="dashboard">ダッシュボード</button>
     <button class="tab-btn admin-only-tab" data-tab="settings">設定</button>
   </div>
 
   <div class="bottom-nav" role="tablist">
-    <button class="tab-btn admin-only-tab" data-tab="dashboard"><span class="nav-icon"></span>集計</button>
-    <button class="tab-btn active" data-tab="grid"><span class="nav-icon"></span>階段図</button>
+    <button class="tab-btn active" data-tab="absence"><span class="nav-icon"></span>欠席</button>
+    <button class="tab-btn" data-tab="calendar"><span class="nav-icon"></span>予定</button>
+    <button class="tab-btn" data-tab="grid"><span class="nav-icon"></span>塾生数</button>
     <button class="tab-btn" data-tab="growth"><span class="nav-icon"></span>成長</button>
     <button class="tab-btn" data-tab="summary"><span class="nav-icon"></span>サマリー</button>
-    <button class="tab-btn" data-tab="absence"><span class="nav-icon"></span>欠席</button>
-    <button class="tab-btn" data-tab="absenceHistory"><span class="nav-icon"></span>履歴</button>
-    <button class="tab-btn" data-tab="calendar"><span class="nav-icon"></span>予定</button>
+    <button class="tab-btn admin-only-tab" data-tab="dashboard"><span class="nav-icon"></span>集計</button>
     <button class="tab-btn admin-only-tab" data-tab="settings"><span class="nav-icon"></span>設定</button>
   </div>
 
@@ -265,7 +271,7 @@
   </div>
 
   <!-- Grid -->
-  <div class="tab-panel active" id="tab-grid">
+  <div class="tab-panel" id="tab-grid">
     <div class="card">
       <h2>階段図</h2>
       <p class="note" style="margin-top:0;">マスをクリックすると 空欄 → ★(在籍) → −(休会) → 空欄 の順で切り替わります。★の数がその月の月謝収入人数になります。</p>
@@ -357,7 +363,11 @@
   </div>
 
   <!-- Absence reports -->
-  <div class="tab-panel" id="tab-absence">
+  <div class="tab-panel active" id="tab-absence">
+    <div class="seg-row" role="tablist">
+      <button class="tab-btn seg-btn active" data-tab="absence">欠席連絡</button>
+      <button class="tab-btn seg-btn" data-tab="absenceHistory">欠席履歴</button>
+    </div>
     <div class="card">
       <h2>欠席連絡</h2>
       <p class="note" style="margin-top:0;">保護者専用フォームから送られた欠席連絡の一覧です。「確認済みにする」を押すと一覧の下の方に移動します。</p>
@@ -376,6 +386,10 @@
 
   <!-- Absence history -->
   <div class="tab-panel" id="tab-absenceHistory">
+    <div class="seg-row" role="tablist">
+      <button class="tab-btn seg-btn" data-tab="absence">欠席連絡</button>
+      <button class="tab-btn seg-btn active" data-tab="absenceHistory">欠席履歴</button>
+    </div>
     <div class="card">
       <h2>欠席履歴(振り返り用)</h2>
       <p class="note" style="margin-top:0;">「欠席連絡」の一覧からアーカイブ(削除)しても、ここには表示中の年度の記録がすべて残ります。列をクリックすると、その選手・その月の詳細(日付・理由・備考)が下に表示されます。</p>
@@ -647,6 +661,7 @@ let settings = {
   extraIncomes:[]
 };
 let isAdmin = false;
+let initialTabApplied = false;
 let currentBranchName = 'タクマ塾';
 let editState = { pricing:false, sponsors:false, expenses:false, extra:false, locations:false, patterns:false, staff:false };
 let currentFY;
@@ -782,6 +797,11 @@ async function resolveRole(uid){
   } catch(e){ isAdmin = false; }
   document.getElementById('current-user-email').textContent = currentUser.email + (isAdmin ? '(管理者)' : '(スタッフ)');
   updateAdminUI();
+  // 役割別の初期画面: スタッフは日常業務の「欠席・出欠」、管理者は「ダッシュボード」に着地する(ログイン直後の1回のみ)
+  if (!initialTabApplied){
+    initialTabApplied = true;
+    switchTab(isAdmin ? 'dashboard' : 'absence');
+  }
 }
 
 function attachListeners(){
@@ -1655,9 +1675,9 @@ function updateAdminUI(){
     dashContent.style.display = 'none';
   }
   document.querySelectorAll('.admin-only-tab').forEach(b => b.style.display = isAdmin ? '' : 'none');
-  const activeTab = document.querySelector('.tab-btn.active');
+  const activeTab = document.querySelector('.tabs .tab-btn.active');
   if (!isAdmin && activeTab && activeTab.classList.contains('admin-only-tab')){
-    switchTab('grid');
+    switchTab('absence');
   }
 }
 
@@ -2129,7 +2149,10 @@ async function shareSingleReport(){
 }
 
 function switchTab(name){
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  // 欠席履歴は「欠席・出欠」タブ内のサブ画面なので、ナビ上は欠席タブを点灯させる
+  const navName = name === 'absenceHistory' ? 'absence' : name;
+  document.querySelectorAll('.tabs .tab-btn, .bottom-nav .tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === navName));
+  document.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + name));
   if (name === 'summary') renderSummary();
   else if (name === 'growth') { populateGrowthStudentSelect(); loadGrowthForm(); }
