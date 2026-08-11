@@ -44,6 +44,25 @@
     <input type="text" id="f-name" placeholder="例: 山田 蓮">
   </div>
   <div class="field">
+    <label for="f-grade">学年</label>
+    <select id="f-grade">
+      <option value="">選択してください</option>
+      <option value="年少">年少</option>
+      <option value="年中">年中</option>
+      <option value="年長">年長</option>
+      <option value="小1">小1</option>
+      <option value="小2">小2</option>
+      <option value="小3">小3</option>
+      <option value="小4">小4</option>
+      <option value="小5">小5</option>
+      <option value="小6">小6</option>
+      <option value="中1">中1</option>
+      <option value="中2">中2</option>
+      <option value="中3">中3</option>
+      <option value="その他">その他</option>
+    </select>
+  </div>
+  <div class="field">
     <label for="f-date">欠席日</label>
     <input type="date" id="f-date">
   </div>
@@ -158,6 +177,7 @@ document.getElementById('btn-submit').addEventListener('click', async () => {
     await ensureSignedIn();
     await db.collection('academies').doc(schoolId).collection('absenceReports').add({
       studentName: name,
+      grade: document.getElementById('f-grade').value || '',
       absenceDate: date,
       reason: selectedReason,
       note: note,
