@@ -199,6 +199,10 @@
           </div>
         </div>
         <div class="row2">
+          <div class="field"><label>開始時刻</label><input type="time" id="hq-new-pattern-start" value="17:00"></div>
+          <div class="field"><label>終了時刻</label><input type="time" id="hq-new-pattern-end" value="19:00"></div>
+        </div>
+        <div class="row2">
           <div class="field"><label>開始日(任意)</label><input type="date" id="hq-new-pattern-startdate"></div>
           <div class="field"><label>終了日(任意)</label><input type="date" id="hq-new-pattern-enddate"></div>
         </div>
@@ -1040,16 +1044,20 @@ document.getElementById('hq-btn-add-pattern').addEventListener('click', async ()
   const statusEl = document.getElementById('hq-add-pattern-status');
   const academyId = document.getElementById('hq-new-pattern-school').value;
   const weekday = Number(document.getElementById('hq-new-pattern-weekday').value);
+  const startTime = document.getElementById('hq-new-pattern-start').value;
+  const endTime = document.getElementById('hq-new-pattern-end').value;
   const startDate = document.getElementById('hq-new-pattern-startdate').value || null;
   const endDate = document.getElementById('hq-new-pattern-enddate').value || null;
   if (!academyId){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = '校舎を選択してください。'; return; }
+  if (!startTime || !endTime){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = '開始時刻と終了時刻を入力してください。'; return; }
+  if (startTime >= endTime){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = '終了時刻は開始時刻より後にしてください。'; return; }
   if (startDate && endDate && startDate > endDate){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = '終了日は開始日より後にしてください。'; return; }
   try {
     await db.collection('academies').doc(academyId).collection('schedulePatterns').add({
-      weekday, startTime:'17:00', endTime:'19:00', locationId:null, staffInCharge:'', targetGroup:'全学年', type:'通常練習', note:'', startDate, endDate
+      weekday, startTime, endTime, locationId:null, staffInCharge:'', targetGroup:'全学年', type:'通常練習', note:'', startDate, endDate
     });
     statusEl.style.color = 'var(--accent-dark)';
-    statusEl.textContent = '✓ 追加しました。曜日・時間などは各校の管理画面から調整できます。';
+    statusEl.textContent = '✓ 追加しました。場所・担当などの詳細は、一覧の予定を「編集」するか各校の管理画面から調整できます。';
   } catch(err){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = '追加に失敗しました: ' + err.message; }
 });
 
