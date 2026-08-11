@@ -247,6 +247,15 @@
           <div id="absence-list-empty" class="empty" style="display:none;">欠席連絡はまだありません。</div>
         </div>
       </div>
+
+      <div class="card" style="border-color:var(--danger);">
+        <h2 style="font-size:15px;margin:0 0 4px;color:var(--danger);">欠席連絡の一括削除(テストデータの整理用)</h2>
+        <p class="status" style="margin-top:0;color:var(--text-muted);">選んだ校舎の欠席連絡を<b>完全に削除します。元に戻せません。</b>削除すると欠席履歴の集計からも消えます。</p>
+        <div class="field"><label>対象の校舎</label><select id="hq-bulk-absence-school"><option value="__all__">すべての校舎</option></select></div>
+        <div class="checkbox-row"><input type="checkbox" id="hq-bulk-absence-acked-only" checked><label for="hq-bulk-absence-acked-only">確認済みのものだけを削除する(未確認は残す)</label></div>
+        <div class="btn-row"><button id="hq-btn-bulk-delete-absence" style="width:auto;background:var(--danger);color:#fff;">一括削除を実行</button></div>
+        <p class="status" id="hq-bulk-absence-status"></p>
+      </div>
     </div>
 
     <div class="tab-panel" id="tab-schools">
@@ -595,9 +604,10 @@ function renderHQAbsenceList(){
   tbody.innerHTML = all.map(r => {
     const done = r.status !== 'new';
     const color = schoolColor(r.academyId);
-    const ackCell = done
+    const ackCell = (done
       ? '<span class="badge muted">確認済</span>'
-      : '<button class="ghost-small" data-ack="' + escAttr(r.academyId) + '|' + escAttr(r.id) + '">確認</button>';
+      : '<button class="ghost-small" data-ack="' + escAttr(r.academyId) + '|' + escAttr(r.id) + '">確認</button>')
+      + ' <button class="link-danger" data-del-absence="' + escAttr(r.academyId) + '|' + escAttr(r.id) + '">削除</button>';
     return '<tr style="' + (done ? 'opacity:0.45;' : '') + '">'
       + '<td style="white-space:nowrap;">' + escAttr(r.absenceDate||'') + '</td>'
       + '<td style="white-space:nowrap;font-weight:700;">' + escAttr(r.studentName||'') + '</td>'
@@ -664,12 +674,22 @@ document.getElementById('hq-absence-detail-table').addEventListener('click', (e)
 });
 
 document.getElementById('absence-list').addEventListener('click', async (e) => {
-  const key = e.target.dataset.ack;
-  if (!key) return;
-  const [academyId, reportId] = key.split('|');
-  try {
-    await db.collection('academies').doc(academyId).collection('absenceReports').doc(reportId).update({ status:'acknowledged' });
-  } catch(err){ alert('更新に失敗しました: ' + err.message); }
+  const ackKey = e.target.dataset.ack;
+  if (ackKey){
+    const [academyId, reportId] = ackKey.split('|');
+    try {
+      await db.collection('academies').doc(academyId).collection('absenceReports').doc(reportId).update({ status:'acknowledged' });
+    } catch(err){ alert('更新に失敗しました: ' + err.message); }
+    return;
+  }
+  const delKey = e.target.dataset.delAbsence;
+  if (delKey){
+    const [academyId, reportId] = delKey.split('|');
+    if (!confirm('この欠席連絡を完全に削除しますか？(元に戻せません)')) return;
+    try {
+      await db.collection('academies').doc(academyId).collection('absenceReports').doc(reportId).delete();
+    } catch(err){ alert('削除に失敗しました: ' + err.message); }
+  }
 });
 
 // ---- 統合スケジュール管理 ----
@@ -857,6 +877,12 @@ function populateSchoolSelects(){
     const cur = bulkSel.value;
     bulkSel.innerHTML = '<option value="__all__">すべての校舎</option>' + opts;
     if (cur) bulkSel.value = cur;
+  }
+  const bulkAbsSel = document.getElementById('hq-bulk-absence-school');
+  if (bulkAbsSel){
+    const cur = bulkAbsSel.value;
+    bulkAbsSel.innerHTML = '<option value="__all__">すべての校舎</option>' + opts;
+    if (cur) bulkAbsSel.value = cur;
   }
   const filterSel = document.getElementById('hq-schedule-filter');
   if (filterSel){
@@ -1066,6 +1092,43 @@ document.getElementById('hq-btn-bulk-delete').addEventListener('click', async ()
     }
     statusEl.style.color = 'var(--accent-dark)';
     statusEl.textContent = '✓ ' + total + '件の予定データを削除しました。';
+  } catch(err){
+    console.error(err);
+    statusEl.style.color = 'var(--danger)';
+    statusEl.textContent = '削除中にエラーが発生しました: ' + err.message + '(' + total + '件までは削除済み)';
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+// ---- 欠席連絡の一括削除(テストデータ整理用) ----
+document.getElementById('hq-btn-bulk-delete-absence').addEventListener('click', async () => {
+  const statusEl = document.getElementById('hq-bulk-absence-status');
+  const sel = document.getElementById('hq-bulk-absence-school').value;
+  const ackedOnly = document.getElementById('hq-bulk-absence-acked-only').checked;
+  const targets = sel === '__all__' ? schoolsArr.map(s => s.id) : [sel];
+  if (targets.length === 0){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = '校舎がありません。'; return; }
+  const scopeLabel = sel === '__all__' ? 'すべての校舎' : schoolNameFor(sel);
+  const kindLabel = ackedOnly ? '確認済みの欠席連絡' : 'すべての欠席連絡(未確認を含む)';
+  if (!confirm('【確認】' + scopeLabel + 'の「' + kindLabel + '」を完全に削除します。\n欠席履歴の集計からも消え、元に戻せません。よろしいですか？')) return;
+  const btn = document.getElementById('hq-btn-bulk-delete-absence');
+  btn.disabled = true;
+  statusEl.style.color = 'var(--text-secondary)';
+  statusEl.textContent = '削除しています…';
+  let total = 0;
+  try {
+    for (const academyId of targets){
+      const snap = await db.collection('academies').doc(academyId).collection('absenceReports').get();
+      const docs = ackedOnly ? snap.docs.filter(d => d.data().status !== 'new') : snap.docs;
+      for (let i = 0; i < docs.length; i += 400){
+        const batch = db.batch();
+        docs.slice(i, i + 400).forEach(d => batch.delete(d.ref));
+        await batch.commit();
+      }
+      total += docs.length;
+    }
+    statusEl.style.color = 'var(--accent-dark)';
+    statusEl.textContent = '✓ ' + total + '件の欠席連絡を削除しました。';
   } catch(err){
     console.error(err);
     statusEl.style.color = 'var(--danger)';
