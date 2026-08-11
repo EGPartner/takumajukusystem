@@ -35,7 +35,7 @@
   .tabs{display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:22px;flex-wrap:wrap;}
   .tab-btn{padding:12px 18px;font-size:13.5px;font-weight:600;background:none;border:none;color:var(--text-secondary);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;font-family:inherit;}
   .tab-btn.active{color:var(--accent-dark);border-bottom-color:var(--accent);}
-  .tab-group-label{font-size:10.5px;font-weight:700;letter-spacing:.08em;color:var(--text-muted);align-self:center;padding:0 2px 0 16px;white-space:nowrap;user-select:none;}
+  .tab-group-label{font-size:10.5px;font-weight:700;letter-spacing:.08em;color:var(--text-muted);align-self:center;padding:0 2px 0 16px;white-space:nowrap;user-select:none;cursor:pointer;}
   .tab-group-label:first-child{padding-left:0;}
   .seg-row{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
   .seg-btn{border:1px solid var(--border-strong);border-radius:20px;padding:6px 16px;font-size:12.5px;font-weight:600;background:var(--surface);color:var(--text-secondary);cursor:pointer;font-family:inherit;border-bottom-width:1px;margin-bottom:0;}
@@ -213,14 +213,14 @@
   </div>
 
   <div class="tabs" role="tablist">
-    <span class="tab-group-label">運営</span>
+    <span class="tab-group-label" data-tab-target="absence">運営</span>
     <button class="tab-btn active" data-tab="absence">欠席・出欠</button>
     <button class="tab-btn" data-tab="calendar">カレンダー</button>
-    <span class="tab-group-label">塾生</span>
+    <span class="tab-group-label" data-tab-target="grid">塾生</span>
     <button class="tab-btn" data-tab="grid">塾生数</button>
     <button class="tab-btn" data-tab="growth">成長記録</button>
     <button class="tab-btn" data-tab="summary">サマリー</button>
-    <span class="tab-group-label admin-only-tab">経営 🔒</span>
+    <span class="tab-group-label admin-only-tab" data-tab-target="dashboard">経営 🔒</span>
     <button class="tab-btn admin-only-tab" data-tab="dashboard">ダッシュボード</button>
     <button class="tab-btn admin-only-tab" data-tab="settings">設定</button>
   </div>
@@ -2193,6 +2193,8 @@ function initUI(){
   document.getElementById('summary-start').value = monthsAgo(currentMonthStr(), SUMMARY_WINDOW - 1);
 
   document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
+  // グループ見出し(運営/塾生/経営)のタッチでも、そのグループの先頭タブに切り替わるようにする
+  document.querySelectorAll('.tab-group-label[data-tab-target]').forEach(l => l.addEventListener('click', () => switchTab(l.dataset.tabTarget)));
   document.getElementById('fy-prev').addEventListener('click', () => { currentFY--; renderAll(); });
   document.getElementById('fy-next').addEventListener('click', () => { currentFY++; renderAll(); });
 
