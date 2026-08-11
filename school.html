@@ -414,6 +414,7 @@
         </table>
       </div>
       <div id="alias-empty" class="empty" style="display:none;">まとめられる表記はありません。</div>
+      <p class="note" id="alias-merged-toggle" style="display:none;margin-top:8px;"></p>
     </div>
     <div id="ah-detail"></div>
   </div>
@@ -669,6 +670,7 @@ let patterns = [];
 let scheduleEvents = [];
 let locationsList = [];
 let nameAliases = {};
+let showMergedAliases = false;
 let staffList = [];
 let calViewYear, calViewMonth, calSelectedDate = null;
 let chartCount, chartFinance, chartRadar, chartRanking;
@@ -1332,17 +1334,31 @@ function canonicalStudentName(rawName){
 function renderAliasTable(){
   const tbody = document.getElementById('alias-tbody');
   const empty = document.getElementById('alias-empty');
+  const mergedToggle = document.getElementById('alias-merged-toggle');
   if (!tbody) return;
   const rawNames = Array.from(new Set(absenceReports.map(r => (r.studentName||'').trim()).filter(Boolean))).sort();
-  if (rawNames.length === 0){ tbody.innerHTML = ''; if (empty) empty.style.display = 'block'; return; }
-  if (empty) empty.style.display = 'none';
   // 統合先として選べるのは「まだ他の名前に統合されていない、基準となる名前」だけ(連鎖を避けるため)
   const canonicalNames = rawNames.filter(n => !nameAliases[n]).sort();
-  tbody.innerHTML = rawNames.map(raw => {
+  // 統合済みの表記は一覧に残さない(ログとして不要なため)。誤統合の解除用に「統合済みを表示」で呼び出せる
+  const mergedNames = rawNames.filter(n => nameAliases[n]);
+  const visibleNames = showMergedAliases ? rawNames : rawNames.filter(n => !nameAliases[n]);
+  tbody.innerHTML = visibleNames.map(raw => {
     const current = nameAliases[raw] || '';
     const opts = '<option value="">(統合しない・そのまま)</option>' + canonicalNames.filter(c => c !== raw).map(c => `<option value="${escAttr(c)}" ${current===c?'selected':''}>${escAttr(c)}</option>`).join('');
     return `<tr><td>${escAttr(raw)}</td><td><select class="alias-select" data-raw="${escAttr(raw)}">${opts}</select></td><td></td></tr>`;
   }).join('');
+  if (empty) empty.style.display = visibleNames.length === 0 ? 'block' : 'none';
+  if (mergedToggle){
+    if (mergedNames.length > 0){
+      mergedToggle.style.display = 'block';
+      mergedToggle.innerHTML = showMergedAliases
+        ? '<a href="#" data-toggle-merged style="color:var(--accent-dark);">統合済みの表記(' + mergedNames.length + '件)を隠す</a>'
+        : '統合済みの表記が' + mergedNames.length + '件あります。間違えて統合した場合は <a href="#" data-toggle-merged style="color:var(--accent-dark);">表示して解除</a> できます。';
+    } else {
+      mergedToggle.style.display = 'none';
+      showMergedAliases = false;
+    }
+  }
 }
 
 async function handleAliasChange(e){
@@ -2306,6 +2322,13 @@ function initUI(){
   document.getElementById('btn-delete-acknowledged').addEventListener('click', handleDeleteAcknowledged);
   document.getElementById('ah-filter').addEventListener('input', renderAbsenceHistory);
   document.getElementById('alias-tbody').addEventListener('change', handleAliasChange);
+  document.getElementById('alias-merged-toggle').addEventListener('click', (e) => {
+    if (e.target.hasAttribute('data-toggle-merged')){
+      e.preventDefault();
+      showMergedAliases = !showMergedAliases;
+      renderAliasTable();
+    }
+  });
   document.getElementById('ah-tbody').addEventListener('click', (e) => {
     const name = e.target.dataset.ahName;
     const ym = e.target.dataset.ahYm;
