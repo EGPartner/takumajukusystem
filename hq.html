@@ -31,6 +31,7 @@
   .school-name{font-weight:700;font-size:14px;}
   .school-meta{font-size:12px;color:var(--text-secondary);}
   .empty{color:var(--text-muted);font-size:13px;text-align:center;padding:20px 0;}
+  .scroll-y{max-height:520px;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding-right:4px;}
   a.link-btn{font-size:13px;color:var(--accent-dark);text-decoration:none;border:1px solid var(--border-strong);padding:7px 12px;border-radius:8px;white-space:nowrap;}
   .absence-row{padding:10px 0;border-bottom:1px solid var(--border);font-size:13px;}
   .absence-row:last-child{border-bottom:none;}
@@ -116,7 +117,7 @@
           <span id="hq-schedule-legend" style="display:inline-flex;gap:12px;flex-wrap:wrap;font-size:11.5px;color:var(--text-secondary);"></span>
         </div>
         <div id="hq-calendar-list-view">
-          <div id="hq-calendar-list"><div class="empty">読み込み中…</div></div>
+          <div id="hq-calendar-list" class="scroll-y"><div class="empty">読み込み中…</div></div>
         </div>
         <div id="hq-calendar-grid-view" style="display:none;">
           <div class="btn-row" style="justify-content:space-between;margin-bottom:10px;">
@@ -186,7 +187,7 @@
       <div class="card">
         <h2 style="font-size:15px;margin:0 0 4px;">定期パターン一覧(全校舎)</h2>
         <p class="status" style="margin-top:0;color:var(--text-muted);">「終了日」を空欄のままにすると無期限で繰り返されます。学年が変わるタイミングなどで区切りたい場合は、終了日を指定し、新しいパターンを別途追加してください。</p>
-        <div style="overflow-x:auto;">
+        <div class="scroll-y" style="overflow-x:auto;">
           <table class="mini-table">
             <thead><tr><th>校舎</th><th>曜日</th><th>時間</th><th>種別</th><th>開始日</th><th>終了日</th><th></th></tr></thead>
             <tbody id="hq-patterns-tbody"></tbody>
@@ -225,7 +226,7 @@
       <div class="card">
         <h2 style="font-size:15px;margin:0 0 4px;">校舎別の状況</h2>
         <p class="status" style="margin-top:0;color:var(--text-muted);">「詳細」を押すと、その校の選手ごとの欠席回数が下に表示されます。</p>
-        <div style="overflow-x:auto;">
+        <div class="scroll-y" style="overflow-x:auto;">
           <table class="mini-table">
             <thead><tr><th>校舎</th><th>未確認</th><th>直近30日</th><th></th></tr></thead>
             <tbody id="hq-absence-summary-tbody"></tbody>
@@ -236,14 +237,14 @@
       <div class="card" id="hq-absence-detail-card" style="display:none;">
         <h2 style="font-size:15px;margin:0 0 4px;" id="hq-absence-detail-title">選手ごとの欠席状況</h2>
         <p class="status" style="margin-top:0;color:var(--text-muted);">選手名をクリックすると、日付・理由の履歴が下に表示されます。</p>
-        <div id="hq-absence-detail-table"><div class="empty">読み込み中…</div></div>
+        <div id="hq-absence-detail-table" class="scroll-y"><div class="empty">読み込み中…</div></div>
         <div id="hq-absence-student-history" style="margin-top:14px;"></div>
       </div>
 
       <div class="card">
         <h2 style="font-size:15px;margin:0 0 4px;">欠席者名簿(全校舎・新しい順)</h2>
         <p class="status" style="margin-top:0;color:var(--text-muted);">1行1件のシンプルな名簿です。内容を確認したら「確認」を押してください。行がグレーになります。</p>
-        <div id="absence-list" style="overflow-x:auto;">
+        <div id="absence-list" class="scroll-y" style="overflow-x:auto;">
           <table class="mini-table" id="hq-absence-roster">
             <thead><tr><th>欠席日</th><th>名前</th><th>学年</th><th>校舎</th><th>理由</th><th>備考</th><th></th></tr></thead>
             <tbody id="absence-list-tbody"><tr><td colspan="7" class="status">読み込み中…</td></tr></tbody>
@@ -265,7 +266,7 @@
     <div class="tab-panel" id="tab-schools">
       <div class="card">
         <h2 style="font-size:15px;margin:0 0 12px;">校舎一覧</h2>
-        <div id="school-list"><div class="empty">読み込み中…</div></div>
+        <div id="school-list" class="scroll-y"><div class="empty">読み込み中…</div></div>
       </div>
       <div class="card">
         <h2 style="font-size:15px;margin:0 0 4px;">新しい校舎を追加</h2>
