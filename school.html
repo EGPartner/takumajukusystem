@@ -522,6 +522,13 @@
     </div>
     <div id="settings-content-wrapper">
     <div class="card">
+      <h2 style="margin:0 0 4px;">校舎名の変更</h2>
+      <p class="note" style="margin-top:0;">画面の見出しや本部の校舎一覧、保護者の欠席フォームの校舎選択などに表示される名前です。校舎ID(URL)は変わりません。</p>
+      <div class="field" style="max-width:360px;"><label for="school-name-input">校舎名</label><input type="text" id="school-name-input" placeholder="例: タクマ塾岩国校"></div>
+      <div class="btn-row"><button class="primary" id="btn-save-school-name" style="width:auto;">保存する</button></div>
+      <p class="status" id="school-name-status"></p>
+    </div>
+    <div class="card">
       <div class="btn-row" style="justify-content:space-between;margin-bottom:4px;">
         <h2 style="margin:0;">スタッフ管理</h2>
         <span><button class="ghost" id="btn-edit-staff">編集</button><button class="primary" id="btn-save-staff" style="display:none;">登録</button></span>
@@ -2185,6 +2192,8 @@ async function loadBranchName(){
     document.getElementById('branch-title').textContent = currentBranchName + ' 収支・塾生管理システム';
     document.getElementById('login-branch-title').textContent = currentBranchName + ' 管理システム';
     document.title = currentBranchName + ' 収支・塾生管理システム';
+    const nameInput = document.getElementById('school-name-input');
+    if (nameInput && name) nameInput.value = name;
     const appleTitleTag = document.querySelector('meta[name="apple-mobile-web-app-title"]');
     if (appleTitleTag) appleTitleTag.setAttribute('content', currentBranchName);
     if (!doc.exists){
@@ -2211,6 +2220,31 @@ function initUI(){
   document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
   // グループ見出し(運営/塾生/経営)のタッチでも、そのグループの先頭タブに切り替わるようにする
   document.querySelectorAll('.tab-group-label[data-tab-target]').forEach(l => l.addEventListener('click', () => switchTab(l.dataset.tabTarget)));
+
+  // 校舎名の変更(設定タブ・管理者のみ。ルール側でも管理者以外の書き込みは拒否される)
+  document.getElementById('btn-save-school-name').addEventListener('click', async () => {
+    const statusEl = document.getElementById('school-name-status');
+    const name = document.getElementById('school-name-input').value.trim();
+    if (!name){
+      statusEl.style.color = 'var(--danger)';
+      statusEl.textContent = '校舎名を入力してください。';
+      return;
+    }
+    statusEl.style.color = 'var(--text-secondary)';
+    statusEl.textContent = '保存しています…';
+    try {
+      await schoolsRef.doc(ACADEMY_ID).set({ name }, { merge:true });
+      await loadBranchName();
+      statusEl.style.color = 'var(--accent-dark)';
+      statusEl.textContent = '✓ 校舎名を「' + name + '」に変更しました。';
+    } catch(err){
+      console.error(err);
+      statusEl.style.color = 'var(--danger)';
+      statusEl.textContent = err && err.code === 'permission-denied'
+        ? '保存できませんでした。校舎名の変更は管理者権限のアカウントのみ行えます。'
+        : '保存に失敗しました: ' + (err && err.message ? err.message : String(err));
+    }
+  });
   document.getElementById('fy-prev').addEventListener('click', () => { currentFY--; renderAll(); });
   document.getElementById('fy-next').addEventListener('click', () => { currentFY++; renderAll(); });
 
