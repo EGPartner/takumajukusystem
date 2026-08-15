@@ -285,8 +285,18 @@
         </div>
       </div>
       <div class="card">
-        <h2 style="font-size:15px;margin:0 0 12px;">校舎別の在籍数</h2>
+        <div class="btn-row" style="justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <h2 style="font-size:15px;margin:0;" id="hq-students-list-title">校舎別の在籍数</h2>
+          <span style="display:flex;gap:8px;">
+            <button class="ghost-small hq-view-toggle active" id="hq-students-view-by-school">校舎別</button>
+            <button class="ghost-small hq-view-toggle" id="hq-students-view-all">全校一覧</button>
+          </span>
+        </div>
         <div id="hq-students-summary" class="scroll-y"><div class="empty">読み込み中…</div></div>
+        <div id="hq-students-all-view" style="display:none;">
+          <div class="field" style="max-width:260px;"><label for="hq-students-filter">名前で絞り込み</label><input type="text" id="hq-students-filter" placeholder="例: 山田"></div>
+          <div id="hq-students-all" class="scroll-y"></div>
+        </div>
       </div>
       <div class="card" id="hq-roster-card" style="display:none;">
         <h2 style="font-size:15px;margin:0 0 4px;" id="hq-roster-title">名簿</h2>
@@ -498,13 +508,59 @@ function renderHQStudents(){
   document.getElementById('hq-students-total').innerHTML = total + '<small> 名</small>';
   document.getElementById('hq-students-schools').innerHTML = schoolsArr.length + '<small> 校</small>';
   renderHQRoster();
+  renderHQStudentsAll();
 }
+
+// ---- 全校一覧ビュー(氏名・学年・校舎・加入状況を1枚のテーブルで) ----
+let hqStudentsView = 'bySchool';
+
+function renderHQStudentsAll(){
+  const el = document.getElementById('hq-students-all');
+  if (!el || !hqStudentsBySchool) return;
+  const filter = ((document.getElementById('hq-students-filter') || {}).value || '').trim().toLowerCase();
+  let rows = [];
+  schoolsArr.forEach(s => {
+    (hqStudentsBySchool[s.id] || []).forEach(st => rows.push({ st, academyId: s.id, schoolName: s.name }));
+  });
+  if (filter) rows = rows.filter(r => String(r.st.name || '').toLowerCase().includes(filter));
+  rows.sort((a,b) => (isActiveThisMonth(b.st) ? 1 : 0) - (isActiveThisMonth(a.st) ? 1 : 0)
+    || a.schoolName.localeCompare(b.schoolName, 'ja')
+    || String(a.st.name || '').localeCompare(String(b.st.name || ''), 'ja'));
+  if (rows.length === 0){
+    el.innerHTML = '<div class="empty">' + (filter ? '該当する塾生がいません。' : '塾生が登録されていません。') + '</div>';
+    return;
+  }
+  el.innerHTML = '<table class="mini-table"><thead><tr><th>氏名</th><th>学年</th><th>校舎</th><th>加入状況</th></tr></thead><tbody>'
+    + rows.map(r => {
+      const active = isActiveThisMonth(r.st);
+      return '<tr style="' + (active ? '' : 'opacity:0.45;') + '">'
+        + '<td style="white-space:nowrap;font-weight:700;">' + escAttr(r.st.name || '') + (r.st.trial ? ' <span class="badge muted">体験</span>' : '') + '</td>'
+        + '<td style="white-space:nowrap;">' + escAttr(hqStudentGrade(r.st)) + '</td>'
+        + '<td style="white-space:nowrap;color:' + schoolColor(r.academyId) + ';font-weight:700;">' + escAttr(r.schoolName) + '</td>'
+        + '<td style="white-space:nowrap;">' + (active ? '在籍' : '在籍外(退会・休会)') + '</td>'
+        + '</tr>';
+    }).join('') + '</tbody></table>';
+}
+
+function setHQStudentsView(v){
+  hqStudentsView = v;
+  document.getElementById('hq-students-view-by-school').classList.toggle('active', v === 'bySchool');
+  document.getElementById('hq-students-view-all').classList.toggle('active', v === 'all');
+  document.getElementById('hq-students-summary').style.display = v === 'bySchool' ? '' : 'none';
+  document.getElementById('hq-students-all-view').style.display = v === 'all' ? 'block' : 'none';
+  document.getElementById('hq-students-list-title').textContent = v === 'bySchool' ? '校舎別の在籍数' : '全校の塾生一覧';
+  if (v === 'all') renderHQStudentsAll();
+  renderHQRoster();
+}
+document.getElementById('hq-students-view-by-school').addEventListener('click', () => setHQStudentsView('bySchool'));
+document.getElementById('hq-students-view-all').addEventListener('click', () => setHQStudentsView('all'));
+document.getElementById('hq-students-filter').addEventListener('input', renderHQStudentsAll);
 
 function renderHQRoster(){
   const card = document.getElementById('hq-roster-card');
   const rosterEl = document.getElementById('hq-roster');
   if (!card || !rosterEl) return;
-  if (!hqRosterSchool || !hqStudentsBySchool || !hqStudentsBySchool[hqRosterSchool]){
+  if (hqStudentsView === 'all' || !hqRosterSchool || !hqStudentsBySchool || !hqStudentsBySchool[hqRosterSchool]){
     card.style.display = 'none';
     return;
   }
