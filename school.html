@@ -529,6 +529,14 @@
       <p class="status" id="school-name-status"></p>
     </div>
     <div class="card">
+      <h2 style="margin:0 0 4px;">名簿のCSV取り込み(スプレッドシートからの移行)</h2>
+      <p class="note" style="margin-top:0;">Googleスプレッドシートの名簿を「ファイル → ダウンロード → カンマ区切り(.csv)」で保存し、ここで取り込むと塾生として一括登録されます。<br>
+      列の並び: <b>1列目=氏名、2列目=学年(例: 小3・中1・3)、3列目=入会月(例: 2026-04・省略可、省略時は今月)</b>。1行目が見出しの場合は自動でスキップします。入会月から今月までが「在籍」として記録されます。</p>
+      <div class="field"><input type="file" id="csv-import-file" accept=".csv,text/csv"></div>
+      <div class="btn-row"><button class="primary" id="btn-csv-import" style="width:auto;">取り込む</button></div>
+      <p class="status" id="csv-import-status"></p>
+    </div>
+    <div class="card">
       <div class="btn-row" style="justify-content:space-between;margin-bottom:4px;">
         <h2 style="margin:0;">スタッフ管理</h2>
         <span><button class="ghost" id="btn-edit-staff">編集</button><button class="primary" id="btn-save-staff" style="display:none;">登録</button></span>
@@ -714,6 +722,36 @@ function cellMark(status){ return status === 'active' ? '★' : (status === 'pau
 function cycleStatus(cur){ if (cur === 'active') return 'pause'; if (cur === 'pause') return null; return 'active'; }
 function currentMonthStr(){ const d = new Date(); return d.getFullYear() + '-' + pad(d.getMonth()+1); }
 function prevMonthStr(ym){ let [y,m] = ym.split('-').map(Number); m--; if(m<1){m=12;y--;} return y + '-' + pad(m); }
+function nextMonthStr(ym){ let [y,m] = ym.split('-').map(Number); m++; if(m>12){m=1;y++;} return y + '-' + pad(m); }
+
+// ---- CSV取り込み用ヘルパー ----
+function parseCsvLine(line){
+  const out = []; let cur = ''; let inQ = false;
+  for (let i = 0; i < line.length; i++){
+    const ch = line[i];
+    if (inQ){
+      if (ch === '"'){ if (line[i+1] === '"'){ cur += '"'; i++; } else inQ = false; }
+      else cur += ch;
+    } else {
+      if (ch === '"') inQ = true;
+      else if (ch === ',' || ch === '\t'){ out.push(cur); cur = ''; }
+      else cur += ch;
+    }
+  }
+  out.push(cur);
+  return out;
+}
+// 「小3」「中1」「高2」「3」「年長」などの表記を学年番号(小1=1〜高3=12、未就学=0)に変換する
+function parseGradeText(t){
+  if (!t) return null;
+  t = String(t).replace(/[０-９]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0)).trim();
+  let m = t.match(/小\s*(\d)/); if (m) return Number(m[1]);
+  m = t.match(/中\s*(\d)/); if (m) return 6 + Number(m[1]);
+  m = t.match(/高\s*(\d)/); if (m) return 9 + Number(m[1]);
+  if (/年少|年中|年長|未就学|幼/.test(t)) return 0;
+  m = t.match(/^(\d{1,2})$/); if (m) return Number(m[1]);
+  return null;
+}
 
 // ---- Firebase setup ----
 // Fill in your own project's config here (Firebase console > Project settings > Your apps > Web app).
@@ -2220,6 +2258,101 @@ function initUI(){
   document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
   // グループ見出し(運営/塾生/経営)のタッチでも、そのグループの先頭タブに切り替わるようにする
   document.querySelectorAll('.tab-group-label[data-tab-target]').forEach(l => l.addEventListener('click', () => switchTab(l.dataset.tabTarget)));
+
+  // 追加フォームの入力を再開したら、前回の「✓ 追加しました」等の表示を消す(出しっぱなし防止)
+  const clearStatusOnInput = (fieldIds, statusId) => {
+    fieldIds.forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      ['input','change'].forEach(ev => el.addEventListener(ev, () => {
+        const s = document.getElementById(statusId);
+        if (s) s.textContent = '';
+      }));
+    });
+  };
+  clearStatusOnInput(['new-occ-date','new-occ-type','new-occ-location','new-occ-start','new-occ-end','new-occ-staff','new-occ-target','new-occ-note'], 'add-occ-status');
+  clearStatusOnInput(['school-name-input'], 'school-name-status');
+  clearStatusOnInput(['csv-import-file'], 'csv-import-status');
+
+  // 名簿のCSV取り込み(スプレッドシートからの移行用)
+  document.getElementById('btn-csv-import').addEventListener('click', async () => {
+    const statusEl = document.getElementById('csv-import-status');
+    const fileEl = document.getElementById('csv-import-file');
+    const file = fileEl.files && fileEl.files[0];
+    if (!file){
+      statusEl.style.color = 'var(--danger)';
+      statusEl.textContent = 'CSVファイルを選択してください。';
+      return;
+    }
+    statusEl.style.color = 'var(--text-secondary)';
+    statusEl.textContent = '読み込んでいます…';
+    let text;
+    try { text = await file.text(); }
+    catch(e){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = 'ファイルを読み込めませんでした: ' + e.message; return; }
+    if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+    const rows = text.split(/\r\n|\r|\n/).filter(l => l.trim() !== '').map(parseCsvLine);
+    if (rows.length === 0){
+      statusEl.style.color = 'var(--danger)';
+      statusEl.textContent = 'CSVが空です。';
+      return;
+    }
+    // 1行目が見出し(「氏名」「名前」を含む)ならスキップ
+    let startIdx = 0;
+    if (rows[0][0] && (rows[0][0].includes('氏名') || rows[0][0].includes('名前'))) startIdx = 1;
+    const nowYm = currentMonthStr();
+    const newStudents = [];
+    const errors = [];
+    for (let i = startIdx; i < rows.length; i++){
+      const cols = rows[i];
+      const name = (cols[0] || '').trim();
+      if (!name) continue;
+      const gradeRaw = (cols[1] || '').trim();
+      const joinRaw = (cols[2] || '').trim();
+      const gradeNum = parseGradeText(gradeRaw);
+      if (gradeRaw && gradeNum === null){
+        errors.push((i+1) + '行目「' + name + '」: 学年「' + gradeRaw + '」を読み取れません');
+        continue;
+      }
+      let joinYm = nowYm;
+      if (joinRaw){
+        const m = joinRaw.match(/^(\d{4})[\/\-年]\s*(\d{1,2})/);
+        if (m) joinYm = m[1] + '-' + pad(Number(m[2]));
+        else {
+          errors.push((i+1) + '行目「' + name + '」: 入会月「' + joinRaw + '」を読み取れません(例: 2026-04)');
+          continue;
+        }
+      }
+      const s = { id: uid(), name, trial: false, gradeRef: gradeNum === null ? 1 : gradeNum, gradeRefFY: currentFY, months: {}, growth: {} };
+      let ym = joinYm, guard = 0;
+      while (ym <= nowYm && guard < 240){ s.months[ym] = 'active'; ym = nextMonthStr(ym); guard++; }
+      newStudents.push(s);
+    }
+    if (newStudents.length === 0){
+      statusEl.style.color = 'var(--danger)';
+      statusEl.textContent = '取り込める行がありませんでした。' + (errors.length ? ' ' + errors.join(' ／ ') : '');
+      return;
+    }
+    const existingNames = new Set(students.map(x => (x.name || '').trim()));
+    const dupCount = newStudents.filter(s => existingNames.has(s.name)).length;
+    const dupNote = dupCount ? '\n※既に同じ名前の塾生が' + dupCount + '名登録されています(そのまま実行すると重複登録になります)。' : '';
+    if (!confirm(newStudents.length + '名を塾生として登録します。' + dupNote + '\nよろしいですか？')) return;
+    statusEl.textContent = '登録しています…';
+    try {
+      for (let i = 0; i < newStudents.length; i += 400){
+        const batch = db.batch();
+        newStudents.slice(i, i + 400).forEach(s => batch.set(studentsRef.doc(s.id), s));
+        await batch.commit();
+      }
+      statusEl.style.color = 'var(--accent-dark)';
+      statusEl.textContent = '✓ ' + newStudents.length + '名を取り込みました。'
+        + (errors.length ? ' 読み取れなかった行が' + errors.length + '件あります: ' + errors.join(' ／ ') : '');
+      fileEl.value = '';
+    } catch(err){
+      console.error(err);
+      statusEl.style.color = 'var(--danger)';
+      statusEl.textContent = '登録に失敗しました: ' + err.message;
+    }
+  });
 
   // 校舎名の変更(設定タブ・管理者のみ。ルール側でも管理者以外の書き込みは拒否される)
   document.getElementById('btn-save-school-name').addEventListener('click', async () => {

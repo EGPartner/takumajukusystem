@@ -32,6 +32,11 @@
   .school-meta{font-size:12px;color:var(--text-secondary);}
   .empty{color:var(--text-muted);font-size:13px;text-align:center;padding:20px 0;}
   .scroll-y{max-height:520px;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding-right:4px;}
+  .kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;}
+  .kpi-box{border:1px solid var(--border);border-radius:10px;padding:10px 12px;background:var(--bg);}
+  .kpi-box .k{font-size:11px;color:var(--text-secondary);}
+  .kpi-box .v{font-size:20px;font-weight:700;}
+  .kpi-box .v small{font-size:12px;color:var(--text-secondary);font-weight:600;}
   a.link-btn{font-size:13px;color:var(--accent-dark);text-decoration:none;border:1px solid var(--border-strong);padding:7px 12px;border-radius:8px;white-space:nowrap;}
   .absence-row{padding:10px 0;border-bottom:1px solid var(--border);font-size:13px;}
   .absence-row:last-child{border-bottom:none;}
@@ -58,7 +63,10 @@
   .ghost-small.hq-view-toggle.active{background:var(--accent);color:#fff;border-color:var(--accent);}
   .hq-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
   .hq-cal-grid .hcg-head{font-size:10px;color:var(--text-secondary);text-align:center;padding:3px 0;font-weight:600;}
-  .hq-cal-day{border:1px solid var(--border);border-radius:6px;min-height:64px;padding:3px;font-size:10px;cursor:pointer;background:var(--surface);}
+  .hq-cal-day{border:1px solid var(--border);border-radius:6px;min-height:52px;padding:3px;font-size:10px;cursor:pointer;background:var(--surface);}
+  .hcd-dots{display:flex;gap:3px;align-items:center;flex-wrap:wrap;margin-top:3px;}
+  .hcd-dot{width:7px;height:7px;border-radius:50%;display:inline-block;flex:0 0 auto;}
+  .hcd-more{font-size:9px;color:var(--text-muted);font-weight:700;}
   .hq-cal-day.empty-cell{border:none;background:none;cursor:default;}
   .hq-cal-day.selected{border-color:var(--accent);background:var(--accent-bg);}
   .hq-cal-day .hcd-num{font-weight:700;margin-bottom:2px;}
@@ -101,6 +109,7 @@
     <div class="tabs" role="tablist">
       <button class="tab-btn active" data-tab="schedule">統合スケジュール</button>
       <button class="tab-btn" data-tab="absence">欠席連絡</button>
+      <button class="tab-btn" data-tab="students">塾生</button>
       <button class="tab-btn" data-tab="schools">校舎管理</button>
     </div>
 
@@ -263,6 +272,29 @@
       </div>
     </div>
 
+    <div class="tab-panel" id="tab-students">
+      <div class="card">
+        <div class="btn-row" style="justify-content:space-between;align-items:center;">
+          <h2 style="font-size:15px;margin:0;">塾生サマリー(全校舎)</h2>
+          <button class="ghost-small" id="hq-btn-reload-students">最新に更新</button>
+        </div>
+        <p class="status" style="margin-top:4px;color:var(--text-muted);">今月在籍している塾生の集計です。名簿の編集は各校の管理画面(「開く」)から行ってください。</p>
+        <div class="kpi-row">
+          <div class="kpi-box"><div class="k">全校の在籍数(今月)</div><div class="v" id="hq-students-total">-</div></div>
+          <div class="kpi-box"><div class="k">校舎数</div><div class="v" id="hq-students-schools">-</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <h2 style="font-size:15px;margin:0 0 12px;">校舎別の在籍数</h2>
+        <div id="hq-students-summary" class="scroll-y"><div class="empty">読み込み中…</div></div>
+      </div>
+      <div class="card" id="hq-roster-card" style="display:none;">
+        <h2 style="font-size:15px;margin:0 0 4px;" id="hq-roster-title">名簿</h2>
+        <p class="status" style="margin-top:0;color:var(--text-muted);">閲覧専用です。今月在籍している塾生が上に、それ以外(休会・退会など)はグレーで下に表示されます。</p>
+        <div id="hq-roster" class="scroll-y"></div>
+      </div>
+    </div>
+
     <div class="tab-panel" id="tab-schools">
       <div class="card">
         <h2 style="font-size:15px;margin:0 0 12px;">校舎一覧</h2>
@@ -403,8 +435,103 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b === btn));
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + btn.dataset.tab));
+    if (btn.dataset.tab === 'students') loadHQStudents();
   });
 });
+
+// ---- 塾生タブ(全校の在籍サマリーと名簿・閲覧専用) ----
+let hqStudentsBySchool = null;
+let hqRosterSchool = null;
+function hqFiscalYearNow(){ const d = new Date(); return d.getMonth() + 1 >= 4 ? d.getFullYear() : d.getFullYear() - 1; }
+function hqGradeLabel(g){
+  if (g === null || g === undefined || isNaN(g)) return '-';
+  if (g < 1) return '未就学';
+  if (g <= 6) return '小' + g;
+  if (g <= 9) return '中' + (g - 6);
+  if (g <= 12) return '高' + (g - 9);
+  return '卒業';
+}
+function hqStudentGrade(s){
+  if (s.gradeRef === undefined || s.gradeRefFY === undefined) return '-';
+  return hqGradeLabel(Number(s.gradeRef) + (hqFiscalYearNow() - Number(s.gradeRefFY)));
+}
+function isActiveThisMonth(s){ return !!(s.months && s.months[currentMonthKey()] === 'active'); }
+
+async function loadHQStudents(force){
+  const summaryEl = document.getElementById('hq-students-summary');
+  if (!summaryEl) return;
+  if (hqStudentsBySchool && !force){ renderHQStudents(); return; }
+  summaryEl.innerHTML = '<div class="empty">読み込み中…</div>';
+  const map = {};
+  await Promise.all(schoolsArr.map(async (s) => {
+    try {
+      const snap = await db.collection('academies').doc(s.id).collection('students').get();
+      map[s.id] = snap.docs.map(d => Object.assign({ id: d.id }, d.data()));
+    } catch(e){ console.error('students load failed for', s.id, e); map[s.id] = []; }
+  }));
+  hqStudentsBySchool = map;
+  renderHQStudents();
+}
+
+function renderHQStudents(){
+  const summaryEl = document.getElementById('hq-students-summary');
+  if (!summaryEl || !hqStudentsBySchool) return;
+  let total = 0;
+  const base = window.location.origin + window.location.pathname.replace(/hq\.html$/, '');
+  summaryEl.innerHTML = schoolsArr.map(s => {
+    const list = hqStudentsBySchool[s.id] || [];
+    const active = list.filter(isActiveThisMonth).length;
+    total += active;
+    const url = base + 'school.html?school=' + encodeURIComponent(s.id);
+    const isOpen = hqRosterSchool === s.id;
+    return `<div class="school-row">
+      <div>
+        <div class="school-name" style="color:${schoolColor(s.id)};">${escAttr(s.name)}</div>
+        <div class="school-meta">今月の在籍: ${active}名 ／ 登録済み: ${list.length}名</div>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <button class="ghost-small" data-roster="${escAttr(s.id)}">${isOpen ? '名簿を閉じる' : '名簿を見る'}</button>
+        <a class="link-btn" href="${escAttr(url)}" target="_blank" rel="noopener">開く</a>
+      </div>
+    </div>`;
+  }).join('') || '<div class="empty">校舎がありません。</div>';
+  document.getElementById('hq-students-total').innerHTML = total + '<small> 名</small>';
+  document.getElementById('hq-students-schools').innerHTML = schoolsArr.length + '<small> 校</small>';
+  renderHQRoster();
+}
+
+function renderHQRoster(){
+  const card = document.getElementById('hq-roster-card');
+  const rosterEl = document.getElementById('hq-roster');
+  if (!card || !rosterEl) return;
+  if (!hqRosterSchool || !hqStudentsBySchool || !hqStudentsBySchool[hqRosterSchool]){
+    card.style.display = 'none';
+    return;
+  }
+  card.style.display = 'block';
+  document.getElementById('hq-roster-title').textContent = schoolNameFor(hqRosterSchool) + ' の名簿';
+  const list = [...hqStudentsBySchool[hqRosterSchool]];
+  list.sort((a,b) => (isActiveThisMonth(b) ? 1 : 0) - (isActiveThisMonth(a) ? 1 : 0)
+    || String(a.name || '').localeCompare(String(b.name || ''), 'ja'));
+  if (list.length === 0){ rosterEl.innerHTML = '<div class="empty">塾生が登録されていません。</div>'; return; }
+  rosterEl.innerHTML = '<table class="mini-table"><thead><tr><th>氏名</th><th>学年</th><th>状態</th></tr></thead><tbody>'
+    + list.map(s => {
+      const active = isActiveThisMonth(s);
+      return '<tr style="' + (active ? '' : 'opacity:0.45;') + '">'
+        + '<td>' + escAttr(s.name || '') + (s.trial ? ' <span class="badge muted">体験</span>' : '') + '</td>'
+        + '<td>' + escAttr(hqStudentGrade(s)) + '</td>'
+        + '<td>' + (active ? '在籍' : '在籍外') + '</td>'
+        + '</tr>';
+    }).join('') + '</tbody></table>';
+}
+
+document.getElementById('hq-students-summary').addEventListener('click', (e) => {
+  const id = e.target.dataset.roster;
+  if (!id) return;
+  hqRosterSchool = hqRosterSchool === id ? null : id;
+  renderHQStudents();
+});
+document.getElementById('hq-btn-reload-students').addEventListener('click', () => loadHQStudents(true));
 
 document.getElementById('btn-add-school').addEventListener('click', async () => {
   const statusEl = document.getElementById('add-status');
@@ -804,9 +931,13 @@ function renderHQCalGrid(){
   for (let day = 1; day <= daysInMonth; day++){
     const dateStr = hqCalViewYear + '-' + pad(hqCalViewMonth+1) + '-' + pad(day);
     const occ = occurrencesForAllDate(dateStr);
-    const tags = occ.map(o => `<div class="hcd-tag" style="background:${schoolColor(o.academyId)};">${escAttr(schoolNameFor(o.academyId))}</div>`).join('');
+    // 校舎名の文字タグはスマホで横に見切れるため、校舎色のドット表示にする(詳細はマスをタップ)
+    const MAX_DOTS = 3;
+    const dots = occ.slice(0, MAX_DOTS).map(o => `<span class="hcd-dot" style="background:${schoolColor(o.academyId)};"></span>`).join('')
+      + (occ.length > MAX_DOTS ? `<span class="hcd-more">+${occ.length - MAX_DOTS}</span>` : '');
+    const dotsRow = occ.length ? `<div class="hcd-dots">${dots}</div>` : '';
     const sel = dateStr === hqCalSelectedDate ? ' selected' : '';
-    html += `<div class="hq-cal-day${sel}" data-date="${dateStr}"><div class="hcd-num">${day}</div>${tags}</div>`;
+    html += `<div class="hq-cal-day${sel}" data-date="${dateStr}"><div class="hcd-num">${day}</div>${dotsRow}</div>`;
   }
   grid.innerHTML = html;
 }
@@ -1198,6 +1329,24 @@ function detachHQCalendarListeners(){
   unsubEventsPerSchool.forEach(u => u());
   unsubEventsPerSchool = [];
 }
+
+// 追加フォームの入力を再開したら、前回の「✓ 追加しました」等の表示を消す(出しっぱなし防止)
+function clearStatusOnInput(fieldIds, statusId){
+  fieldIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    ['input','change'].forEach(ev => el.addEventListener(ev, () => {
+      const s = document.getElementById(statusId);
+      if (s) s.textContent = '';
+    }));
+  });
+}
+clearStatusOnInput(['hq-new-occ-school','hq-new-occ-date','hq-new-occ-type','hq-new-occ-location','hq-new-occ-start','hq-new-occ-end','hq-new-occ-staff','hq-new-occ-target','hq-new-occ-note'], 'hq-add-occ-status');
+clearStatusOnInput(['hq-new-pattern-school','hq-new-pattern-weekday','hq-new-pattern-start','hq-new-pattern-end','hq-new-pattern-startdate','hq-new-pattern-enddate'], 'hq-add-pattern-status');
+clearStatusOnInput(['new-name','new-id'], 'add-status');
+clearStatusOnInput(['hq-bulk-school','hq-bulk-events','hq-bulk-patterns'], 'hq-bulk-status');
+clearStatusOnInput(['hq-bulk-absence-school','hq-bulk-absence-acked-only'], 'hq-bulk-absence-status');
+clearStatusOnInput(['new-hqadmin-email','new-hqadmin-password'], 'add-hqadmin-status');
 
 auth.onAuthStateChanged(async (user) => {
   if (user && user.isAnonymous){ await auth.signOut(); return; }
