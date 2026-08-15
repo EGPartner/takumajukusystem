@@ -61,11 +61,9 @@
   .link-danger{background:none;border:none;color:var(--danger);font-size:12px;cursor:pointer;width:auto;padding:2px 4px;}
   .ghost-small{padding:6px 10px;font-size:12px;width:auto;background:none;border:1px solid var(--border-strong);border-radius:6px;color:var(--text-primary);cursor:pointer;}
   .ghost-small.hq-view-toggle.active{background:var(--accent);color:#fff;border-color:var(--accent);}
-  .hq-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+  .hq-cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;}
   .hq-cal-grid .hcg-head{font-size:10px;color:var(--text-secondary);text-align:center;padding:3px 0;font-weight:600;}
-  .hq-cal-day{border:1px solid var(--border);border-radius:6px;min-height:52px;padding:3px;font-size:10px;cursor:pointer;background:var(--surface);}
-  .hcd-dots{display:flex;gap:3px;align-items:center;flex-wrap:wrap;margin-top:3px;}
-  .hcd-dot{width:7px;height:7px;border-radius:50%;display:inline-block;flex:0 0 auto;}
+  .hq-cal-day{border:1px solid var(--border);border-radius:6px;min-height:60px;padding:3px;font-size:10px;cursor:pointer;background:var(--surface);min-width:0;overflow:hidden;}
   .hcd-more{font-size:9px;color:var(--text-muted);font-weight:700;}
   .hq-cal-day.empty-cell{border:none;background:none;cursor:default;}
   .hq-cal-day.selected{border-color:var(--accent);background:var(--accent-bg);}
@@ -987,13 +985,15 @@ function renderHQCalGrid(){
   for (let day = 1; day <= daysInMonth; day++){
     const dateStr = hqCalViewYear + '-' + pad(hqCalViewMonth+1) + '-' + pad(day);
     const occ = occurrencesForAllDate(dateStr);
-    // 校舎名の文字タグはスマホで横に見切れるため、校舎色のドット表示にする(詳細はマスをタップ)
-    const MAX_DOTS = 3;
-    const dots = occ.slice(0, MAX_DOTS).map(o => `<span class="hcd-dot" style="background:${schoolColor(o.academyId)};"></span>`).join('')
-      + (occ.length > MAX_DOTS ? `<span class="hcd-more">+${occ.length - MAX_DOTS}</span>` : '');
-    const dotsRow = occ.length ? `<div class="hcd-dots">${dots}</div>` : '';
+    // 校舎色のテキストタグで表示。列をminmax(0,1fr)にしてあるため、入り切らない文字は「…」で省略され見切れない
+    const MAX_TAGS = 3;
+    const tags = occ.slice(0, MAX_TAGS).map(o => {
+      const shortName = schoolNameFor(o.academyId).replace(/^タクマ塾/, '');
+      return `<div class="hcd-tag" style="background:${schoolColor(o.academyId)};">${escAttr(shortName)}</div>`;
+    }).join('')
+      + (occ.length > MAX_TAGS ? `<div class="hcd-more">+${occ.length - MAX_TAGS}件</div>` : '');
     const sel = dateStr === hqCalSelectedDate ? ' selected' : '';
-    html += `<div class="hq-cal-day${sel}" data-date="${dateStr}"><div class="hcd-num">${day}</div>${dotsRow}</div>`;
+    html += `<div class="hq-cal-day${sel}" data-date="${dateStr}"><div class="hcd-num">${day}</div>${tags}</div>`;
   }
   grid.innerHTML = html;
 }
