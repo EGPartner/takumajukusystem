@@ -32,6 +32,8 @@
   .school-meta{font-size:12px;color:var(--text-secondary);}
   .empty{color:var(--text-muted);font-size:13px;text-align:center;padding:20px 0;}
   .scroll-y{max-height:520px;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding-right:4px;}
+  .alert-banner{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;text-align:left;background:#FDECEA;border:1px solid var(--danger);border-radius:10px;padding:13px 16px;margin-bottom:16px;cursor:pointer;font-family:inherit;font-size:14px;color:var(--danger);font-weight:700;}
+  .alert-banner .ab-go{font-size:13px;white-space:nowrap;}
   .kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;}
   .kpi-box{border:1px solid var(--border);border-radius:10px;padding:10px 12px;background:var(--bg);}
   .kpi-box .k{font-size:11px;color:var(--text-secondary);}
@@ -103,6 +105,11 @@
         <button class="ghost" id="btn-logout">ログアウト</button>
       </div>
     </div>
+
+    <button type="button" class="alert-banner" id="hq-pending-banner" style="display:none;">
+      <span class="ab-text" id="hq-pending-banner-text"></span>
+      <span class="ab-go">確認する →</span>
+    </button>
 
     <div class="tabs" role="tablist">
       <button class="tab-btn active" data-tab="schedule">統合スケジュール</button>
@@ -341,7 +348,7 @@
         <p class="status" id="hq-url-copy-status" style="margin-bottom:0;"></p>
       </div>
 
-      <div class="card">
+      <div class="card" id="hq-parent-access-card">
         <h2 style="font-size:15px;margin:0 0 4px;">保護者の閲覧管理</h2>
         <p class="status" style="margin-top:0;color:var(--text-muted);">保護者ページは、初回に入力された<b>塾生名が名簿と一致すると自動で利用開始</b>になります。一致しなかった申請だけが下の「承認待ち」に入るので、内容を確認して承認または却下してください。</p>
         <div style="margin-top:8px;">
@@ -1293,17 +1300,56 @@ function viewerDateLabel(v){
   return '-';
 }
 
-async function loadParentViewers(){
+// 承認待ちがあれば画面上部に赤帯で知らせる(タブを開かなくても気づけるように)
+function renderPendingBanner(count){
+  const banner = document.getElementById('hq-pending-banner');
+  const textEl = document.getElementById('hq-pending-banner-text');
+  if (!banner || !textEl) return;
+  if (count > 0){
+    textEl.textContent = '保護者ページの承認待ちが' + count + '件あります';
+    banner.style.display = 'flex';
+  } else {
+    banner.style.display = 'none';
+  }
+}
+
+document.getElementById('hq-pending-banner').addEventListener('click', () => {
+  const tabBtn = document.querySelector('.tab-btn[data-tab="schools"]');
+  if (tabBtn) tabBtn.click();
+  const card = document.getElementById('hq-parent-access-card');
+  if (card) card.scrollIntoView({ behavior:'smooth', block:'start' });
+});
+
+let unsubParentViewers = null;
+function detachParentViewers(){
+  if (unsubParentViewers){ unsubParentViewers(); unsubParentViewers = null; }
+}
+
+function loadParentViewers(){
+  detachParentViewers();
+  const pendingTbody = document.getElementById('hq-pending-tbody');
+  const viewersTbody = document.getElementById('hq-viewers-tbody');
+  pendingTbody.innerHTML = '<tr><td colspan="4" class="status">読み込み中…</td></tr>';
+  viewersTbody.innerHTML = '<tr><td colspan="4" class="status">読み込み中…</td></tr>';
+  // 申請は管理画面を開いている最中にも届くため、リアルタイムに監視する
+  unsubParentViewers = db.collection('parentViewers').orderBy('createdAt', 'desc')
+    .onSnapshot(renderParentViewers, (e) => {
+      console.error(e);
+      renderPendingBanner(0);
+      pendingTbody.innerHTML = '<tr><td colspan="4" class="status">読み込みに失敗しました: ' + escAttr(e.message) + '</td></tr>';
+      viewersTbody.innerHTML = '';
+    });
+}
+
+function renderParentViewers(snap){
   const pendingTbody = document.getElementById('hq-pending-tbody');
   const viewersTbody = document.getElementById('hq-viewers-tbody');
   const pendingCount = document.getElementById('hq-pending-count');
   const viewersCount = document.getElementById('hq-viewers-count');
-  pendingTbody.innerHTML = '<tr><td colspan="4" class="status">読み込み中…</td></tr>';
-  viewersTbody.innerHTML = '<tr><td colspan="4" class="status">読み込み中…</td></tr>';
-  try {
-    const snap = await db.collection('parentViewers').orderBy('createdAt', 'desc').get();
+  {
     const pending = snap.docs.filter(d => d.data().status === 'pending');
     const approved = snap.docs.filter(d => d.data().status === 'approved');
+    renderPendingBanner(pending.length);
     if (pendingCount) pendingCount.textContent = pending.length > 0 ? pending.length + '件' : '';
     if (viewersCount) viewersCount.textContent = '(' + approved.length + '件)';
     pendingTbody.innerHTML = pending.length === 0
@@ -1328,10 +1374,6 @@ async function loadParentViewers(){
             + '<td><button class="link-danger" data-del-viewer="' + escAttr(d.id) + '">取り消し</button></td>'
             + '</tr>';
         }).join('');
-  } catch(e){
-    console.error(e);
-    pendingTbody.innerHTML = '<tr><td colspan="4" class="status">読み込みに失敗しました: ' + escAttr(e.message) + '</td></tr>';
-    viewersTbody.innerHTML = '';
   }
 }
 
@@ -1340,7 +1382,6 @@ async function handleViewerAction(e){
   if (approveUid){
     try {
       await db.collection('parentViewers').doc(approveUid).update({ status: 'approved' });
-      loadParentViewers();
     } catch(err){ alert('承認に失敗しました: ' + err.message); }
     return;
   }
@@ -1349,7 +1390,6 @@ async function handleViewerAction(e){
     if (!confirm('この登録を削除しますか？(その端末は次回アクセス時にもう一度塾生名の入力が必要になります)')) return;
     try {
       await db.collection('parentViewers').doc(delUid).delete();
-      loadParentViewers();
     } catch(err){ alert('削除に失敗しました: ' + err.message); }
   }
 }
@@ -1520,6 +1560,8 @@ auth.onAuthStateChanged(async (user) => {
     document.getElementById('main-content').style.display = 'none';
     detachHQCalendarListeners();
     detachAbsenceListeners();
+    detachParentViewers();
+    renderPendingBanner(0);
     return;
   }
   // systemAdmins と hqAdmins は別々に読み、片方の失敗がもう片方の判定を壊さないようにする
