@@ -891,14 +891,15 @@ let unsubAbsencePerSchool = [];
 
 function attachAbsenceListeners(){
   detachAbsenceListeners();
-  const listContainer = document.getElementById('absence-list');
+  // 名簿の表そのものを消さないよう、中身(tbody)だけを書き換える
+  const listTbody = document.getElementById('absence-list-tbody');
   const summaryTbody = document.getElementById('hq-absence-summary-tbody');
   if (schoolsArr.length === 0){
-    listContainer.innerHTML = '<div class="empty">校舎が登録されていません。</div>';
+    listTbody.innerHTML = '<tr><td colspan="7" class="status">校舎が登録されていません。</td></tr>';
     summaryTbody.innerHTML = '';
     return;
   }
-  listContainer.innerHTML = '<div class="empty">読み込み中…</div>';
+  listTbody.innerHTML = '<tr><td colspan="7" class="status">読み込み中…</td></tr>';
   summaryTbody.innerHTML = '<tr><td colspan="4" class="status">読み込み中…</td></tr>';
   unsubAbsencePerSchool = schoolsArr.map(s =>
     db.collection('academies').doc(s.id).collection('absenceReports')
