@@ -739,6 +739,8 @@ function nextMonthStr(ym){ let [y,m] = ym.split('-').map(Number); m++; if(m>12){
 let lastRosterKey = null;
 function normalizeStudentName(n){ return String(n || '').replace(/[\s　]/g, ''); }
 async function syncRosterNames(){
+  // 閲覧のみのスタッフは名簿を書き込めないため、無駄な拒否エラーを出さないようにする
+  if (!isAdmin) return;
   try {
     const names = Array.from(new Set(students.map(s => normalizeStudentName(s.name)).filter(Boolean))).sort();
     const key = names.join('|');

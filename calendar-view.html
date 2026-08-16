@@ -68,7 +68,9 @@
     <div id="gate-pending" style="display:none;text-align:center;padding:10px 0;">
       <p style="font-weight:700;font-size:14px;margin:0 0 6px;">申請を受け付けました</p>
       <p style="font-size:12px;color:var(--text-muted);margin:0;">入力されたお名前が名簿と一致しなかったため、教室の確認をお待ちください。<br>確認が済むと、このページが自動で切り替わります。</p>
-    </div>
+    
+    <button type="button" id="gate-retry" style="margin-top:12px;background:none;border:1px solid var(--border-strong);border-radius:8px;padding:8px 14px;font-size:13px;cursor:pointer;font-family:inherit;color:var(--text-primary);">お名前を入力し直す</button>
+  </div>
   </div>
 
   <div id="main-content" style="display:none;">
@@ -318,6 +320,15 @@ function showPending(uid){
     if (doc.exists && doc.data().status === 'approved') showMain();
   }, err => console.error(err));
 }
+// 承認待ちの間も、名前を入力し直して再申請できる(誤字で待ち続けるのを防ぐ)
+document.getElementById('gate-retry').addEventListener('click', () => {
+  document.getElementById('gate-pending').style.display = 'none';
+  document.getElementById('gate-form').style.display = 'block';
+  const st = document.getElementById('gate-status');
+  if (st) st.textContent = '';
+  loadGateSchoolOptions();
+});
+
 async function loadGateSchoolOptions(){
   const sel = document.getElementById('gate-school');
   try {
