@@ -679,6 +679,7 @@ let settings = {
 };
 let isAdmin = false;
 let initialTabApplied = false;
+let pendingGridRerender = false;
 let currentBranchName = 'タクマ塾';
 let editState = { pricing:false, sponsors:false, expenses:false, extra:false, locations:false, patterns:false, staff:false };
 let currentFY;
@@ -1612,6 +1613,13 @@ function renderGrid(){
   const months = fiscalMonths(currentFY);
   const tbody = document.getElementById('grid-tbody');
   const empty = document.getElementById('grid-empty');
+  // 氏名・学年を入力している最中は表を作り直さない(入力欄が置き換わってフォーカスが外れるため)。
+  // 保留した再描画は、欄を離れた時(focusout)に実行される
+  const active = document.activeElement;
+  if (active && tbody.contains(active) && (active.classList.contains('in-name') || active.classList.contains('in-grade'))){
+    pendingGridRerender = true;
+    return;
+  }
   if (students.length === 0){ tbody.innerHTML = ''; empty.style.display = 'block'; }
   else {
     empty.style.display = 'none';
@@ -2402,7 +2410,16 @@ function initUI(){
   document.getElementById('fy-next').addEventListener('click', () => { currentFY++; renderAll(); });
 
   document.getElementById('grid-tbody').addEventListener('click', handleGridClick);
-  document.getElementById('grid-tbody').addEventListener('input', handleGridInput);
+  // 'input'(1文字ごと)ではなく'change'(入力確定時)で保存する。
+  // 1文字ごとに保存→再描画が走ると、入力中の欄が作り直されてフォーカスが外れてしまうため
+  document.getElementById('grid-tbody').addEventListener('change', handleGridInput);
+  // 入力中に保留された再描画があれば、欄を離れたタイミングで実行する
+  document.getElementById('grid-tbody').addEventListener('focusout', () => {
+    if (pendingGridRerender){
+      pendingGridRerender = false;
+      setTimeout(renderGrid, 0);
+    }
+  });
   document.getElementById('btn-add-student').addEventListener('click', handleAddStudent);
   document.getElementById('btn-sample').addEventListener('click', handleAddSample);
   document.getElementById('btn-reset-students').addEventListener('click', handleResetStudents);
