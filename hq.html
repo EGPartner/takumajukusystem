@@ -315,9 +315,9 @@
         <h2 style="font-size:15px;margin:0 0 12px;">校舎一覧</h2>
         <div id="school-list" class="scroll-y"><div class="empty">読み込み中…</div></div>
       </div>
-      <div class="card">
+      <div class="card" id="add-school-section" style="display:none;">
         <h2 style="font-size:15px;margin:0 0 4px;">新しい校舎を追加</h2>
-        <p class="status" style="margin-top:0;color:var(--text-muted);">校舎IDは半角英数字とハイフンのみ(例: nara)。あとで変更できません。</p>
+        <p class="status" style="margin-top:0;color:var(--text-muted);">校舎の追加は「大元の情報」の変更にあたるため、システム管理者のみが行えます。校舎IDは半角英数字とハイフンのみ(例: nara)。あとで変更できません。</p>
         <div class="field"><label for="new-name">校舎名</label><input type="text" id="new-name" placeholder="例: タクマ塾奈良校"></div>
         <div class="field"><label for="new-id">校舎ID</label><input type="text" id="new-id" placeholder="例: nara"></div>
         <div class="btn-row"><button class="primary" id="btn-add-school">追加する</button></div>
@@ -380,20 +380,41 @@
         <p class="status" style="margin-top:0;color:var(--text-muted);">全校舎の統合スケジュール・欠席連絡・校舎管理ができる権限です。追加・削除はシステム管理者のみ行えます。「削除」はアクセス権のみ外し、ログインアカウント自体は残ります。</p>
         <div style="overflow-x:auto;">
           <table class="mini-table">
-            <thead><tr><th>メールアドレス</th><th></th></tr></thead>
+            <thead><tr><th>メールアドレス</th><th>発行者・発行日</th><th></th></tr></thead>
             <tbody id="hqadmin-tbody"></tbody>
           </table>
         </div>
-        <div style="margin-top:16px;padding:14px;border:1px solid var(--accent);border-radius:10px;background:var(--accent-bg);">
-          <p style="font-weight:700;font-size:13px;margin:0 0 4px;color:var(--accent-dark);">◆ ここは新しいログイン情報を作る機能です(ログイン画面ではありません)</p>
-          <p class="status" style="margin-top:0;">入力した内容が、その人の新しいメールアドレス・パスワードになります。作成後、この2つをそのまま本人に伝えてください。<br>※このメールアドレスがすでに(他の校のスタッフなどとして)登録済みの場合は、エラーになり作成できません。</p>
-          <div class="row2" style="margin-top:10px;">
-            <div class="field"><label>新しいメールアドレス</label><input type="text" id="new-hqadmin-email" placeholder="例: staff@example.com"></div>
-            <div class="field"><label>新しい初期パスワード</label><input type="text" id="new-hqadmin-password" placeholder="6文字以上"></div>
-          </div>
-          <div class="btn-row"><button class="primary" id="btn-add-hqadmin" style="width:auto;">この内容で新規アカウントを作成する</button></div>
-          <p class="status" id="add-hqadmin-status"></p>
+      </div>
+
+      <div class="card" id="sysadmin-section" style="display:none;">
+        <h2 style="font-size:15px;margin:0 0 4px;">システム管理者(最上位権限)</h2>
+        <p class="status" style="margin-top:0;color:var(--text-muted);">すべての操作ができる権限です。安全のため<b>この画面からは追加・削除できません</b>。変更が必要な場合は Firebase コンソールの Firestore で <code>systemAdmins</code> を直接編集してください(乗っ取り時に権限を無限に増やされるのを防ぐための制限です)。</p>
+        <div style="overflow-x:auto;">
+          <table class="mini-table">
+            <thead><tr><th>メールアドレス</th></tr></thead>
+            <tbody id="sysadmin-tbody"></tbody>
+          </table>
         </div>
+      </div>
+
+      <div class="card" id="issue-account-section" style="display:none;">
+        <h2 style="font-size:15px;margin:0 0 4px;">アカウントの発行</h2>
+        <p class="status" style="margin-top:0;color:var(--text-muted);">◆ ここは<b>新しいログイン情報を作る機能</b>です(ログイン画面ではありません)。入力した内容がその人のメールアドレス・パスワードになるので、作成後この2つをそのまま本人にお伝えください。<br>※すでに登録済みのメールアドレスはエラーになり作成できません。</p>
+        <div class="row2">
+          <div class="field"><label for="new-account-role">権限</label>
+            <select id="new-account-role"></select>
+          </div>
+          <div class="field" id="new-account-school-field" style="display:none;"><label for="new-account-school">校舎</label>
+            <select id="new-account-school"></select>
+          </div>
+        </div>
+        <p class="status" id="new-account-desc" style="margin-top:0;padding:9px 11px;border-radius:8px;background:var(--accent-bg);color:var(--accent-dark);"></p>
+        <div class="row2">
+          <div class="field"><label for="new-account-email">新しいメールアドレス</label><input type="text" id="new-account-email" placeholder="例: staff@example.com"></div>
+          <div class="field"><label for="new-account-password">新しい初期パスワード</label><input type="text" id="new-account-password" placeholder="6文字以上"></div>
+        </div>
+        <div class="btn-row"><button class="primary" id="btn-issue-account" style="width:auto;">この内容で発行する</button></div>
+        <p class="status" id="issue-account-status"></p>
       </div>
     </div>
   </div>
@@ -655,20 +676,49 @@ document.getElementById('btn-add-school').addEventListener('click', async () => 
   }
 });
 
+// 発行者と発行日。記録のない古いアカウントは「-」になる
+function issuedLabel(data){
+  const ymd = (data.createdAt && data.createdAt.toDate)
+    ? (() => { const d = data.createdAt.toDate(); return d.getFullYear() + '/' + (d.getMonth()+1) + '/' + d.getDate(); })()
+    : '';
+  const label = [data.createdBy || '', ymd].filter(Boolean).join(' ');
+  return label || '-';
+}
+
 async function loadHQAdmins(){
   const tbody = document.getElementById('hqadmin-tbody');
-  tbody.innerHTML = '<tr><td colspan="2" class="status">読み込み中…</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="3" class="status">読み込み中…</td></tr>';
   try {
     const snap = await hqAdminsRef.get();
-    if (snap.empty){ tbody.innerHTML = '<tr><td colspan="2" class="status">登録されていません</td></tr>'; return; }
+    if (snap.empty){ tbody.innerHTML = '<tr><td colspan="3" class="status">登録されていません</td></tr>'; return; }
     tbody.innerHTML = snap.docs.map(d => {
       const data = d.data();
-      const selfTag = currentUser && d.id === currentUser.uid ? '(自分)' : '';
-      const delBtn = (currentUser && d.id === currentUser.uid) ? '' : `<button class="link-danger" data-del-hqadmin="${d.id}">削除</button>`;
-      return `<tr><td>${escAttr(data.email || d.id)} ${selfTag}</td><td>${delBtn}</td></tr>`;
+      const isSelf = currentUser && d.id === currentUser.uid;
+      const selfTag = isSelf ? '(自分)' : '';
+      // 自分の権限は自分で外せない(誤って本部機能から締め出されるのを防ぐ)
+      const delBtn = isSelf ? '' : `<button class="link-danger" data-del-hqadmin="${d.id}">削除</button>`;
+      return `<tr><td>${escAttr(data.email || d.id)} ${selfTag}</td><td class="status">${escAttr(issuedLabel(data))}</td><td>${delBtn}</td></tr>`;
     }).join('');
   } catch(e){
-    tbody.innerHTML = '<tr><td colspan="2" class="status">読み込みに失敗しました: ' + escAttr(e.message) + '</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="3" class="status">読み込みに失敗しました: ' + escAttr(e.message) + '</td></tr>';
+  }
+}
+
+// システム管理者は閲覧のみ(発行・削除はFirebaseコンソール限定)
+async function loadSystemAdmins(){
+  const tbody = document.getElementById('sysadmin-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td class="status">読み込み中…</td></tr>';
+  try {
+    const snap = await systemAdminsRef.get();
+    if (snap.empty){ tbody.innerHTML = '<tr><td class="status">登録されていません</td></tr>'; return; }
+    tbody.innerHTML = snap.docs.map(d => {
+      const data = d.data();
+      const selfTag = currentUser && d.id === currentUser.uid ? ' (自分)' : '';
+      return `<tr><td>${escAttr(data.email || d.id)}${selfTag}</td></tr>`;
+    }).join('');
+  } catch(e){
+    tbody.innerHTML = '<tr><td class="status">読み込みに失敗しました: ' + escAttr(e.message) + '</td></tr>';
   }
 }
 
@@ -680,28 +730,75 @@ document.getElementById('hqadmin-tbody').addEventListener('click', async (e) => 
   catch(err){ alert('削除に失敗しました: ' + err.message); }
 });
 
-document.getElementById('btn-add-hqadmin').addEventListener('click', async () => {
-  const statusEl = document.getElementById('add-hqadmin-status');
-  const email = document.getElementById('new-hqadmin-email').value.trim();
-  const password = document.getElementById('new-hqadmin-password').value;
-  if (!email || !password){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = 'メールアドレスとパスワードの両方を入力してください。'; return; }
-  if (password.length < 6){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = 'パスワードは6文字以上にしてください。'; return; }
+// ---- アカウントの発行(権限をプルダウンで選ぶ) ----
+// 自分より弱い権限しか発行できない。運用管理者の発行はシステム管理者のみ。
+const ACCOUNT_ROLES = {
+  hqAdmin:      { label:'運用管理者(全校の管理)',   needsSchool:false, systemAdminOnly:true,
+                  desc:'全校舎の統合スケジュール・欠席連絡・塾生・校舎管理ができます。収支設定も全校で編集できます。' },
+  schoolAdmin:  { label:'校舎管理者(塾長)',        needsSchool:true,  systemAdminOnly:false,
+                  desc:'選んだ校舎の収支・単価設定・スタッフ管理ができます。他の校舎は見られません。' },
+  schoolStaff:  { label:'スタッフ',                needsSchool:true,  systemAdminOnly:false,
+                  desc:'選んだ校舎の欠席連絡・カレンダー・塾生の記録ができます。収支や設定は見られません。' }
+};
+
+function populateAccountRoleSelect(){
+  const sel = document.getElementById('new-account-role');
+  if (!sel) return;
+  const keys = Object.keys(ACCOUNT_ROLES).filter(k => !ACCOUNT_ROLES[k].systemAdminOnly || isSystemAdminUser);
+  sel.innerHTML = keys.map(k => `<option value="${k}">${escAttr(ACCOUNT_ROLES[k].label)}</option>`).join('');
+  updateAccountRoleUI();
+}
+
+function updateAccountRoleUI(){
+  const sel = document.getElementById('new-account-role');
+  const role = ACCOUNT_ROLES[sel.value];
+  if (!role) return;
+  document.getElementById('new-account-school-field').style.display = role.needsSchool ? '' : 'none';
+  document.getElementById('new-account-desc').textContent = 'この権限でできること: ' + role.desc;
+}
+
+document.getElementById('new-account-role').addEventListener('change', updateAccountRoleUI);
+
+document.getElementById('btn-issue-account').addEventListener('click', async () => {
+  const statusEl = document.getElementById('issue-account-status');
+  const roleKey = document.getElementById('new-account-role').value;
+  const role = ACCOUNT_ROLES[roleKey];
+  const academyId = document.getElementById('new-account-school').value;
+  const email = document.getElementById('new-account-email').value.trim();
+  const password = document.getElementById('new-account-password').value;
+  const fail = (msg) => { statusEl.style.color = 'var(--danger)'; statusEl.textContent = msg; };
+  if (!role) return fail('権限を選んでください。');
+  if (role.systemAdminOnly && !isSystemAdminUser) return fail('この権限を発行できるのはシステム管理者だけです。');
+  if (role.needsSchool && !academyId) return fail('校舎を選んでください。');
+  if (!email || !password) return fail('メールアドレスとパスワードの両方を入力してください。');
+  if (password.length < 6) return fail('パスワードは6文字以上にしてください。');
   statusEl.style.color = 'var(--text-secondary)';
   statusEl.textContent = 'アカウントを発行しています…';
   try {
     const cred = await secondaryAuth.createUserWithEmailAndPassword(email, password);
     const newUid = cred.user.uid;
     await secondaryAuth.signOut();
-    await hqAdminsRef.doc(newUid).set({ email });
+    const stamp = {
+      createdBy: currentUser ? currentUser.email : '',
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+    let where;
+    if (roleKey === 'hqAdmin'){
+      await hqAdminsRef.doc(newUid).set(Object.assign({ email }, stamp));
+      where = '運用管理者';
+      loadHQAdmins();
+    } else {
+      await db.collection('academies').doc(academyId).collection('staff').doc(newUid)
+        .set(Object.assign({ role: roleKey === 'schoolAdmin' ? 'admin' : 'staff', email, uid: newUid }, stamp));
+      where = schoolNameFor(academyId) + 'の' + (roleKey === 'schoolAdmin' ? '校舎管理者' : 'スタッフ');
+    }
     statusEl.style.color = 'var(--accent-dark)';
-    statusEl.textContent = '✓ ' + email + ' さんを運用管理者として発行しました。';
-    document.getElementById('new-hqadmin-email').value = '';
-    document.getElementById('new-hqadmin-password').value = '';
-    loadHQAdmins();
+    statusEl.textContent = '✓ ' + email + ' さんを' + where + 'として発行しました。メールアドレスと初期パスワードを本人にお伝えください。';
+    document.getElementById('new-account-email').value = '';
+    document.getElementById('new-account-password').value = '';
   } catch(err){
     console.error(err);
-    statusEl.style.color = 'var(--danger)';
-    statusEl.textContent = '発行に失敗しました: ' + err.message;
+    fail('発行に失敗しました: ' + err.message);
   }
 });
 
@@ -1111,6 +1208,13 @@ function populateSchoolSelects(){
     const cur = bulkSel.value;
     bulkSel.innerHTML = '<option value="__all__">すべての校舎</option>' + opts;
     if (cur) bulkSel.value = cur;
+  }
+  // アカウント発行の校舎は、選び忘れを防ぐため空の選択肢から始める
+  const accountSel = document.getElementById('new-account-school');
+  if (accountSel){
+    const cur = accountSel.value;
+    accountSel.innerHTML = '<option value="">選択してください</option>' + opts;
+    if (cur) accountSel.value = cur;
   }
   const bulkAbsSel = document.getElementById('hq-bulk-absence-school');
   if (bulkAbsSel){
@@ -1550,7 +1654,7 @@ clearStatusOnInput(['hq-new-pattern-school','hq-new-pattern-weekday','hq-new-pat
 clearStatusOnInput(['new-name','new-id'], 'add-status');
 clearStatusOnInput(['hq-bulk-school','hq-bulk-events','hq-bulk-patterns'], 'hq-bulk-status');
 clearStatusOnInput(['hq-bulk-absence-school','hq-bulk-absence-acked-only'], 'hq-bulk-absence-status');
-clearStatusOnInput(['new-hqadmin-email','new-hqadmin-password'], 'add-hqadmin-status');
+clearStatusOnInput(['new-account-role','new-account-school','new-account-email','new-account-password'], 'issue-account-status');
 
 auth.onAuthStateChanged(async (user) => {
   if (user && user.isAnonymous){ await auth.signOut(); return; }
@@ -1589,10 +1693,15 @@ auth.onAuthStateChanged(async (user) => {
   document.getElementById('login-card').style.display = 'none';
   document.getElementById('main-content').style.display = 'block';
   document.getElementById('who').textContent = user.email + (isSystemAdminUser ? '(システム管理者)' : '(運用管理者)');
+  // システム管理者の一覧と運用管理者の管理はシステム管理者のみ。発行フォームは本部権限があれば使える
   document.getElementById('hqadmin-manage-section').style.display = isSystemAdminUser ? 'block' : 'none';
+  document.getElementById('sysadmin-section').style.display = isSystemAdminUser ? 'block' : 'none';
+  document.getElementById('add-school-section').style.display = isSystemAdminUser ? 'block' : 'none';
+  document.getElementById('issue-account-section').style.display = 'block';
+  populateAccountRoleSelect();
   document.getElementById('hq-new-occ-date').value = (() => { const d = new Date(); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); })();
   await loadSchools();
-  if (isSystemAdminUser) loadHQAdmins();
+  if (isSystemAdminUser){ loadHQAdmins(); loadSystemAdmins(); }
   loadParentViewers();
   attachAbsenceListeners();
   attachHQCalendarListeners();

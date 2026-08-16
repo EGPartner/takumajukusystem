@@ -35,6 +35,10 @@
   .tabs{display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:22px;flex-wrap:wrap;}
   .tab-btn{padding:12px 18px;font-size:13.5px;font-weight:600;background:none;border:none;color:var(--text-secondary);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;font-family:inherit;}
   .tab-btn.active{color:var(--accent-dark);border-bottom-color:var(--accent);}
+  /* スタッフ(閲覧のみ)のときは、編集用のボタン・フォームをまとめて隠す */
+  body.is-readonly .edit-only{display:none !important;}
+  .readonly-banner{display:none;background:#EEF6F7;border:1px solid var(--border-strong);border-radius:10px;padding:11px 14px;margin-bottom:14px;font-size:13px;color:var(--text-secondary);}
+  body.is-readonly .readonly-banner{display:block;}
   .tab-group-label{font-size:10.5px;font-weight:700;letter-spacing:.08em;color:var(--text-muted);align-self:center;padding:0 2px 0 16px;white-space:nowrap;user-select:none;cursor:pointer;}
   .tab-group-label:first-child{padding-left:0;}
   .seg-row{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
@@ -201,6 +205,8 @@
     </div>
   </header>
 
+  <p class="readonly-banner">閲覧専用のアカウントでログインしています。データの確認はできますが、登録・変更はできません。変更が必要な場合は校舎の代表者にご依頼ください。</p>
+
   <div class="fy-nav">
     <button class="ghost" id="fy-prev">◀ 前年度</button>
     <div id="fy-label">-</div>
@@ -286,7 +292,7 @@
         </table>
       </div>
       <div id="grid-empty" class="empty" style="display:none;">まだ塾生が登録されていません。下のボタンから追加してください。</div>
-      <div class="btn-row" style="margin-top:14px;">
+      <div class="btn-row edit-only" style="margin-top:14px;">
         <button class="primary" id="btn-add-student">+ 塾生を追加</button>
         <button class="ghost" id="btn-sample">サンプルデータを追加</button>
         <button class="ghost" id="btn-reset-students">塾生データを全削除</button>
@@ -311,7 +317,7 @@
       <p class="note" id="growth-status-line" style="margin-top:-8px;"></p>
       <div id="growth-inputs"></div>
       <div class="field"><label for="g-comment">特記事項</label><textarea id="g-comment" rows="3"></textarea></div>
-      <div class="btn-row">
+      <div class="btn-row edit-only">
         <button class="primary" id="btn-save-growth">この月の評価を保存</button>
         <span id="growth-saved" style="font-size:12px;color:var(--accent-dark);display:none;">保存しました</span>
       </div>
@@ -371,7 +377,7 @@
     <div class="card">
       <h2>欠席連絡</h2>
       <p class="note" style="margin-top:0;">保護者専用フォームから送られた欠席連絡の一覧です。「確認済みにする」を押すと一覧の下の方に移動します。</p>
-      <div class="btn-row" id="absence-bulk-actions" style="display:none;margin-bottom:12px;">
+      <div class="btn-row edit-only" id="absence-bulk-actions" style="display:none;margin-bottom:12px;">
         <button class="link-danger" id="btn-delete-acknowledged">確認済みをすべて削除</button>
       </div>
       <div class="table-scroll" style="max-height:520px;overflow-y:auto;-webkit-overflow-scrolling:touch;">
@@ -404,7 +410,7 @@
       <p class="note">選手名は保護者が欠席連絡フォームに自由入力した文字列を基に集計しています。表記の揺れがある場合は、下の「表記ゆれをまとめる」から統合できます。</p>
     </div>
 
-    <div class="card">
+    <div class="card edit-only">
       <h2>表記ゆれをまとめる</h2>
       <p class="note" style="margin-top:0;">同じ選手なのに表記が違うために別集計になっている場合、ここで統合できます。元の入力データは変更されず、集計・表示だけがまとまります。</p>
       <div class="table-scroll">
@@ -445,7 +451,7 @@
       </div>
     </div>
 
-    <div class="card">
+    <div class="card edit-only">
       <h2>この日だけの予定を編集</h2>
       <p class="note" id="occ-editor-hint" style="margin-top:0;">上の一覧またはカレンダーから「編集」を押すと、ここに内容が表示されます。</p>
       <div id="occ-editor" style="display:none;">
@@ -475,7 +481,7 @@
       </div>
     </div>
 
-    <div class="card">
+    <div class="card edit-only">
       <h2>単発の予定を追加</h2>
       <p class="note" style="margin-top:0;">定期パターンに属さない、大会や特別イベントなどを追加します。</p>
       <div class="row">
@@ -543,7 +549,7 @@
       </div>
       <p class="note" style="margin-top:0;">このシステム内でスタッフのログインアカウントを発行できます。「削除」は、このシステムへのアクセス権を外すだけで、発行済みのアカウント自体は残ります。</p>
       <div class="table-scroll">
-        <table class="mini-table"><thead><tr><th>メールアドレス</th><th>役割</th><th></th></tr></thead><tbody id="staff-tbody"></tbody></table>
+        <table class="mini-table"><thead><tr><th>メールアドレス</th><th>役割</th><th>発行者・発行日</th><th></th></tr></thead><tbody id="staff-tbody"></tbody></table>
       </div>
       <div id="staff-empty" class="empty" style="display:none;">スタッフが登録されていません。</div>
       <div id="add-staff-form" style="display:none;margin-top:16px;padding:14px;border:1px solid var(--accent);border-radius:10px;background:var(--accent-bg);">
@@ -678,6 +684,7 @@ let settings = {
   extraIncomes:[]
 };
 let isAdmin = false;
+let isHQUser = false;
 let initialTabApplied = false;
 let pendingGridRerender = false;
 let currentBranchName = 'タクマ塾';
@@ -854,14 +861,24 @@ function defaultSettings(){
 }
 
 async function resolveRole(uid){
+  // 本部(運用管理者・システム管理者)は全校舎を管理できるため、各校の画面でも代表者と同じ権限で扱う
+  isHQUser = false;
+  try {
+    const [sysDoc, hqDoc] = await Promise.all([
+      db.collection('systemAdmins').doc(uid).get().catch(() => null),
+      db.collection('hqAdmins').doc(uid).get().catch(() => null)
+    ]);
+    isHQUser = !!((sysDoc && sysDoc.exists) || (hqDoc && hqDoc.exists));
+  } catch(e){ console.error(e); }
   try {
     const doc = await staffRef.doc(uid).get();
-    isAdmin = doc.exists && doc.data().role === 'admin';
+    isAdmin = isHQUser || (doc.exists && doc.data().role === 'admin');
     if (doc.exists && doc.data().uid !== uid){
       staffRef.doc(uid).set({ uid, email: currentUser.email }, { merge:true }).catch(e => console.error(e));
     }
-  } catch(e){ isAdmin = false; }
-  document.getElementById('current-user-email').textContent = currentUser.email + (isAdmin ? '(管理者)' : '(スタッフ)');
+  } catch(e){ isAdmin = isHQUser; }
+  const roleLabel = isHQUser ? '(本部)' : (isAdmin ? '(校舎代表者)' : '(スタッフ・閲覧のみ)');
+  document.getElementById('current-user-email').textContent = currentUser.email + roleLabel;
   updateAdminUI();
   // 役割別の初期画面: スタッフは日常業務の「欠席・出欠」、管理者は「ダッシュボード」に着地する(ログイン直後の1回のみ)
   if (!initialTabApplied){
@@ -962,7 +979,7 @@ function renderAbsenceList(docs){
     const r = d.data();
     const submittedStr = fmtTimestamp(r.submittedAt);
     const statusBadge = r.status === 'new' ? '<span class="badge">未確認</span>' : '<span class="badge muted">確認済み</span>';
-    const ackBtn = r.status === 'new' ? `<button class="ghost" data-ack="${d.id}">確認済みにする</button>` : '';
+    const ackBtn = (isAdmin && r.status === 'new') ? `<button class="ghost" data-ack="${d.id}">確認済みにする</button>` : '';
     const delBtn = isAdmin ? `<button class="link-danger" data-archive-absence="${d.id}">一覧から削除</button>` : '';
     const actionCell = ackBtn + ' ' + delBtn;
     return `<tr>
@@ -1060,10 +1077,10 @@ function calendarRowHTML(o){
       ${o.note ? '<div class="cr-note">' + escAttr(o.note) + '</div>' : ''}
       ${absenteesHTML}
     </div>
-    <div class="cr-actions">
+    ${isAdmin ? `<div class="cr-actions">
       <button class="ghost" data-edit-occ="${key}">編集</button>
       <button class="link-danger" data-delete-occ="${key}">削除</button>
-    </div>
+    </div>` : ''}
   </div>`;
 }
 
@@ -1345,23 +1362,63 @@ function renderStaffTable(){
   if (staffList.length === 0){ tbody.innerHTML = ''; if (empty) empty.style.display = 'block'; return; }
   if (empty) empty.style.display = 'none';
   const dis = editState.staff ? '' : 'disabled';
-  tbody.innerHTML = staffList.map(s => `
+  tbody.innerHTML = staffList.map(s => {
+    const isSelf = currentUser && s.id === currentUser.uid;
+    // 自分自身と「最後の管理者」は、締め出しを防ぐため変更・削除できない
+    const locked = isSelf || isLastAdmin(s.id);
+    const rowDis = (dis || locked) ? 'disabled' : '';
+    const lockNote = isSelf ? '<span class="note">(自分)</span>' : (locked ? '<span class="note">(最後の管理者)</span>' : '');
+    return `
     <tr data-id="${s.id}">
-      <td>${escAttr(s.email || s.id)}</td>
-      <td><select class="stf-role" data-id="${s.id}" ${dis}><option value="staff" ${s.role!=='admin'?'selected':''}>スタッフ</option><option value="admin" ${s.role==='admin'?'selected':''}>管理者</option></select></td>
-      <td><button class="link-danger" data-del-staff="${s.id}" ${dis}>削除</button></td>
-    </tr>`).join('');
+      <td>${escAttr(s.email || s.id)} ${lockNote}</td>
+      <td><select class="stf-role" data-id="${s.id}" ${rowDis}><option value="staff" ${s.role!=='admin'?'selected':''}>スタッフ</option><option value="admin" ${s.role==='admin'?'selected':''}>管理者</option></select></td>
+      <td class="note">${escAttr(staffIssuedLabel(s))}</td>
+      <td>${locked ? '' : `<button class="link-danger" data-del-staff="${s.id}" ${dis}>削除</button>`}</td>
+    </tr>`;
+  }).join('');
+}
+
+// 発行者と発行日。古いデータには記録がないため「-」を返す
+function staffIssuedLabel(s){
+  if (!s.createdAt || !s.createdAt.toDate) return s.createdBy || '-';
+  const d = s.createdAt.toDate();
+  const ymd = d.getFullYear() + '/' + (d.getMonth()+1) + '/' + d.getDate();
+  return (s.createdBy ? s.createdBy + ' ' : '') + ymd;
+}
+
+// 校舎の管理者が0人になると、設定・収支を触れる人がいなくなり本部依頼でしか復旧できないため防ぐ
+function isLastAdmin(id){
+  const admins = staffList.filter(s => s.role === 'admin');
+  return admins.length <= 1 && admins.some(s => s.id === id);
 }
 
 async function handleStaffChange(e){
   const id = e.target.dataset.id;
   if (!id || !e.target.classList.contains('stf-role')) return;
+  if (currentUser && id === currentUser.uid){
+    alert('自分自身の役割は変更できません。管理者権限が必要な変更は、他の管理者または本部にご依頼ください。');
+    renderStaffTable();
+    return;
+  }
+  if (e.target.value !== 'admin' && isLastAdmin(id)){
+    alert('この校舎で最後の管理者のため、スタッフに変更できません。先に別の方を管理者にしてください。');
+    renderStaffTable();
+    return;
+  }
   try { await staffRef.doc(id).set({ role: e.target.value }, { merge:true }); }
-  catch(err){ console.error(err); alert('更新に失敗しました: ' + err.message); }
+  catch(err){ console.error(err); alert('更新に失敗しました: ' + err.message); renderStaffTable(); }
 }
 async function handleStaffClick(e){
   const id = e.target.dataset.delStaff;
   if (!id) return;
+  if (currentUser && id === currentUser.uid){
+    alert('自分自身のアクセス権は削除できません。');
+    return;
+  }
+  if (isLastAdmin(id)){
+    alert('この校舎で最後の管理者のため、削除できません。先に別の方を管理者にしてください。');
+    return;
+  }
   if (!confirm('このアカウントのアクセス権を削除しますか？(ログインアカウント自体は残ります)')) return;
   try { await staffRef.doc(id).delete(); }
   catch(err){ console.error(err); alert('削除に失敗しました: ' + err.message); }
@@ -1380,7 +1437,11 @@ async function handleAddStaff(){
     const cred = await secondaryAuth.createUserWithEmailAndPassword(email, password);
     const newUid = cred.user.uid;
     await secondaryAuth.signOut();
-    await staffRef.doc(newUid).set({ role, email, uid: newUid });
+    await staffRef.doc(newUid).set({
+      role, email, uid: newUid,
+      createdBy: currentUser ? currentUser.email : '',
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
     statusEl.style.color = 'var(--accent-dark)';
     statusEl.textContent = '✓ ' + email + ' さんのアカウントを発行しました。';
     document.getElementById('new-staff-email').value = '';
@@ -1427,6 +1488,7 @@ function renderAliasTable(){
 }
 
 async function handleAliasChange(e){
+  if (!isAdmin) return;
   if (!e.target.classList.contains('alias-select')) return;
   const raw = e.target.dataset.raw;
   const target = e.target.value;
@@ -1630,11 +1692,12 @@ function renderGrid(){
         const cls = st === 'pause' ? 'cell-month pause' : 'cell-month';
         return `<td class="${cls}" data-id="${s.id}" data-key="${mo.key}">${cellMark(st)}</td>`;
       }).join('');
+      const ro = isAdmin ? '' : 'disabled';
       return `<tr data-row="${s.id}">
-        <td class="col-name"><input type="text" class="in-name" data-id="${s.id}" value="${escAttr(s.name)}"></td>
-        <td class="col-grade"><input type="number" class="in-grade" data-id="${s.id}" value="${grade}" title="${gradeLabel(grade)}"></td>
-        <td class="col-trial"><input type="checkbox" class="in-trial" data-id="${s.id}" ${s.trial ? 'checked' : ''}></td>
-        ${cells}<td><button class="link-danger" data-del="${s.id}">削除</button></td></tr>`;
+        <td class="col-name"><input type="text" class="in-name" data-id="${s.id}" value="${escAttr(s.name)}" ${ro}></td>
+        <td class="col-grade"><input type="number" class="in-grade" data-id="${s.id}" value="${grade}" title="${gradeLabel(grade)}" ${ro}></td>
+        <td class="col-trial"><input type="checkbox" class="in-trial" data-id="${s.id}" ${s.trial ? 'checked' : ''} ${ro}></td>
+        ${cells}<td>${isAdmin ? `<button class="link-danger" data-del="${s.id}">削除</button>` : ''}</td></tr>`;
     }).join('');
   }
   renderGridFooter(months);
@@ -1661,6 +1724,7 @@ function renderAll(){
 }
 
 async function handleGridClick(e){
+  if (!isAdmin) return;
   const del = e.target.dataset.del;
   if (del){
     if (!confirm('この塾生を削除しますか？(成長記録も削除されます)')) return;
@@ -1679,6 +1743,7 @@ async function handleGridClick(e){
   }
 }
 async function handleGridInput(e){
+  if (!isAdmin) return;
   const id = e.target.dataset.id;
   const s = students.find(x => x.id === id); if (!s) return;
   if (e.target.classList.contains('in-name')){ await saveStudent(Object.assign({}, s, { name: e.target.value })); }
@@ -1686,6 +1751,7 @@ async function handleGridInput(e){
   else if (e.target.classList.contains('in-trial')){ await saveStudent(Object.assign({}, s, { trial: e.target.checked })); }
 }
 async function handleAddStudent(){
+  if (!isAdmin) return;
   await saveStudent({ id: uid(), name:'新しい塾生', trial:false, gradeRef:1, gradeRefFY: currentFY, months:{}, growth:{} });
 }
 async function handleAddSample(){
@@ -1762,6 +1828,9 @@ function updateAdminUI(){
     dashLocked.style.display = 'block';
     dashContent.style.display = 'none';
   }
+  // スタッフは閲覧のみ。編集用のボタン・フォームをまとめて隠し、入力欄も操作できないようにする
+  document.body.classList.toggle('is-readonly', !isAdmin);
+  document.querySelectorAll('#growth-inputs select, #g-comment').forEach(el => { el.disabled = !isAdmin; });
   document.querySelectorAll('.admin-only-tab').forEach(b => b.style.display = isAdmin ? '' : 'none');
   const activeTab = document.querySelector('.tabs .tab-btn.active');
   if (!isAdmin && activeTab && activeTab.classList.contains('admin-only-tab')){
@@ -2004,6 +2073,7 @@ function loadGrowthForm(){
 }
 
 async function handleSaveGrowth(){
+  if (!isAdmin) return;
   const sid = document.getElementById('growth-student').value;
   const ym = document.getElementById('growth-month').value;
   const s = students.find(x => x.id === sid);
