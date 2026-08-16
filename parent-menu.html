@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>タクマ塾 保護者ページ</title>
+<style>
+  :root{
+    --bg:#F6F6F1; --surface:#FFFFFF; --border:#E1E7E7; --border-strong:#C7D2D2;
+    --text-primary:#12181A; --text-secondary:#5B6668; --text-muted:#8A9799;
+    --accent:#0FB8C4; --accent-dark:#0A8A93; --accent-bg:#E3F7F8;
+    --danger:#D6483F; --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:"Hiragino Sans","Yu Gothic",-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text-primary);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:26px 22px;max-width:420px;width:100%;}
+  h1{font-size:19px;margin:0 0 4px;text-align:center;}
+  p.sub{font-size:13px;color:var(--text-secondary);margin:0 0 20px;text-align:center;}
+  label{font-size:13px;color:var(--text-secondary);display:block;margin-bottom:5px;}
+  select{width:100%;padding:11px;border:1px solid var(--border-strong);border-radius:8px;font-size:16px;background:var(--surface);color:var(--text-primary);font-family:inherit;font-weight:600;}
+  .field{margin-bottom:18px;}
+  a.menu-btn{display:block;border:1px solid var(--border-strong);border-radius:12px;padding:16px 18px;margin-bottom:12px;text-decoration:none;color:var(--text-primary);background:var(--surface);transition:border-color 0.15s;}
+  a.menu-btn:active{border-color:var(--accent);background:var(--accent-bg);}
+  a.menu-btn .mb-title{font-weight:700;font-size:15px;margin-bottom:2px;}
+  a.menu-btn .mb-desc{font-size:12px;color:var(--text-secondary);}
+  .note{font-size:12px;color:var(--text-muted);text-align:center;margin:16px 0 0;}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>タクマ塾 保護者ページ</h1>
+  <p class="sub">ログインは不要です。ご用件をお選びください。</p>
+
+  <div class="field">
+    <label for="menu-school">お子さまの校舎</label>
+    <select id="menu-school"><option value="">読み込み中…</option></select>
+  </div>
+
+  <a class="menu-btn" href="absence-form.html">
+    <div class="mb-title">🙋 欠席のご連絡</div>
+    <div class="mb-desc">練習をお休みする時は、こちらからご連絡ください。</div>
+  </a>
+  <a class="menu-btn" href="calendar-view.html">
+    <div class="mb-title">📅 活動予定</div>
+    <div class="mb-desc">練習・試合・イベントの予定(今日から60日分)をご覧いただけます。</div>
+  </a>
+
+  <p class="note">校舎を選んでおくと、各ページに選択済みの状態で移動します。</p>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyDKTuN49WGP1pFobS6rS_RwDnDvzJe1h00",
+  authDomain: "takuma-juku-iwakuni.firebaseapp.com",
+  projectId: "takuma-juku-iwakuni",
+  storageBucket: "takuma-juku-iwakuni.firebasestorage.app",
+  messagingSenderId: "1065956673618",
+  appId: "1:1065956673618:web:e765409502a9b87031b78b"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+function escAttr(v){ return String(v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// 欠席フォーム・予定ページと同じ記憶キーを共用する。ここで選べば各ページに引き継がれる
+const LAST_SCHOOL_KEY = 'takumajuku_last_school';
+
+async function loadSchoolOptions(){
+  const sel = document.getElementById('menu-school');
+  try {
+    const snap = await db.collection('schools').orderBy('name').get();
+    if (snap.empty){
+      sel.innerHTML = '<option value="">校舎が登録されていません</option>';
+      return;
+    }
+    sel.innerHTML = '<option value="">選択してください</option>' + snap.docs.map(d => `<option value="${d.id}">${escAttr(d.data().name || d.id)}</option>`).join('');
+    let remembered = null;
+    try { remembered = localStorage.getItem(LAST_SCHOOL_KEY); } catch(e){}
+    if (remembered && snap.docs.some(d => d.id === remembered)) sel.value = remembered;
+  } catch(e){
+    console.error(e);
+    sel.innerHTML = '<option value="">読み込みに失敗しました</option>';
+  }
+}
+loadSchoolOptions();
+
+document.getElementById('menu-school').addEventListener('change', (e) => {
+  try {
+    if (e.target.value) localStorage.setItem(LAST_SCHOOL_KEY, e.target.value);
+  } catch(err){}
+});
+</script>
+</body>
+</html>

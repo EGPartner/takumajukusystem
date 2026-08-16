@@ -605,9 +605,10 @@
     </div>
     <div class="card">
       <h2>保護者用URL(全校共通)</h2>
-      <p class="note" style="margin-top:0;">下のURLは、どの校の保護者にも同じものを共有できます。フォーム内で保護者ご自身に校舎を選んでいただく仕組みになっています。</p>
-      <div class="field"><label>欠席連絡フォーム</label><input type="text" id="url-absence" readonly onclick="this.select()"></div>
-      <div class="field"><label>活動カレンダー(閲覧専用)</label><input type="text" id="url-calendar" readonly onclick="this.select()"></div>
+      <p class="note" style="margin-top:0;">保護者への案内は<b>「保護者メニュー」のURL1本でOK</b>です。メニューから欠席連絡・活動カレンダーに進めます。どの校の保護者にも同じURLを共有でき、ページ内で校舎を選んでいただく仕組みです。</p>
+      <div class="field"><label>保護者メニュー(これを案内する)</label><input type="text" id="url-menu" readonly onclick="this.select()"></div>
+      <div class="field"><label>欠席連絡フォーム(直接リンク・補助用)</label><input type="text" id="url-absence" readonly onclick="this.select()"></div>
+      <div class="field"><label>活動カレンダー(直接リンク・補助用)</label><input type="text" id="url-calendar" readonly onclick="this.select()"></div>
       <p class="note" style="margin-top:0;">タップすると全選択されるので、コピーして貼り付けてください。</p>
     </div>
     <div class="card">
@@ -2246,6 +2247,7 @@ function initUI(){
   const today = new Date();
   currentFY = fiscalYearOf(today.getFullYear(), today.getMonth()+1);
   const base = window.location.origin + window.location.pathname.replace(/school\.html$/, '');
+  document.getElementById('url-menu').value = base + 'parent-menu.html';
   document.getElementById('url-absence').value = base + 'absence-form.html';
   document.getElementById('url-calendar').value = base + 'calendar-view.html';
   document.getElementById('growth-inputs').innerHTML = buildGrowthInputsHTML();
