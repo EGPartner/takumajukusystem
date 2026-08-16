@@ -85,7 +85,7 @@ function goSchool(id){ window.location.href = basePath() + 'school.html?school='
 function showDestinations(isHQ, schoolIds, names){
   const listEl = document.getElementById('branch-list');
   const parts = [];
-  if (isHQ) parts.push('<button type="button" class="branch-btn" data-hq="1">本部管理画面(全校舎)</button>');
+  if (isHQ) parts.push('<button type="button" class="branch-btn" data-hq="1">管理者ページ(全校舎)</button>');
   schoolIds.forEach(id => {
     parts.push('<button type="button" class="branch-btn" data-id="' + escAttr(id) + '">' + escAttr(names[id] || id) + '</button>');
   });
@@ -142,7 +142,7 @@ async function doLogin(){
     // 行き先が1つに定まる場合はそのまま移動する
     if (isHQ && schoolIds.length === 0){
       statusEl.style.color = 'var(--accent-dark)';
-      statusEl.textContent = '✓ 本部管理者として確認しました。移動します…';
+      statusEl.textContent = '✓ 管理者ページに移動します…';
       goHQ();
       return;
     }
