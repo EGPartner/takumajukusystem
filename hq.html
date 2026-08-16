@@ -34,6 +34,10 @@
   .scroll-y{max-height:520px;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding-right:4px;}
   .alert-banner{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;text-align:left;background:#FDECEA;border:1px solid var(--danger);border-radius:10px;padding:13px 16px;margin-bottom:16px;cursor:pointer;font-family:inherit;font-size:14px;color:var(--danger);font-weight:700;}
   .alert-banner .ab-go{font-size:13px;white-space:nowrap;}
+  .check-list{display:flex;flex-wrap:wrap;gap:8px;}
+  .check-list label{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border-strong);border-radius:20px;padding:7px 14px;font-size:13px;background:var(--surface);color:var(--text-primary);cursor:pointer;margin:0;}
+  .check-list label.checked{border-color:var(--accent);background:var(--accent-bg);color:var(--accent-dark);font-weight:600;}
+  .check-list input{width:auto;margin:0;}
   .kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;}
   .kpi-box{border:1px solid var(--border);border-radius:10px;padding:10px 12px;background:var(--bg);}
   .kpi-box .k{font-size:11px;color:var(--text-secondary);}
@@ -400,13 +404,13 @@
       <div class="card" id="issue-account-section" style="display:none;">
         <h2 style="font-size:15px;margin:0 0 4px;">アカウントの発行</h2>
         <p class="status" style="margin-top:0;color:var(--text-muted);">◆ ここは<b>新しいログイン情報を作る機能</b>です(ログイン画面ではありません)。入力した内容がその人のメールアドレス・パスワードになるので、作成後この2つをそのまま本人にお伝えください。<br>※すでに登録済みのメールアドレスはエラーになり作成できません。</p>
-        <div class="row2">
-          <div class="field"><label for="new-account-role">権限</label>
-            <select id="new-account-role"></select>
-          </div>
-          <div class="field" id="new-account-school-field" style="display:none;"><label for="new-account-school">校舎</label>
-            <select id="new-account-school"></select>
-          </div>
+        <div class="field"><label for="new-account-role">権限</label>
+          <select id="new-account-role"></select>
+        </div>
+        <div class="field" id="new-account-school-field" style="display:none;">
+          <label>担当する校舎(複数選べます)</label>
+          <div id="new-account-schools" class="check-list"></div>
+          <p class="status" style="margin:6px 0 0;color:var(--text-muted);">選んだ校舎すべてで同じ権限になります。複数選ぶと、その方はログイン時にどの校舎を開くか選べるようになります。</p>
         </div>
         <p class="status" id="new-account-desc" style="margin-top:0;padding:9px 11px;border-radius:8px;background:var(--accent-bg);color:var(--accent-dark);"></p>
         <div class="row2">
@@ -757,19 +761,30 @@ function updateAccountRoleUI(){
   document.getElementById('new-account-desc').textContent = 'この権限でできること: ' + role.desc;
 }
 
+// チェックされた担当校舎のID一覧
+function selectedAccountSchools(){
+  return Array.from(document.querySelectorAll('#new-account-schools input:checked')).map(el => el.value);
+}
+
 document.getElementById('new-account-role').addEventListener('change', updateAccountRoleUI);
+document.getElementById('new-account-schools').addEventListener('change', (e) => {
+  if (e.target.type === 'checkbox'){
+    e.target.closest('label').classList.toggle('checked', e.target.checked);
+    document.getElementById('issue-account-status').textContent = '';
+  }
+});
 
 document.getElementById('btn-issue-account').addEventListener('click', async () => {
   const statusEl = document.getElementById('issue-account-status');
   const roleKey = document.getElementById('new-account-role').value;
   const role = ACCOUNT_ROLES[roleKey];
-  const academyId = document.getElementById('new-account-school').value;
+  const academyIds = selectedAccountSchools();
   const email = document.getElementById('new-account-email').value.trim();
   const password = document.getElementById('new-account-password').value;
   const fail = (msg) => { statusEl.style.color = 'var(--danger)'; statusEl.textContent = msg; };
   if (!role) return fail('権限を選んでください。');
   if (role.systemAdminOnly && !isSystemAdminUser) return fail('この権限を発行できるのはシステム管理者だけです。');
-  if (role.needsSchool && !academyId) return fail('校舎を選んでください。');
+  if (role.needsSchool && academyIds.length === 0) return fail('担当する校舎を1つ以上選んでください。');
   if (!email || !password) return fail('メールアドレスとパスワードの両方を入力してください。');
   if (password.length < 6) return fail('パスワードは6文字以上にしてください。');
   statusEl.style.color = 'var(--text-secondary)';
@@ -788,9 +803,25 @@ document.getElementById('btn-issue-account').addEventListener('click', async () 
       where = '運用管理者';
       loadHQAdmins();
     } else {
-      await db.collection('academies').doc(academyId).collection('staff').doc(newUid)
-        .set(Object.assign({ role: roleKey === 'schoolAdmin' ? 'admin' : 'staff', email, uid: newUid }, stamp));
-      where = schoolNameFor(academyId) + 'の' + (roleKey === 'schoolAdmin' ? '校舎管理者' : 'スタッフ');
+      // 選んだ校舎ごとにスタッフ登録を作る。複数校に登録すると、本人はログイン時に開く校舎を選べる
+      const staffRole = roleKey === 'schoolAdmin' ? 'admin' : 'staff';
+      const results = await Promise.allSettled(academyIds.map(id =>
+        db.collection('academies').doc(id).collection('staff').doc(newUid)
+          .set(Object.assign({ role: staffRole, email, uid: newUid }, stamp))
+      ));
+      const okIds = academyIds.filter((id, i) => results[i].status === 'fulfilled');
+      const ngIds = academyIds.filter((id, i) => results[i].status === 'rejected');
+      if (okIds.length === 0){
+        return fail('アカウントは作成されましたが、校舎への登録に失敗しました。もう一度「発行する」を押すとエラーになるため、システム管理者にご相談ください。');
+      }
+      where = okIds.map(schoolNameFor).join('・') + 'の' + (staffRole === 'admin' ? '校舎管理者' : 'スタッフ');
+      if (ngIds.length > 0){
+        statusEl.style.color = 'var(--warn, #A96F10)';
+        statusEl.textContent = '△ ' + email + ' さんを' + where + 'として発行しましたが、' + ngIds.map(schoolNameFor).join('・') + 'への登録に失敗しました。校舎管理の一覧でご確認ください。';
+        document.getElementById('new-account-email').value = '';
+        document.getElementById('new-account-password').value = '';
+        return;
+      }
     }
     statusEl.style.color = 'var(--accent-dark)';
     statusEl.textContent = '✓ ' + email + ' さんを' + where + 'として発行しました。メールアドレスと初期パスワードを本人にお伝えください。';
@@ -1209,12 +1240,13 @@ function populateSchoolSelects(){
     bulkSel.innerHTML = '<option value="__all__">すべての校舎</option>' + opts;
     if (cur) bulkSel.value = cur;
   }
-  // アカウント発行の校舎は、選び忘れを防ぐため空の選択肢から始める
-  const accountSel = document.getElementById('new-account-school');
-  if (accountSel){
-    const cur = accountSel.value;
-    accountSel.innerHTML = '<option value="">選択してください</option>' + opts;
-    if (cur) accountSel.value = cur;
+  // アカウント発行の担当校舎は複数選べるようチェックボックスで表示する
+  const accountSchools = document.getElementById('new-account-schools');
+  if (accountSchools){
+    const checked = new Set(selectedAccountSchools());
+    accountSchools.innerHTML = schoolsArr.map(s =>
+      `<label class="${checked.has(s.id) ? 'checked' : ''}"><input type="checkbox" value="${escAttr(s.id)}" ${checked.has(s.id) ? 'checked' : ''}>${escAttr(s.name)}</label>`
+    ).join('') || '<span class="status">校舎が登録されていません。</span>';
   }
   const bulkAbsSel = document.getElementById('hq-bulk-absence-school');
   if (bulkAbsSel){
@@ -1654,7 +1686,7 @@ clearStatusOnInput(['hq-new-pattern-school','hq-new-pattern-weekday','hq-new-pat
 clearStatusOnInput(['new-name','new-id'], 'add-status');
 clearStatusOnInput(['hq-bulk-school','hq-bulk-events','hq-bulk-patterns'], 'hq-bulk-status');
 clearStatusOnInput(['hq-bulk-absence-school','hq-bulk-absence-acked-only'], 'hq-bulk-absence-status');
-clearStatusOnInput(['new-account-role','new-account-school','new-account-email','new-account-password'], 'issue-account-status');
+clearStatusOnInput(['new-account-role','new-account-email','new-account-password'], 'issue-account-status');
 
 auth.onAuthStateChanged(async (user) => {
   if (user && user.isAnonymous){ await auth.signOut(); return; }
