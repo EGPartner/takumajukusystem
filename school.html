@@ -897,15 +897,23 @@ function attachListeners(){
     renderAll();
     syncRosterNames();
   }, err => { console.error(err); markSaved(false); });
-  unsubSettings = settingsRef.onSnapshot(doc => {
-    if (doc.exists) settings = Object.assign(defaultSettings(), doc.data());
-    else settingsRef.set(defaultSettings());
-    loadSettingsToForm();
-    refreshDashboard();
+  // 収支設定(単価・スポンサー・支出)は金額情報のため、閲覧のみのスタッフには読み込ませない
+  if (isAdmin){
+    unsubSettings = settingsRef.onSnapshot(doc => {
+      if (doc.exists) settings = Object.assign(defaultSettings(), doc.data());
+      else settingsRef.set(defaultSettings());
+      loadSettingsToForm();
+      refreshDashboard();
+      renderGridFooter(fiscalMonths(currentFY));
+      renderPatternsTable();
+      renderCalendarViews();
+    }, err => console.error(err));
+  } else {
+    settings = defaultSettings();
     renderGridFooter(fiscalMonths(currentFY));
     renderPatternsTable();
     renderCalendarViews();
-  }, err => console.error(err));
+  }
   unsubAbsence = absenceRef.orderBy('absenceDate', 'desc').onSnapshot(snap => {
     absenceReports = snap.docs.map(d => Object.assign({ id:d.id }, d.data()));
     renderAbsenceList(snap.docs);
@@ -1706,9 +1714,13 @@ function renderGrid(){
 }
 function renderGridFooter(months){
   const countCells = months.map(mo => `<td>${activeCountAtKey(mo.key)}</td>`).join('');
-  const revCells = months.map(mo => `<td>${fmtYen(activeCountAtKey(mo.key) * Number(settings.tuition))}</td>`).join('');
   document.getElementById('grid-foot-count').innerHTML = '<td class="col-name">在籍数(★)</td><td class="col-grade"></td><td class="col-trial"></td>' + countCells + '<td></td>';
-  document.getElementById('grid-foot-revenue').innerHTML = '<td class="col-name">月謝収入</td><td class="col-grade"></td><td class="col-trial"></td>' + revCells + '<td></td>';
+  // 月謝収入はスタッフに見せない(在籍状況の把握には不要なため)
+  const revRow = document.getElementById('grid-foot-revenue');
+  revRow.style.display = isAdmin ? '' : 'none';
+  if (!isAdmin){ revRow.innerHTML = ''; return; }
+  const revCells = months.map(mo => `<td>${fmtYen(activeCountAtKey(mo.key) * Number(settings.tuition))}</td>`).join('');
+  revRow.innerHTML = '<td class="col-name">月謝収入</td><td class="col-grade"></td><td class="col-trial"></td>' + revCells + '<td></td>';
 }
 function populateGrowthStudentSelect(){
   const sel = document.getElementById('growth-student');
