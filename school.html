@@ -725,6 +725,23 @@ function currentMonthStr(){ const d = new Date(); return d.getFullYear() + '-' +
 function prevMonthStr(ym){ let [y,m] = ym.split('-').map(Number); m--; if(m<1){m=12;y--;} return y + '-' + pad(m); }
 function nextMonthStr(ym){ let [y,m] = ym.split('-').map(Number); m++; if(m>12){m=1;y++;} return y + '-' + pad(m); }
 
+// ---- 保護者アクセスの照合用名簿(rosterNames)を自動同期 ----
+// 保護者ページの関門では、入力された塾生名(空白を除去したもの)がこのリストと一致すれば即通過できる。
+// 塾生の追加・改名・CSV取り込みのたびに自動で最新化される。
+let lastRosterKey = null;
+function normalizeStudentName(n){ return String(n || '').replace(/[\s　]/g, ''); }
+async function syncRosterNames(){
+  try {
+    const names = Array.from(new Set(students.map(s => normalizeStudentName(s.name)).filter(Boolean))).sort();
+    const key = names.join('|');
+    if (key === lastRosterKey) return;
+    lastRosterKey = key;
+    await academyRef.collection('meta').doc('rosterNames').set({
+      names, updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  } catch(e){ console.error('rosterNames sync failed', e); }
+}
+
 // ---- CSV取り込み用ヘルパー ----
 function parseCsvLine(line){
   const out = []; let cur = ''; let inQ = false;
@@ -858,6 +875,7 @@ function attachListeners(){
     students = snap.docs.map(d => Object.assign({ id:d.id }, d.data()));
     students.forEach(s => { if (!s.growth) s.growth = {}; if (!s.months) s.months = {}; });
     renderAll();
+    syncRosterNames();
   }, err => { console.error(err); markSaved(false); });
   unsubSettings = settingsRef.onSnapshot(doc => {
     if (doc.exists) settings = Object.assign(defaultSettings(), doc.data());

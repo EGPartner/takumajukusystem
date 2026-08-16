@@ -32,6 +32,21 @@
   .r-note{color:var(--text-muted);font-size:12px;}
   .badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:20px;background:var(--surface);color:var(--text-muted);font-weight:600;border:1px solid var(--border-strong);}
   .empty{color:var(--text-muted);font-size:13px;text-align:center;padding:30px 0;}
+  input[type=text]{width:100%;padding:10px 11px;border:1px solid var(--border-strong);border-radius:8px;font-size:16px;background:var(--surface);color:var(--text-primary);font-family:inherit;}
+  .field{margin-bottom:14px;}
+  button.primary-btn{width:100%;padding:13px;border:none;border-radius:8px;background:var(--accent);color:#fff;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;}
+  .vt-btn{padding:7px 14px;font-size:12.5px;border:1px solid var(--border-strong);border-radius:6px;background:none;color:var(--text-primary);cursor:pointer;font-family:inherit;font-weight:600;}
+  .vt-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .pcal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px;}
+  .pcal-head{font-size:10px;color:var(--text-secondary);text-align:center;padding:2px 0;font-weight:600;}
+  .pcal-day{border:1px solid var(--border);border-radius:6px;min-height:56px;padding:3px;font-size:10px;background:var(--surface);cursor:pointer;min-width:0;overflow:hidden;}
+  .pcal-day.empty-cell{border:none;background:none;cursor:default;}
+  .pcal-day.selected{border-color:var(--accent);background:var(--accent-bg);}
+  .pcal-num{font-weight:700;margin-bottom:1px;}
+  .pcal-tag{font-size:8.5px;font-weight:700;background:var(--accent);color:#fff;border-radius:3px;padding:1px 3px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .pcal-tag.cancelled{background:#EEECE4;color:var(--text-muted);text-decoration:line-through;}
+  .pcal-nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+  .pcal-nav button{padding:6px 12px;border:1px solid var(--border-strong);border-radius:6px;background:var(--surface);cursor:pointer;font-family:inherit;font-size:13px;color:var(--text-primary);}
 </style>
 </head>
 <body>
@@ -41,12 +56,44 @@
     <p>今日から60日間の練習・試合・イベント予定です(閲覧専用)。</p>
     <p style="margin-top:6px;"><a href="parent-menu.html" style="color:var(--accent-dark);font-size:13px;text-decoration:none;">← メニューへ戻る</a></p>
   </header>
+  <div class="card" id="gate-card" style="display:none;">
+    <p style="font-weight:700;font-size:14px;margin:0 0 6px;">このページは塾生のご家族専用です</p>
+    <p style="font-size:13px;color:var(--text-secondary);margin:0 0 14px;">確認のため、お子さまの情報を入力してください(この端末で初回のみ)。</p>
+    <div id="gate-form">
+      <div class="field"><label for="gate-school">お子さまの校舎</label><select id="gate-school" style="width:100%;padding:10px 11px;border:1px solid var(--border-strong);border-radius:8px;font-size:16px;background:var(--surface);color:var(--text-primary);font-family:inherit;"><option value="">読み込み中…</option></select></div>
+      <div class="field"><label for="gate-name">塾生のお名前(姓名)</label><input type="text" id="gate-name" placeholder="例: 山田 蓮"></div>
+      <button type="button" class="primary-btn" id="gate-submit">利用を開始する</button>
+      <p class="status" id="gate-status" style="padding:8px 0 0;min-height:16px;"></p>
+    </div>
+    <div id="gate-pending" style="display:none;text-align:center;padding:10px 0;">
+      <p style="font-weight:700;font-size:14px;margin:0 0 6px;">申請を受け付けました</p>
+      <p style="font-size:12px;color:var(--text-muted);margin:0;">入力されたお名前が名簿と一致しなかったため、教室の確認をお待ちください。<br>確認が済むと、このページが自動で切り替わります。</p>
+    </div>
+  </div>
+
+  <div id="main-content" style="display:none;">
   <div class="card">
     <label for="school-select">校舎を選択</label>
     <select id="school-select"><option value="">読み込み中…</option></select>
   </div>
   <div class="card">
-    <div id="content"><div class="status">上で校舎を選択してください。</div></div>
+    <div style="display:flex;gap:6px;margin-bottom:12px;">
+      <button class="vt-btn active" id="btn-view-list">一覧</button>
+      <button class="vt-btn" id="btn-view-cal">カレンダー</button>
+    </div>
+    <div id="list-view">
+      <div id="content"><div class="status">上で校舎を選択してください。</div></div>
+    </div>
+    <div id="cal-view" style="display:none;">
+      <div class="pcal-nav">
+        <button id="pcal-prev">◀</button>
+        <strong id="pcal-label">-</strong>
+        <button id="pcal-next">▶</button>
+      </div>
+      <div class="pcal-grid" id="pcal-grid"></div>
+      <div id="pcal-day-detail" style="margin-top:14px;"></div>
+    </div>
+  </div>
   </div>
 </div>
 
@@ -134,7 +181,76 @@ function render(){
   container.innerHTML = rows.length === 0
     ? '<p class="empty">今後60日間の予定はまだ登録されていません。</p>'
     : rows.map(rowHTML).join('');
+  renderPcalGrid();
+  if (pcalSelectedDate) renderPcalDayDetail(pcalSelectedDate);
 }
+
+// ---- 月間カレンダー表示 ----
+let pcalYear = null, pcalMonth = null, pcalSelectedDate = null;
+
+function renderPcalGrid(){
+  const grid = document.getElementById('pcal-grid');
+  const label = document.getElementById('pcal-label');
+  if (!grid || !label || pcalYear === null) return;
+  label.textContent = pcalYear + '年' + (pcalMonth + 1) + '月';
+  const startOffset = new Date(pcalYear, pcalMonth, 1).getDay();
+  const daysInMonth = new Date(pcalYear, pcalMonth + 1, 0).getDate();
+  let html = WEEKDAY_LABELS.map(w => `<div class="pcal-head">${w}</div>`).join('');
+  for (let i = 0; i < startOffset; i++) html += '<div class="pcal-day empty-cell"></div>';
+  for (let day = 1; day <= daysInMonth; day++){
+    const dateStr = pcalYear + '-' + pad(pcalMonth + 1) + '-' + pad(day);
+    const occ = occurrencesForDate(dateStr);
+    const MAX_TAGS = 3;
+    const tags = occ.slice(0, MAX_TAGS).map(o =>
+      `<div class="pcal-tag ${o.cancelled ? 'cancelled' : ''}">${escAttr(o.cancelled ? '中止' : (o.type || '予定'))}</div>`
+    ).join('') + (occ.length > MAX_TAGS ? `<div style="font-size:8px;color:var(--text-muted);font-weight:700;">+${occ.length - MAX_TAGS}件</div>` : '');
+    const sel = dateStr === pcalSelectedDate ? ' selected' : '';
+    html += `<div class="pcal-day${sel}" data-date="${dateStr}"><div class="pcal-num">${day}</div>${tags}</div>`;
+  }
+  grid.innerHTML = html;
+}
+
+function renderPcalDayDetail(dateStr){
+  const container = document.getElementById('pcal-day-detail');
+  if (!container) return;
+  const d = new Date(dateStr + 'T00:00:00');
+  const occ = occurrencesForDate(dateStr);
+  const heading = `<p style="font-weight:700;font-size:14px;margin:0 0 6px;">${d.getMonth()+1}月${d.getDate()}日(${WEEKDAY_LABELS[d.getDay()]})の予定</p>`;
+  container.innerHTML = heading + (occ.length === 0
+    ? '<p class="empty" style="padding:12px 0;">この日の予定はありません。</p>'
+    : occ.map(rowHTML).join(''));
+}
+
+function initPcalMonth(){
+  if (pcalYear !== null) return;
+  const t = new Date();
+  pcalYear = t.getFullYear();
+  pcalMonth = t.getMonth();
+}
+
+document.getElementById('btn-view-list').addEventListener('click', () => {
+  document.getElementById('btn-view-list').classList.add('active');
+  document.getElementById('btn-view-cal').classList.remove('active');
+  document.getElementById('list-view').style.display = 'block';
+  document.getElementById('cal-view').style.display = 'none';
+});
+document.getElementById('btn-view-cal').addEventListener('click', () => {
+  document.getElementById('btn-view-cal').classList.add('active');
+  document.getElementById('btn-view-list').classList.remove('active');
+  document.getElementById('list-view').style.display = 'none';
+  document.getElementById('cal-view').style.display = 'block';
+  initPcalMonth();
+  renderPcalGrid();
+});
+document.getElementById('pcal-prev').addEventListener('click', () => { pcalMonth--; if (pcalMonth < 0){ pcalMonth = 11; pcalYear--; } renderPcalGrid(); });
+document.getElementById('pcal-next').addEventListener('click', () => { pcalMonth++; if (pcalMonth > 11){ pcalMonth = 0; pcalYear++; } renderPcalGrid(); });
+document.getElementById('pcal-grid').addEventListener('click', (e) => {
+  const cell = e.target.closest('.pcal-day[data-date]');
+  if (!cell) return;
+  pcalSelectedDate = cell.dataset.date;
+  renderPcalGrid();
+  renderPcalDayDetail(pcalSelectedDate);
+});
 
 function detachSchoolListeners(){
   if (unsubPatterns){ unsubPatterns(); unsubPatterns = null; }
@@ -187,16 +303,78 @@ document.getElementById('school-select').addEventListener('change', (e) => {
   else { detachSchoolListeners(); document.getElementById('content').innerHTML = '<div class="status">上で校舎を選択してください。</div>'; }
 });
 
+// ---- 塾生名簿との照合による関門(塾生家庭以外の閲覧を防ぐ) ----
+function normalizeName(n){ return String(n || '').replace(/[\s　]/g, ''); }
+function showMain(){
+  document.getElementById('gate-card').style.display = 'none';
+  document.getElementById('main-content').style.display = 'block';
+  loadSchoolOptions();
+}
+function showPending(uid){
+  document.getElementById('gate-card').style.display = 'block';
+  document.getElementById('gate-form').style.display = 'none';
+  document.getElementById('gate-pending').style.display = 'block';
+  db.collection('parentViewers').doc(uid).onSnapshot(doc => {
+    if (doc.exists && doc.data().status === 'approved') showMain();
+  }, err => console.error(err));
+}
+async function loadGateSchoolOptions(){
+  const sel = document.getElementById('gate-school');
+  try {
+    const snap = await schoolsRef.orderBy('name').get();
+    sel.innerHTML = '<option value="">選択してください</option>' + snap.docs.map(d => `<option value="${d.id}">${escAttr(d.data().name || d.id)}</option>`).join('');
+    let remembered = null;
+    try { remembered = localStorage.getItem(LAST_SCHOOL_KEY); } catch(e){}
+    if (remembered && snap.docs.some(d => d.id === remembered)) sel.value = remembered;
+  } catch(e){ console.error(e); sel.innerHTML = '<option value="">読み込みに失敗しました</option>'; }
+}
+
 async function init(){
   try {
     await auth.signInAnonymously();
   } catch(e){
     console.error(e);
-    document.getElementById('content').innerHTML = '<p class="empty">読み込みに失敗しました。<br>エラー内容: ' + escAttr(e && e.code ? e.code : '') + ' ' + escAttr(e && e.message ? e.message : String(e)) + '</p>';
+    document.getElementById('gate-card').style.display = 'block';
+    document.getElementById('gate-status').textContent = '接続に失敗しました。通信環境をご確認ください。';
     return;
   }
-  loadSchoolOptions();
+  try {
+    const doc = await db.collection('parentViewers').doc(auth.currentUser.uid).get();
+    if (doc.exists){
+      if (doc.data().status === 'approved'){ showMain(); return; }
+      showPending(auth.currentUser.uid);
+      return;
+    }
+  } catch(e){ console.error(e); }
+  document.getElementById('gate-card').style.display = 'block';
+  loadGateSchoolOptions();
 }
+
+document.getElementById('gate-submit').addEventListener('click', async () => {
+  const statusEl = document.getElementById('gate-status');
+  const schoolId = document.getElementById('gate-school').value;
+  const name = document.getElementById('gate-name').value.trim();
+  if (!schoolId){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = '校舎を選択してください。'; return; }
+  if (!name){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = '塾生のお名前を入力してください。'; return; }
+  statusEl.style.color = 'var(--text-secondary)';
+  statusEl.textContent = '確認しています…';
+  try {
+    if (!auth.currentUser) await auth.signInAnonymously();
+    try { localStorage.setItem(LAST_SCHOOL_KEY, schoolId); } catch(e){}
+    const base = { studentName: name, nameKey: normalizeName(name), schoolId, createdAt: firebase.firestore.FieldValue.serverTimestamp() };
+    try {
+      await db.collection('parentViewers').doc(auth.currentUser.uid).set(Object.assign({ status: 'approved' }, base));
+      showMain();
+    } catch(e1){
+      await db.collection('parentViewers').doc(auth.currentUser.uid).set(Object.assign({ status: 'pending' }, base));
+      showPending(auth.currentUser.uid);
+    }
+  } catch(e){
+    console.error(e);
+    statusEl.style.color = 'var(--danger)';
+    statusEl.textContent = '確認に失敗しました。もう一度お試しください。';
+  }
+});
 
 init();
 </script>

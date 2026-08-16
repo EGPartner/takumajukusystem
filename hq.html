@@ -341,6 +341,33 @@
         <p class="status" id="hq-url-copy-status" style="margin-bottom:0;"></p>
       </div>
 
+      <div class="card">
+        <h2 style="font-size:15px;margin:0 0 4px;">保護者の閲覧管理</h2>
+        <p class="status" style="margin-top:0;color:var(--text-muted);">保護者ページは、初回に入力された<b>塾生名が名簿と一致すると自動で利用開始</b>になります。一致しなかった申請だけが下の「承認待ち」に入るので、内容を確認して承認または却下してください。</p>
+        <div style="margin-top:8px;">
+          <div class="btn-row" style="justify-content:space-between;align-items:center;">
+            <strong style="font-size:13px;">承認待ち <span id="hq-pending-count" style="color:var(--danger);font-weight:700;"></span></strong>
+            <button class="ghost-small" id="hq-btn-reload-viewers">再読み込み</button>
+          </div>
+          <div class="scroll-y" style="overflow-x:auto;">
+            <table class="mini-table">
+              <thead><tr><th>入力された塾生名</th><th>校舎</th><th>申請日</th><th></th></tr></thead>
+              <tbody id="hq-pending-tbody"><tr><td colspan="4" class="status">読み込み中…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+        <div style="margin-top:16px;">
+          <strong style="font-size:13px;">利用中の閲覧者 <span id="hq-viewers-count" style="color:var(--text-muted);font-weight:600;"></span></strong>
+          <div class="scroll-y" style="overflow-x:auto;">
+            <table class="mini-table">
+              <thead><tr><th>塾生名</th><th>校舎</th><th>登録日</th><th></th></tr></thead>
+              <tbody id="hq-viewers-tbody"><tr><td colspan="4" class="status">読み込み中…</td></tr></tbody>
+            </table>
+          </div>
+          <p class="status" style="color:var(--text-muted);">「取り消し」すると、その端末は次回アクセス時にもう一度塾生名の入力(名簿との照合)が必要になります。退会した家庭の遮断にも使えます。</p>
+        </div>
+      </div>
+
       <div class="card" id="hqadmin-manage-section" style="display:none;">
         <h2 style="font-size:15px;margin:0 0 4px;">運用管理者</h2>
         <p class="status" style="margin-top:0;color:var(--text-muted);">全校舎の統合スケジュール・欠席連絡・校舎管理ができる権限です。追加・削除はシステム管理者のみ行えます。「削除」はアクセス権のみ外し、ログインアカウント自体は残ります。</p>
@@ -1257,6 +1284,79 @@ document.getElementById('hq-btn-add-pattern').addEventListener('click', async ()
   } catch(err){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = '追加に失敗しました: ' + err.message; }
 });
 
+// ---- 保護者の閲覧管理(承認待ちと利用中の閲覧者) ----
+function viewerDateLabel(v){
+  if (v.createdAt && v.createdAt.toDate){
+    const dt = v.createdAt.toDate();
+    return dt.getFullYear() + '/' + (dt.getMonth()+1) + '/' + dt.getDate();
+  }
+  return '-';
+}
+
+async function loadParentViewers(){
+  const pendingTbody = document.getElementById('hq-pending-tbody');
+  const viewersTbody = document.getElementById('hq-viewers-tbody');
+  const pendingCount = document.getElementById('hq-pending-count');
+  const viewersCount = document.getElementById('hq-viewers-count');
+  pendingTbody.innerHTML = '<tr><td colspan="4" class="status">読み込み中…</td></tr>';
+  viewersTbody.innerHTML = '<tr><td colspan="4" class="status">読み込み中…</td></tr>';
+  try {
+    const snap = await db.collection('parentViewers').orderBy('createdAt', 'desc').get();
+    const pending = snap.docs.filter(d => d.data().status === 'pending');
+    const approved = snap.docs.filter(d => d.data().status === 'approved');
+    if (pendingCount) pendingCount.textContent = pending.length > 0 ? pending.length + '件' : '';
+    if (viewersCount) viewersCount.textContent = '(' + approved.length + '件)';
+    pendingTbody.innerHTML = pending.length === 0
+      ? '<tr><td colspan="4" class="status">承認待ちはありません</td></tr>'
+      : pending.map(d => {
+          const v = d.data();
+          return '<tr>'
+            + '<td>' + escAttr(v.studentName || '-') + '</td>'
+            + '<td>' + escAttr(schoolsMap[v.schoolId] || v.schoolId || '-') + '</td>'
+            + '<td>' + escAttr(viewerDateLabel(v)) + '</td>'
+            + '<td style="white-space:nowrap;"><button class="ghost-small" data-approve-viewer="' + escAttr(d.id) + '">承認</button> <button class="link-danger" data-del-viewer="' + escAttr(d.id) + '">却下</button></td>'
+            + '</tr>';
+        }).join('');
+    viewersTbody.innerHTML = approved.length === 0
+      ? '<tr><td colspan="4" class="status">まだ登録がありません</td></tr>'
+      : approved.map(d => {
+          const v = d.data();
+          return '<tr>'
+            + '<td>' + escAttr(v.studentName || '-') + '</td>'
+            + '<td>' + escAttr(schoolsMap[v.schoolId] || v.schoolId || '-') + '</td>'
+            + '<td>' + escAttr(viewerDateLabel(v)) + '</td>'
+            + '<td><button class="link-danger" data-del-viewer="' + escAttr(d.id) + '">取り消し</button></td>'
+            + '</tr>';
+        }).join('');
+  } catch(e){
+    console.error(e);
+    pendingTbody.innerHTML = '<tr><td colspan="4" class="status">読み込みに失敗しました: ' + escAttr(e.message) + '</td></tr>';
+    viewersTbody.innerHTML = '';
+  }
+}
+
+async function handleViewerAction(e){
+  const approveUid = e.target.dataset.approveViewer;
+  if (approveUid){
+    try {
+      await db.collection('parentViewers').doc(approveUid).update({ status: 'approved' });
+      loadParentViewers();
+    } catch(err){ alert('承認に失敗しました: ' + err.message); }
+    return;
+  }
+  const delUid = e.target.dataset.delViewer;
+  if (delUid){
+    if (!confirm('この登録を削除しますか？(その端末は次回アクセス時にもう一度塾生名の入力が必要になります)')) return;
+    try {
+      await db.collection('parentViewers').doc(delUid).delete();
+      loadParentViewers();
+    } catch(err){ alert('削除に失敗しました: ' + err.message); }
+  }
+}
+document.getElementById('hq-pending-tbody').addEventListener('click', handleViewerAction);
+document.getElementById('hq-viewers-tbody').addEventListener('click', handleViewerAction);
+document.getElementById('hq-btn-reload-viewers').addEventListener('click', loadParentViewers);
+
 // ---- 予定の一括削除(テストデータ整理用) ----
 document.getElementById('hq-btn-bulk-delete').addEventListener('click', async () => {
   const statusEl = document.getElementById('hq-bulk-status');
@@ -1451,6 +1551,7 @@ auth.onAuthStateChanged(async (user) => {
   document.getElementById('hq-new-occ-date').value = (() => { const d = new Date(); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); })();
   await loadSchools();
   if (isSystemAdminUser) loadHQAdmins();
+  loadParentViewers();
   attachAbsenceListeners();
   attachHQCalendarListeners();
 });

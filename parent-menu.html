@@ -27,7 +27,22 @@
 </style>
 </head>
 <body>
-<div class="card">
+<div class="card" id="gate-card" style="display:none;">
+  <h1>タクマ塾 保護者ページ</h1>
+  <p class="sub">このページは塾生のご家族専用です。<br>確認のため、お子さまの情報を入力してください(この端末で初回のみ)。</p>
+  <div id="gate-form">
+    <div class="field"><label for="gate-school">お子さまの校舎</label><select id="gate-school"><option value="">読み込み中…</option></select></div>
+    <div class="field"><label for="gate-name">塾生のお名前(姓名)</label><input type="text" id="gate-name" placeholder="例: 山田 蓮"></div>
+    <button type="button" class="menu-btn" id="gate-submit" style="text-align:center;background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700;cursor:pointer;width:100%;font-size:15px;font-family:inherit;">利用を開始する</button>
+    <p class="note" id="gate-status" style="min-height:16px;"></p>
+  </div>
+  <div id="gate-pending" style="display:none;text-align:center;padding:10px 0;">
+    <p style="font-weight:700;font-size:14px;margin:0 0 6px;">申請を受け付けました</p>
+    <p class="note" style="margin:0;">入力されたお名前が名簿と一致しなかったため、教室の確認をお待ちください。<br>確認が済むと、このページが自動で切り替わります。</p>
+  </div>
+</div>
+
+<div class="card" id="menu-card" style="display:none;">
   <h1>タクマ塾 保護者ページ</h1>
   <p class="sub">ログインは不要です。ご用件をお選びください。</p>
 
@@ -49,6 +64,7 @@
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
 const firebaseConfig = {
@@ -60,7 +76,80 @@ const firebaseConfig = {
   appId: "1:1065956673618:web:e765409502a9b87031b78b"
 };
 firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
 const db = firebase.firestore();
+
+// ---- 塾生名簿との照合による関門(塾生家庭以外の閲覧を防ぐ) ----
+function normalizeName(n){ return String(n || '').replace(/[\s　]/g, ''); }
+async function ensureAnon(){
+  if (auth.currentUser) return auth.currentUser;
+  const cred = await auth.signInAnonymously();
+  return cred.user;
+}
+function showMenu(){
+  document.getElementById('gate-card').style.display = 'none';
+  document.getElementById('menu-card').style.display = 'block';
+}
+function showPending(uid){
+  document.getElementById('gate-card').style.display = 'block';
+  document.getElementById('gate-form').style.display = 'none';
+  document.getElementById('gate-pending').style.display = 'block';
+  // 承認されたら自動でメニューに切り替える
+  db.collection('parentViewers').doc(uid).onSnapshot(doc => {
+    if (doc.exists && doc.data().status === 'approved') showMenu();
+  }, err => console.error(err));
+}
+async function loadGateSchoolOptions(){
+  const sel = document.getElementById('gate-school');
+  try {
+    const snap = await db.collection('schools').orderBy('name').get();
+    sel.innerHTML = '<option value="">選択してください</option>' + snap.docs.map(d => `<option value="${d.id}">${escAttr(d.data().name || d.id)}</option>`).join('');
+    let remembered = null;
+    try { remembered = localStorage.getItem(LAST_SCHOOL_KEY); } catch(e){}
+    if (remembered && snap.docs.some(d => d.id === remembered)) sel.value = remembered;
+  } catch(e){ console.error(e); sel.innerHTML = '<option value="">読み込みに失敗しました</option>'; }
+}
+async function initGate(){
+  try {
+    const user = await ensureAnon();
+    const doc = await db.collection('parentViewers').doc(user.uid).get();
+    if (doc.exists){
+      if (doc.data().status === 'approved'){ showMenu(); return; }
+      showPending(user.uid);
+      return;
+    }
+  } catch(e){ console.error(e); }
+  document.getElementById('gate-card').style.display = 'block';
+  loadGateSchoolOptions();
+}
+document.getElementById('gate-submit').addEventListener('click', async () => {
+  const statusEl = document.getElementById('gate-status');
+  const schoolId = document.getElementById('gate-school').value;
+  const name = document.getElementById('gate-name').value.trim();
+  if (!schoolId){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = '校舎を選択してください。'; return; }
+  if (!name){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = '塾生のお名前を入力してください。'; return; }
+  statusEl.style.color = 'var(--text-secondary)';
+  statusEl.textContent = '確認しています…';
+  const user = await ensureAnon();
+  try { localStorage.setItem(LAST_SCHOOL_KEY, schoolId); } catch(e){}
+  const base = { studentName: name, nameKey: normalizeName(name), schoolId, createdAt: firebase.firestore.FieldValue.serverTimestamp() };
+  try {
+    // まず名簿との照合(一致すれば即「承認済み」で登録できる)
+    await db.collection('parentViewers').doc(user.uid).set(Object.assign({ status: 'approved' }, base));
+    showMenu();
+  } catch(e1){
+    try {
+      // 一致しない場合は「承認待ち」として申請する
+      await db.collection('parentViewers').doc(user.uid).set(Object.assign({ status: 'pending' }, base));
+      showPending(user.uid);
+    } catch(e2){
+      console.error(e2);
+      statusEl.style.color = 'var(--danger)';
+      statusEl.textContent = '確認に失敗しました。通信環境をご確認のうえ、もう一度お試しください。';
+    }
+  }
+});
+initGate();
 
 function escAttr(v){ return String(v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
