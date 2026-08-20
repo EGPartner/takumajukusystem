@@ -160,7 +160,7 @@
             <div class="field"><label>種別</label>
               <select id="hq-occ-type"><option value="通常練習">通常練習</option><option value="試合">試合</option><option value="イベント">イベント</option></select>
             </div>
-            <div class="field"><label>場所</label><select id="hq-occ-location"></select></div>
+            <div class="field"><label>場所</label><input type="text" id="hq-occ-location" list="hq-occ-location-options" placeholder="選択または入力" autocomplete="off"><datalist id="hq-occ-location-options"></datalist></div>
           </div>
           <div class="row2">
             <div class="field"><label>開始時刻</label><input type="time" id="hq-occ-start"></div>
@@ -189,7 +189,7 @@
           <div class="field"><label>種別</label>
             <select id="hq-new-occ-type"><option value="試合">試合</option><option value="イベント">イベント</option><option value="通常練習">通常練習</option></select>
           </div>
-          <div class="field"><label>場所</label><select id="hq-new-occ-location"></select></div>
+          <div class="field"><label>場所</label><input type="text" id="hq-new-occ-location" list="hq-new-occ-location-options" placeholder="選択または入力" autocomplete="off"><datalist id="hq-new-occ-location-options"></datalist></div>
         </div>
         <div class="row2">
           <div class="field"><label>開始時刻</label><input type="time" id="hq-new-occ-start"></div>
@@ -1077,14 +1077,14 @@ function occurrencesForSchoolDate(academyId, dateStr){
     results.push({
       academyId, date:dateStr, patternId:p.id, eventId: override ? override.id : null,
       cancelled: !!(override && override.cancelled),
-      startTime: merged.startTime, endTime: merged.endTime, locationId: merged.locationId,
+      startTime: merged.startTime, endTime: merged.endTime, locationId: merged.locationId, locationText: merged.locationText,
       staffInCharge: merged.staffInCharge, targetGroup: merged.targetGroup, type: merged.type, note: merged.note
     });
   });
   allEvents.filter(e => e.academyId === academyId && e.date === dateStr && !e.patternId).forEach(e => {
     results.push({
       academyId, date:dateStr, patternId:null, eventId:e.id, cancelled: !!e.cancelled,
-      startTime:e.startTime, endTime:e.endTime, locationId:e.locationId,
+      startTime:e.startTime, endTime:e.endTime, locationId:e.locationId, locationText:e.locationText,
       staffInCharge:e.staffInCharge, targetGroup:e.targetGroup, type:e.type, note:e.note
     });
   });
@@ -1118,7 +1118,7 @@ function calRowHTML(o){
     <div class="cr-body">
       <div class="cr-school" style="color:${color};">${escAttr(schoolNameFor(o.academyId))}</div>
       <div>${escAttr(o.type||'')}</div>
-      <div class="cr-loc">📍 ${escAttr(locationNameFor(o.academyId, o.locationId) || '場所未設定')}</div>
+      <div class="cr-loc">📍 ${escAttr(locationLabelFor(o))}</div>
       <div class="cr-staff">担当: ${escAttr(o.staffInCharge||'-')} ／ 対象: ${escAttr(o.targetGroup||'-')}</div>
     </div>
     <div class="cr-actions"><button class="ghost-small" data-edit-occ="${key}">編集</button>${deleteBtn}</div>
@@ -1271,10 +1271,23 @@ function populateSchoolSelects(){
   populateLocationSelectFor('hq-new-occ-location', document.getElementById('hq-new-occ-school') ? document.getElementById('hq-new-occ-school').value : null);
 }
 function populateLocationSelectFor(selectId, academyId){
-  const el = document.getElementById(selectId);
-  if (!el) return;
+  // 登録済みの場所を入力候補として並べる。候補にない場所は手入力できる。
+  const dl = document.getElementById(selectId + '-options');
+  if (!dl) return;
   const list = allLocations[academyId] || [];
-  el.innerHTML = '<option value="">(未選択)</option>' + list.map(l => `<option value="${escAttr(l.id)}">${escAttr(l.name)}</option>`).join('');
+  dl.innerHTML = list.map(l => `<option value="${escAttr(l.name)}"></option>`).join('');
+}
+function locationNameById(academyId, id){
+  const l = (allLocations[academyId] || []).find(x => x.id === id);
+  return l ? l.name : '';
+}
+function locationLabelFor(o){ return locationNameById(o.academyId, o.locationId) || (o.locationText || '') || '場所未設定'; }
+function locationInputValueFor(o){ return locationNameById(o.academyId, o.locationId) || (o.locationText || ''); }
+function resolveLocationInputFor(academyId, text){
+  const t = String(text || '').trim();
+  if (!t) return { locationId: null, locationText: null };
+  const hit = (allLocations[academyId] || []).find(x => x.name === t);
+  return hit ? { locationId: hit.id, locationText: null } : { locationId: null, locationText: t };
 }
 
 function renderHQPatternsTable(){
@@ -1306,7 +1319,7 @@ function openHQOccEditor(key){
   document.getElementById('hq-occ-start').value = occ.startTime || '';
   document.getElementById('hq-occ-end').value = occ.endTime || '';
   populateLocationSelectFor('hq-occ-location', academyId);
-  document.getElementById('hq-occ-location').value = occ.locationId || '';
+  document.getElementById('hq-occ-location').value = locationInputValueFor(occ);
   document.getElementById('hq-occ-staff').value = occ.staffInCharge || '';
   document.getElementById('hq-occ-target').value = occ.targetGroup || '';
   document.getElementById('hq-occ-note').value = occ.note || '';
@@ -1334,7 +1347,7 @@ document.getElementById('hq-btn-save-occ').addEventListener('click', async () =>
     type: document.getElementById('hq-occ-type').value,
     startTime: document.getElementById('hq-occ-start').value,
     endTime: document.getElementById('hq-occ-end').value,
-    locationId: document.getElementById('hq-occ-location').value || null,
+    ...resolveLocationInputFor(academyId, document.getElementById('hq-occ-location').value),
     staffInCharge: document.getElementById('hq-occ-staff').value,
     targetGroup: document.getElementById('hq-occ-target').value,
     note: document.getElementById('hq-occ-note').value,
@@ -1386,7 +1399,7 @@ document.getElementById('hq-btn-add-occ').addEventListener('click', async () => 
     type: document.getElementById('hq-new-occ-type').value,
     startTime: document.getElementById('hq-new-occ-start').value,
     endTime: document.getElementById('hq-new-occ-end').value,
-    locationId: document.getElementById('hq-new-occ-location').value || null,
+    ...resolveLocationInputFor(academyId, document.getElementById('hq-new-occ-location').value),
     staffInCharge: document.getElementById('hq-new-occ-staff').value,
     targetGroup: document.getElementById('hq-new-occ-target').value,
     note: document.getElementById('hq-new-occ-note').value,

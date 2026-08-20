@@ -140,14 +140,14 @@ function occurrencesForDate(dateStr){
     const override = scheduleEvents.find(e => e.date === dateStr && e.patternId === p.id);
     const merged = Object.assign({}, p, override || {});
     results.push({
-      startTime: merged.startTime, endTime: merged.endTime, locationId: merged.locationId,
+      startTime: merged.startTime, endTime: merged.endTime, locationId: merged.locationId, locationText: merged.locationText,
       staffInCharge: merged.staffInCharge, targetGroup: merged.targetGroup, type: merged.type, note: merged.note,
       cancelled: !!(override && override.cancelled)
     });
   });
   scheduleEvents.filter(e => e.date === dateStr && !e.patternId).forEach(e => {
     results.push({
-      startTime:e.startTime, endTime:e.endTime, locationId:e.locationId,
+      startTime:e.startTime, endTime:e.endTime, locationId:e.locationId, locationText:e.locationText,
       staffInCharge:e.staffInCharge, targetGroup:e.targetGroup, type:e.type, note:e.note,
       cancelled: !!e.cancelled
     });
@@ -165,7 +165,7 @@ function rowHTML(o){
     <div class="r-time">${escAttr(o.startTime||'')}${o.endTime ? '〜'+escAttr(o.endTime) : ''}</div>
     <div class="r-body">
       <div class="r-type">${escAttr(o.type||'')}${cancelledTag}</div>
-      <div class="r-loc">📍 ${escAttr(locationName(o.locationId) || '場所未設定')}</div>
+      <div class="r-loc">📍 ${escAttr(locationName(o.locationId) || o.locationText || '場所未設定')}</div>
       <div class="r-staff">対象: ${escAttr(o.targetGroup||'-')}</div>
       ${o.note ? '<div class="r-note">' + escAttr(o.note) + '</div>' : ''}
     </div>

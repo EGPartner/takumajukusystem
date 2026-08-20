@@ -196,6 +196,7 @@
   </div>
 </div>
 <div id="app-root" style="display:none;">
+<datalist id="location-options"></datalist>
 <div class="wrap">
   <header>
     <div class="logo-mark"></div>
@@ -466,7 +467,7 @@
           <div class="field"><label for="occ-end">終了時刻</label><input type="time" id="occ-end"></div>
         </div>
         <div class="row">
-          <div class="field"><label for="occ-location">場所</label><select id="occ-location"></select></div>
+          <div class="field"><label for="occ-location">場所</label><input type="text" id="occ-location" list="location-options" placeholder="選択または入力" autocomplete="off"></div>
           <div class="field"><label for="occ-staff">担当スタッフ</label><input type="text" id="occ-staff"></div>
         </div>
         <div class="field"><label for="occ-target">対象学年/グループ</label><input type="text" id="occ-target" placeholder="例: 全学年、小1-3など"></div>
@@ -495,7 +496,7 @@
         <div class="field"><label for="new-occ-end">終了時刻</label><input type="time" id="new-occ-end"></div>
       </div>
       <div class="row">
-        <div class="field"><label for="new-occ-location">場所</label><select id="new-occ-location"></select></div>
+        <div class="field"><label for="new-occ-location">場所</label><input type="text" id="new-occ-location" list="location-options" placeholder="選択または入力" autocomplete="off"></div>
         <div class="field"><label for="new-occ-staff">担当スタッフ</label><input type="text" id="new-occ-staff"></div>
       </div>
       <div class="field"><label for="new-occ-target">対象学年/グループ</label><input type="text" id="new-occ-target"></div>
@@ -687,6 +688,7 @@ let isAdmin = false;
 let isHQUser = false;
 let initialTabApplied = false;
 let pendingGridRerender = false;
+let pendingSettingsRerender = false;
 let currentBranchName = 'タクマ塾';
 let editState = { pricing:false, sponsors:false, expenses:false, extra:false, locations:false, patterns:false, staff:false };
 let currentFY;
@@ -1035,7 +1037,18 @@ const WEEKDAY_NAMES = ['日曜','月曜','火曜','水曜','木曜','金曜','�
 
 function dateStrOf(d){ return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()); }
 function weekdayOf(dateStr){ return new Date(dateStr + 'T00:00:00').getDay(); }
-function locationName(id){ const l = (locationsList||[]).find(x => x.id === id); return l ? l.name : '(場所未設定)'; }
+// 場所は「登録済みから選ぶ」「その場で手入力する」のどちらでもよい。
+// 登録済みを選んだ場合は locationId、手入力の場合は locationText に入る。
+function locationNameOf(id){ const l = (locationsList||[]).find(x => x.id === id); return l ? l.name : ''; }
+function locationLabelOf(o){ return locationNameOf(o.locationId) || (o.locationText || '') || '(場所未設定)'; }
+function locationInputValue(o){ return locationNameOf(o.locationId) || (o.locationText || ''); }
+function resolveLocationInput(text){
+  const t = String(text || '').trim();
+  if (!t) return { locationId: null, locationText: null };
+  const hit = (locationsList||[]).find(x => x.name === t);
+  return hit ? { locationId: hit.id, locationText: null } : { locationId: null, locationText: t };
+}
+function locationName(id){ return locationNameOf(id) || '(場所未設定)'; }
 
 function occurrencesForDate(dateStr){
   const wd = weekdayOf(dateStr);
@@ -1049,14 +1062,14 @@ function occurrencesForDate(dateStr){
     results.push({
       date:dateStr, patternId:p.id, eventId: override ? override.id : null,
       cancelled: !!(override && override.cancelled),
-      startTime: merged.startTime, endTime: merged.endTime, locationId: merged.locationId,
+      startTime: merged.startTime, endTime: merged.endTime, locationId: merged.locationId, locationText: merged.locationText,
       staffInCharge: merged.staffInCharge, targetGroup: merged.targetGroup, type: merged.type, note: merged.note
     });
   });
   scheduleEvents.filter(e => e.date === dateStr && !e.patternId).forEach(e => {
     results.push({
       date:dateStr, patternId:null, eventId:e.id, cancelled: !!e.cancelled,
-      startTime:e.startTime, endTime:e.endTime, locationId:e.locationId,
+      startTime:e.startTime, endTime:e.endTime, locationId:e.locationId, locationText:e.locationText,
       staffInCharge:e.staffInCharge, targetGroup:e.targetGroup, type:e.type, note:e.note
     });
   });
@@ -1082,7 +1095,7 @@ function calendarRowHTML(o){
     <div class="cr-time">${escAttr(o.startTime||'')}${o.endTime ? '〜'+escAttr(o.endTime) : ''}</div>
     <div class="cr-body">
       <div class="cr-type">${escAttr(o.type||'')}${cancelledTag}</div>
-      <div class="cr-loc">📍 ${escAttr(locationName(o.locationId))}</div>
+      <div class="cr-loc">📍 ${escAttr(locationLabelOf(o))}</div>
       <div class="cr-staff">担当: ${escAttr(o.staffInCharge||'-')} ／ 対象: ${escAttr(o.targetGroup||'-')}</div>
       ${o.note ? '<div class="cr-note">' + escAttr(o.note) + '</div>' : ''}
       ${absenteesHTML}
@@ -1168,14 +1181,9 @@ function renderCalendarViews(){
 }
 
 function populateLocationSelects(){
-  const opts = '<option value="">(未選択)</option>' + (locationsList||[]).map(l => `<option value="${l.id}">${escAttr(l.name)}</option>`).join('');
-  ['occ-location','new-occ-location'].forEach(id => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    const prev = el.value;
-    el.innerHTML = opts;
-    if (prev) el.value = prev;
-  });
+  // 登録済みの場所を入力候補として並べる。候補にない場所は手入力できる。
+  const dl = document.getElementById('location-options');
+  if (dl) dl.innerHTML = (locationsList||[]).map(l => `<option value="${escAttr(l.name)}"></option>`).join('');
 }
 
 function openOccurrenceEditor(key){
@@ -1188,7 +1196,7 @@ function openOccurrenceEditor(key){
   document.getElementById('occ-type').value = occ.type || '通常練習';
   document.getElementById('occ-start').value = occ.startTime || '';
   document.getElementById('occ-end').value = occ.endTime || '';
-  document.getElementById('occ-location').value = occ.locationId || '';
+  document.getElementById('occ-location').value = locationInputValue(occ);
   document.getElementById('occ-staff').value = occ.staffInCharge || '';
   document.getElementById('occ-target').value = occ.targetGroup || '';
   document.getElementById('occ-note').value = occ.note || '';
@@ -1213,7 +1221,7 @@ async function handleSaveOccurrence(){
     type: document.getElementById('occ-type').value,
     startTime: document.getElementById('occ-start').value,
     endTime: document.getElementById('occ-end').value,
-    locationId: document.getElementById('occ-location').value || null,
+    ...resolveLocationInput(document.getElementById('occ-location').value),
     staffInCharge: document.getElementById('occ-staff').value,
     targetGroup: document.getElementById('occ-target').value,
     note: document.getElementById('occ-note').value,
@@ -1265,7 +1273,7 @@ async function handleAddStandaloneOccurrence(){
     type: document.getElementById('new-occ-type').value,
     startTime: document.getElementById('new-occ-start').value,
     endTime: document.getElementById('new-occ-end').value,
-    locationId: document.getElementById('new-occ-location').value || null,
+    ...resolveLocationInput(document.getElementById('new-occ-location').value),
     staffInCharge: document.getElementById('new-occ-staff').value,
     targetGroup: document.getElementById('new-occ-target').value,
     note: document.getElementById('new-occ-note').value,
@@ -1295,7 +1303,7 @@ function renderPatternsTable(){
     <tr data-id="${p.id}">
       <td><select class="pt-weekday" data-id="${p.id}" ${dis}>${wdOpts(p.weekday)}</select></td>
       <td><input type="time" class="pt-start" data-id="${p.id}" value="${p.startTime||''}" style="width:80px;display:inline-block;" ${dis}> 〜 <input type="time" class="pt-end" data-id="${p.id}" value="${p.endTime||''}" style="width:80px;display:inline-block;" ${dis}></td>
-      <td><select class="pt-location" data-id="${p.id}" ${dis}>${locOpts(p.locationId)}</select></td>
+      <td><input type="text" class="pt-location" data-id="${p.id}" list="location-options" value="${escAttr(locationInputValue(p))}" placeholder="選択または入力" autocomplete="off" style="width:120px;" ${dis}></td>
       <td><input type="text" class="pt-staff" data-id="${p.id}" value="${escAttr(p.staffInCharge||'')}" style="width:90px;" ${dis}></td>
       <td><input type="text" class="pt-target" data-id="${p.id}" value="${escAttr(p.targetGroup||'')}" style="width:90px;" ${dis}></td>
       <td><select class="pt-type" data-id="${p.id}" ${dis}><option ${p.type==='通常練習'?'selected':''}>通常練習</option><option ${p.type==='試合'?'selected':''}>試合</option><option ${p.type==='イベント'?'selected':''}>イベント</option></select></td>
@@ -1309,7 +1317,13 @@ function renderPatternsTable(){
 async function handlePatternsChange(e){
   const id = e.target.dataset.id;
   if (!id) return;
-  const field = { 'pt-weekday':'weekday','pt-start':'startTime','pt-end':'endTime','pt-location':'locationId','pt-staff':'staffInCharge','pt-target':'targetGroup','pt-type':'type','pt-note':'note','pt-startdate':'startDate','pt-enddate':'endDate' };
+  // 場所は「登録済みならID、手入力ならテキスト」の2つの項目に振り分けて保存する
+  if (e.target.classList.contains('pt-location')){
+    try { await patternsRef.doc(id).set(resolveLocationInput(e.target.value), { merge:true }); }
+    catch(err){ console.error(err); alert('保存に失敗しました: ' + err.message); }
+    return;
+  }
+  const field = { 'pt-weekday':'weekday','pt-start':'startTime','pt-end':'endTime','pt-staff':'staffInCharge','pt-target':'targetGroup','pt-type':'type','pt-note':'note','pt-startdate':'startDate','pt-enddate':'endDate' };
   const cls = [...e.target.classList].find(c => field[c]);
   if (!cls) return;
   const key = field[cls];
@@ -1818,6 +1832,14 @@ async function handleResetStudents(){
 }
 
 function loadSettingsToForm(){
+  // 入力している最中は表を作り直さない(入力欄が置き換わってフォーカスが外れるため)。
+  // 保留した再描画は、欄を離れた時(focusout)に実行される
+  const active = document.activeElement;
+  const wrapper = document.getElementById('settings-content-wrapper');
+  if (active && wrapper && wrapper.contains(active) && /^(INPUT|SELECT|TEXTAREA)$/.test(active.tagName)){
+    pendingSettingsRerender = true;
+    return;
+  }
   document.getElementById('cfg-tuition').value = settings.tuition;
   document.getElementById('cfg-enroll').value = settings.enroll;
   renderSponsors(); renderExpenses(); renderExtra(); renderLocationsTable(); populateLocationSelects();
@@ -2512,24 +2534,29 @@ function initUI(){
   document.getElementById('cfg-enroll').addEventListener('change', handleTuitionEnrollChange);
   document.getElementById('btn-edit-pricing').addEventListener('click', () => togglePricingEdit(true));
   document.getElementById('btn-save-pricing').addEventListener('click', async () => { await handleTuitionEnrollChange(); togglePricingEdit(false); });
-  document.getElementById('sponsors-tbody').addEventListener('input', handleSponsorsChange);
+  // 入力中に保留した再描画を、欄を離れたタイミングで実行する
+  document.getElementById('settings-content-wrapper').addEventListener('focusout', () => {
+    if (pendingSettingsRerender){
+      pendingSettingsRerender = false;
+      setTimeout(loadSettingsToForm, 0);
+    }
+  });
   document.getElementById('sponsors-tbody').addEventListener('change', handleSponsorsChange);
   document.getElementById('sponsors-tbody').addEventListener('click', handleSponsorsClick);
   document.getElementById('btn-add-sponsor').addEventListener('click', async () => { settings.sponsors.push({ id:uid(), name:'新しいスポンサー', amount:0, month:4 }); await saveSettings(); });
   document.getElementById('btn-edit-sponsors').addEventListener('click', () => toggleEditMode('sponsors', true));
   document.getElementById('btn-save-sponsors').addEventListener('click', () => toggleEditMode('sponsors', false));
-  document.getElementById('expenses-tbody').addEventListener('input', handleExpensesChange);
+  document.getElementById('expenses-tbody').addEventListener('change', handleExpensesChange);
   document.getElementById('expenses-tbody').addEventListener('click', handleExpensesClick);
   document.getElementById('btn-add-expense').addEventListener('click', async () => { settings.expenses.push({ id:uid(), name:'新しい支出項目', amount:0 }); await saveSettings(); });
   document.getElementById('btn-edit-expenses').addEventListener('click', () => toggleEditMode('expenses', true));
   document.getElementById('btn-save-expenses').addEventListener('click', () => toggleEditMode('expenses', false));
-  document.getElementById('extra-tbody').addEventListener('input', handleExtraChange);
   document.getElementById('extra-tbody').addEventListener('change', handleExtraChange);
   document.getElementById('extra-tbody').addEventListener('click', handleExtraClick);
   document.getElementById('btn-add-extra').addEventListener('click', async () => { settings.extraIncomes.push({ id:uid(), name:'新しい臨時収入', amount:0, ym:currentMonthStr() }); await saveSettings(); });
   document.getElementById('btn-edit-extra').addEventListener('click', () => toggleEditMode('extra', true));
   document.getElementById('btn-save-extra').addEventListener('click', () => toggleEditMode('extra', false));
-  document.getElementById('locations-tbody').addEventListener('input', handleLocationsChange);
+  document.getElementById('locations-tbody').addEventListener('change', handleLocationsChange);
   document.getElementById('locations-tbody').addEventListener('click', handleLocationsClick);
   document.getElementById('btn-add-location').addEventListener('click', async () => { locationsList = (locationsList||[]).concat([{ id:uid(), name:'新しい場所', address:'', note:'' }]); await saveLocations(); renderLocationsTable(); populateLocationSelects(); renderPatternsTable(); });
   document.getElementById('btn-edit-locations').addEventListener('click', () => toggleEditMode('locations', true));
