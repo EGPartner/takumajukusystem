@@ -34,6 +34,9 @@
   .scroll-y{max-height:520px;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding-right:4px;}
   .alert-banner{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;text-align:left;background:#FDECEA;border:1px solid var(--danger);border-radius:10px;padding:13px 16px;margin-bottom:16px;cursor:pointer;font-family:inherit;font-size:14px;color:var(--danger);font-weight:700;}
   .alert-banner .ab-go{font-size:13px;white-space:nowrap;}
+  .staff-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;}
+  .staff-chip{border:1px solid var(--border-strong);background:var(--surface);border-radius:20px;padding:5px 12px;font-size:12.5px;cursor:pointer;font-family:inherit;color:var(--text-primary);}
+  .staff-chip.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600;}
   .check-list{display:flex;flex-wrap:wrap;gap:8px;}
   .check-list label{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border-strong);border-radius:20px;padding:7px 14px;font-size:13px;background:var(--surface);color:var(--text-primary);cursor:pointer;margin:0;}
   .check-list label.checked{border-color:var(--accent);background:var(--accent-bg);color:var(--accent-dark);font-weight:600;}
@@ -166,7 +169,7 @@
             <div class="field"><label>開始時刻</label><input type="time" id="hq-occ-start"></div>
             <div class="field"><label>終了時刻</label><input type="time" id="hq-occ-end"></div>
           </div>
-          <div class="field"><label>担当スタッフ</label><input type="text" id="hq-occ-staff"></div>
+          <div class="field"><label>担当スタッフ<span class="status" style="margin:0 0 0 6px;display:inline;">複数人を選べます</span></label><div class="staff-chips" id="hq-occ-staff-chips"></div><input type="text" id="hq-occ-staff" placeholder="候補を選ぶか、直接入力"></div>
           <div class="field"><label>対象学年/グループ</label><input type="text" id="hq-occ-target"></div>
           <div class="field"><label>備考</label><textarea id="hq-occ-note" rows="2"></textarea></div>
           <div class="checkbox-row"><input type="checkbox" id="hq-occ-cancelled"><label for="hq-occ-cancelled">この日は中止にする(一覧・カレンダーから消えます。「上書きを解除」で元に戻せます)</label></div>
@@ -195,7 +198,7 @@
           <div class="field"><label>開始時刻</label><input type="time" id="hq-new-occ-start"></div>
           <div class="field"><label>終了時刻</label><input type="time" id="hq-new-occ-end"></div>
         </div>
-        <div class="field"><label>担当スタッフ</label><input type="text" id="hq-new-occ-staff"></div>
+        <div class="field"><label>担当スタッフ<span class="status" style="margin:0 0 0 6px;display:inline;">複数人を選べます</span></label><div class="staff-chips" id="hq-new-occ-staff-chips"></div><input type="text" id="hq-new-occ-staff" placeholder="候補を選ぶか、直接入力"></div>
         <div class="field"><label>対象学年/グループ</label><input type="text" id="hq-new-occ-target"></div>
         <div class="field"><label>備考</label><textarea id="hq-new-occ-note" rows="2"></textarea></div>
         <div class="btn-row"><button class="primary" id="hq-btn-add-occ" style="width:auto;">追加する</button></div>
@@ -390,6 +393,17 @@
         </div>
       </div>
 
+      <div class="card">
+        <h2 style="font-size:15px;margin:0 0 4px;">全校の予定に表示する担当者</h2>
+        <p class="status" style="margin-top:0;color:var(--text-muted);">代表など<b>すべての校舎を回る方</b>の氏名を登録します。ここに入れておくと、どの校舎の予定でも担当者の候補に出ます。新しい校舎が増えたときも自動で反映されます。<br>※これは名前を候補に出すためだけの設定で、ログイン権限とは関係ありません。</p>
+        <div id="common-staff-list" class="scroll-y" style="margin-bottom:10px;"><div class="empty">読み込み中…</div></div>
+        <div class="btn-row" style="flex-wrap:nowrap;">
+          <input type="text" id="new-common-staff" placeholder="例: タクマ代表" style="flex:1 1 auto;">
+          <button class="primary" id="btn-add-common-staff" style="flex:0 0 auto;width:auto;">追加</button>
+        </div>
+        <p class="status" id="common-staff-status"></p>
+      </div>
+
       <div class="card" id="sysadmin-section" style="display:none;">
         <h2 style="font-size:15px;margin:0 0 4px;">システム管理者(最上位権限)</h2>
         <p class="status" style="margin-top:0;color:var(--text-muted);">すべての操作ができる権限です。安全のため<b>この画面からは追加・削除できません</b>。変更が必要な場合は Firebase コンソールの Firestore で <code>systemAdmins</code> を直接編集してください(乗っ取り時に権限を無限に増やされるのを防ぐための制限です)。</p>
@@ -414,6 +428,7 @@
         </div>
         <p class="status" id="new-account-desc" style="margin-top:0;padding:9px 11px;border-radius:8px;background:var(--accent-bg);color:var(--accent-dark);"></p>
         <div class="row2">
+          <div class="field"><label for="new-account-name">氏名</label><input type="text" id="new-account-name" placeholder="例: 佐藤 健"></div>
           <div class="field"><label for="new-account-email">新しいメールアドレス</label><input type="text" id="new-account-email" placeholder="例: staff@example.com"></div>
           <div class="field"><label for="new-account-password">新しい初期パスワード</label><input type="text" id="new-account-password" placeholder="6文字以上"></div>
         </div>
@@ -781,6 +796,7 @@ document.getElementById('btn-issue-account').addEventListener('click', async () 
   const academyIds = selectedAccountSchools();
   const email = document.getElementById('new-account-email').value.trim();
   const password = document.getElementById('new-account-password').value;
+  const staffName = document.getElementById('new-account-name').value.trim();
   const fail = (msg) => { statusEl.style.color = 'var(--danger)'; statusEl.textContent = msg; };
   if (!role) return fail('権限を選んでください。');
   if (role.systemAdminOnly && !isSystemAdminUser) return fail('この権限を発行できるのはシステム管理者だけです。');
@@ -799,7 +815,7 @@ document.getElementById('btn-issue-account').addEventListener('click', async () 
     };
     let where;
     if (roleKey === 'hqAdmin'){
-      await hqAdminsRef.doc(newUid).set(Object.assign({ email }, stamp));
+      await hqAdminsRef.doc(newUid).set(Object.assign({ email, name: staffName }, stamp));
       where = '運用管理者';
       loadHQAdmins();
     } else {
@@ -807,7 +823,7 @@ document.getElementById('btn-issue-account').addEventListener('click', async () 
       const staffRole = roleKey === 'schoolAdmin' ? 'admin' : 'staff';
       const results = await Promise.allSettled(academyIds.map(id =>
         db.collection('academies').doc(id).collection('staff').doc(newUid)
-          .set(Object.assign({ role: staffRole, email, uid: newUid }, stamp))
+          .set(Object.assign({ role: staffRole, email, uid: newUid, name: staffName }, stamp))
       ));
       const okIds = academyIds.filter((id, i) => results[i].status === 'fulfilled');
       const ngIds = academyIds.filter((id, i) => results[i].status === 'rejected');
@@ -827,6 +843,7 @@ document.getElementById('btn-issue-account').addEventListener('click', async () 
     statusEl.textContent = '✓ ' + email + ' さんを' + where + 'として発行しました。メールアドレスと初期パスワードを本人にお伝えください。';
     document.getElementById('new-account-email').value = '';
     document.getElementById('new-account-password').value = '';
+    document.getElementById('new-account-name').value = '';
   } catch(err){
     console.error(err);
     fail('発行に失敗しました: ' + err.message);
@@ -882,6 +899,7 @@ async function loadSchools(){
   try { populateSchoolSelects(); } catch(e){ console.error('populateSchoolSelects failed', e); }
   try { renderHQCalendarList(); } catch(e){ console.error('renderHQCalendarList failed', e); }
   try { renderHQPatternsTable(); } catch(e){ console.error('renderHQPatternsTable failed', e); }
+  try { loadStaffNames(); } catch(e){ console.error('loadStaffNames failed', e); }
 }
 
 let absenceDataBySchool = {};
@@ -1277,6 +1295,74 @@ function populateLocationSelectFor(selectId, academyId){
   const list = allLocations[academyId] || [];
   dl.innerHTML = list.map(l => `<option value="${escAttr(l.name)}"></option>`).join('');
 }
+// ---- 担当スタッフ(複数人可) ----
+// 候補は「その校舎のスタッフ氏名」＋「全校共通の担当者」。候補になくても手入力できる。
+const STAFF_SEP = '・';
+let allStaffNames = {};      // 校舎ID → 氏名の配列
+let commonStaffNames = [];   // 全校共通の担当者
+function staffCandidatesFor(academyId){
+  return Array.from(new Set((allStaffNames[academyId] || []).concat(commonStaffNames)));
+}
+function splitStaff(text){
+  return String(text || '').split(/[・,、\/]/).map(t => t.trim()).filter(Boolean);
+}
+function renderStaffChips(inputId, academyId){
+  const box = document.getElementById(inputId + '-chips');
+  const el = document.getElementById(inputId);
+  if (!box || !el) return;
+  const selected = splitStaff(el.value);
+  const cands = staffCandidatesFor(academyId);
+  if (cands.length === 0){
+    box.innerHTML = '<span class="status" style="margin:0;">候補がありません。各校の設定でスタッフの氏名を登録すると、ここから選べます。</span>';
+    return;
+  }
+  box.innerHTML = cands.map(n =>
+    `<button type="button" class="staff-chip ${selected.includes(n) ? 'on' : ''}" data-staff-input="${escAttr(inputId)}" data-staff-academy="${escAttr(academyId || '')}" data-staff-name="${escAttr(n)}">${escAttr(n)}</button>`
+  ).join('');
+}
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest && e.target.closest('.staff-chip');
+  if (!btn) return;
+  e.preventDefault();
+  const el = document.getElementById(btn.dataset.staffInput);
+  const list = splitStaff(el.value);
+  const i = list.indexOf(btn.dataset.staffName);
+  if (i >= 0) list.splice(i, 1); else list.push(btn.dataset.staffName);
+  el.value = list.join(STAFF_SEP);
+  renderStaffChips(btn.dataset.staffInput, btn.dataset.staffAcademy);
+});
+
+async function loadStaffNames(){
+  const map = {};
+  await Promise.all(schoolsArr.map(async (s) => {
+    try {
+      const snap = await db.collection('academies').doc(s.id).collection('staff').get();
+      map[s.id] = snap.docs.map(d => (d.data().name || '').trim()).filter(Boolean);
+    } catch(e){ console.error('staff names load failed for', s.id, e); map[s.id] = []; }
+  }));
+  allStaffNames = map;
+  try {
+    const doc = await db.collection('commonStaff').doc('config').get();
+    commonStaffNames = (doc.exists && Array.isArray(doc.data().names)) ? doc.data().names : [];
+  } catch(e){ console.error('commonStaff load failed', e); }
+  renderCommonStaffList();
+  renderStaffChips('hq-new-occ-staff', document.getElementById('hq-new-occ-school').value);
+}
+
+function renderCommonStaffList(){
+  const el = document.getElementById('common-staff-list');
+  if (!el) return;
+  el.innerHTML = commonStaffNames.length === 0
+    ? '<div class="empty">まだ登録されていません。</div>'
+    : commonStaffNames.map(n => `<div class="school-row"><div class="school-name">${escAttr(n)}</div><button class="link-danger" data-del-common-staff="${escAttr(n)}">削除</button></div>`).join('');
+}
+
+async function saveCommonStaff(){
+  await db.collection('commonStaff').doc('config').set({ names: commonStaffNames });
+  renderCommonStaffList();
+  renderStaffChips('hq-new-occ-staff', document.getElementById('hq-new-occ-school').value);
+}
+
 function locationNameById(academyId, id){
   const l = (allLocations[academyId] || []).find(x => x.id === id);
   return l ? l.name : '';
@@ -1321,6 +1407,7 @@ function openHQOccEditor(key){
   populateLocationSelectFor('hq-occ-location', academyId);
   document.getElementById('hq-occ-location').value = locationInputValueFor(occ);
   document.getElementById('hq-occ-staff').value = occ.staffInCharge || '';
+  renderStaffChips('hq-occ-staff', academyId);
   document.getElementById('hq-occ-target').value = occ.targetGroup || '';
   document.getElementById('hq-occ-note').value = occ.note || '';
   document.getElementById('hq-occ-cancelled').checked = occ.cancelled;
@@ -1387,6 +1474,7 @@ document.getElementById('hq-btn-delete-occ').addEventListener('click', async () 
 
 document.getElementById('hq-new-occ-school').addEventListener('change', (e) => {
   populateLocationSelectFor('hq-new-occ-location', e.target.value);
+  renderStaffChips('hq-new-occ-staff', e.target.value);
 });
 document.getElementById('hq-btn-add-occ').addEventListener('click', async () => {
   const statusEl = document.getElementById('hq-add-occ-status');
@@ -1700,7 +1788,45 @@ clearStatusOnInput(['hq-new-pattern-school','hq-new-pattern-weekday','hq-new-pat
 clearStatusOnInput(['new-name','new-id'], 'add-status');
 clearStatusOnInput(['hq-bulk-school','hq-bulk-events','hq-bulk-patterns'], 'hq-bulk-status');
 clearStatusOnInput(['hq-bulk-absence-school','hq-bulk-absence-acked-only'], 'hq-bulk-absence-status');
-clearStatusOnInput(['new-account-role','new-account-email','new-account-password'], 'issue-account-status');
+clearStatusOnInput(['new-account-role','new-account-name','new-account-email','new-account-password'], 'issue-account-status');
+
+['hq-occ-staff','hq-new-occ-staff'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('input', () => {
+    const academyId = id === 'hq-new-occ-staff'
+      ? document.getElementById('hq-new-occ-school').value
+      : document.getElementById('hq-occ-editor').dataset.academyId;
+    renderStaffChips(id, academyId);
+  });
+});
+document.getElementById('btn-add-common-staff').addEventListener('click', async () => {
+  const input = document.getElementById('new-common-staff');
+  const statusEl = document.getElementById('common-staff-status');
+  const name = input.value.trim();
+  if (!name){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = '氏名を入力してください。'; return; }
+  if (commonStaffNames.includes(name)){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = 'すでに登録されています。'; return; }
+  commonStaffNames = commonStaffNames.concat([name]);
+  try {
+    await saveCommonStaff();
+    input.value = '';
+    statusEl.style.color = 'var(--accent-dark)';
+    statusEl.textContent = '✓ ' + name + ' さんを全校の候補に追加しました。';
+  } catch(err){
+    commonStaffNames = commonStaffNames.filter(n => n !== name);
+    statusEl.style.color = 'var(--danger)';
+    statusEl.textContent = '追加に失敗しました: ' + err.message;
+  }
+});
+document.getElementById('common-staff-list').addEventListener('click', async (e) => {
+  const name = e.target.dataset.delCommonStaff;
+  if (!name) return;
+  if (!confirm(name + ' さんを全校の候補から外しますか？(登録済みの予定の担当名はそのまま残ります)')) return;
+  const before = commonStaffNames;
+  commonStaffNames = commonStaffNames.filter(n => n !== name);
+  try { await saveCommonStaff(); }
+  catch(err){ commonStaffNames = before; alert('削除に失敗しました: ' + err.message); }
+});
+clearStatusOnInput(['new-common-staff'], 'common-staff-status');
 
 auth.onAuthStateChanged(async (user) => {
   if (user && user.isAnonymous){ await auth.signOut(); return; }

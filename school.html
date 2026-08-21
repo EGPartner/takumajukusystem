@@ -39,6 +39,9 @@
   body.is-readonly .edit-only{display:none !important;}
   .readonly-banner{display:none;background:#EEF6F7;border:1px solid var(--border-strong);border-radius:10px;padding:11px 14px;margin-bottom:14px;font-size:13px;color:var(--text-secondary);}
   body.is-readonly .readonly-banner{display:block;}
+  .staff-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;}
+  .staff-chip{border:1px solid var(--border-strong);background:var(--surface);border-radius:20px;padding:5px 12px;font-size:12.5px;cursor:pointer;font-family:inherit;color:var(--text-primary);}
+  .staff-chip.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600;}
   .tab-group-label{font-size:10.5px;font-weight:700;letter-spacing:.08em;color:var(--text-muted);align-self:center;padding:0 2px 0 16px;white-space:nowrap;user-select:none;cursor:pointer;}
   .tab-group-label:first-child{padding-left:0;}
   .seg-row{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
@@ -468,7 +471,7 @@
         </div>
         <div class="row">
           <div class="field"><label for="occ-location">場所</label><input type="text" id="occ-location" list="location-options" placeholder="選択または入力" autocomplete="off"></div>
-          <div class="field"><label for="occ-staff">担当スタッフ</label><input type="text" id="occ-staff"></div>
+          <div class="field"><label for="occ-staff">担当スタッフ<span class="note" style="margin:0 0 0 6px;display:inline;">複数人を選べます</span></label><div class="staff-chips" id="occ-staff-chips"></div><input type="text" id="occ-staff" placeholder="候補を選ぶか、直接入力"></div>
         </div>
         <div class="field"><label for="occ-target">対象学年/グループ</label><input type="text" id="occ-target" placeholder="例: 全学年、小1-3など"></div>
         <div class="field"><label for="occ-note">備考</label><textarea id="occ-note" rows="2"></textarea></div>
@@ -497,7 +500,7 @@
       </div>
       <div class="row">
         <div class="field"><label for="new-occ-location">場所</label><input type="text" id="new-occ-location" list="location-options" placeholder="選択または入力" autocomplete="off"></div>
-        <div class="field"><label for="new-occ-staff">担当スタッフ</label><input type="text" id="new-occ-staff"></div>
+        <div class="field"><label for="new-occ-staff">担当スタッフ<span class="note" style="margin:0 0 0 6px;display:inline;">複数人を選べます</span></label><div class="staff-chips" id="new-occ-staff-chips"></div><input type="text" id="new-occ-staff" placeholder="候補を選ぶか、直接入力"></div>
       </div>
       <div class="field"><label for="new-occ-target">対象学年/グループ</label><input type="text" id="new-occ-target"></div>
       <div class="field"><label for="new-occ-note">備考</label><textarea id="new-occ-note" rows="2"></textarea></div>
@@ -550,13 +553,14 @@
       </div>
       <p class="note" style="margin-top:0;">このシステム内でスタッフのログインアカウントを発行できます。「削除」は、このシステムへのアクセス権を外すだけで、発行済みのアカウント自体は残ります。</p>
       <div class="table-scroll">
-        <table class="mini-table"><thead><tr><th>メールアドレス</th><th>役割</th><th>発行者・発行日</th><th></th></tr></thead><tbody id="staff-tbody"></tbody></table>
+        <table class="mini-table"><thead><tr><th>氏名</th><th>メールアドレス</th><th>役割</th><th>発行者・発行日</th><th></th></tr></thead><tbody id="staff-tbody"></tbody></table>
       </div>
       <div id="staff-empty" class="empty" style="display:none;">スタッフが登録されていません。</div>
       <div id="add-staff-form" style="display:none;margin-top:16px;padding:14px;border:1px solid var(--accent);border-radius:10px;background:var(--accent-bg);">
         <p style="font-weight:700;font-size:13px;margin:0 0 4px;color:var(--accent-dark);">◆ ここは新しいログイン情報を作る機能です(ログイン画面ではありません)</p>
         <p class="note" style="margin-top:0;">入力した内容が、その人の新しいメールアドレス・パスワードになります。作成後、この2つをそのまま本人に伝えてください。<br>※このメールアドレスがすでに(他の校や運用管理者などとして)登録済みの場合は、エラーになり作成できません。</p>
         <div class="row" style="margin-top:10px;">
+          <div class="field"><label for="new-staff-name">氏名</label><input type="text" id="new-staff-name" placeholder="例: 佐藤 健"></div>
           <div class="field"><label for="new-staff-email">新しいメールアドレス</label><input type="text" id="new-staff-email" placeholder="例: staff@example.com"></div>
           <div class="field"><label for="new-staff-password">新しい初期パスワード</label><input type="text" id="new-staff-password" placeholder="6文字以上"></div>
           <div class="field"><label for="new-staff-role">役割</label>
@@ -945,7 +949,15 @@ function attachListeners(){
   unsubStaffList = staffRef.onSnapshot(snap => {
     staffList = snap.docs.map(d => Object.assign({ id:d.id }, d.data()));
     renderStaffTable();
+    renderStaffChips('occ-staff'); renderStaffChips('new-occ-staff');
   }, err => console.error(err));
+  // 全校共通の担当者(代表など)を読み込む
+  db.collection('commonStaff').doc('config').get()
+    .then(doc => {
+      commonStaffNames = (doc.exists && Array.isArray(doc.data().names)) ? doc.data().names : [];
+      renderStaffChips('occ-staff'); renderStaffChips('new-occ-staff');
+    })
+    .catch(e => console.error('commonStaff load failed', e));
   unsubNameAliases = nameAliasesRef.onSnapshot(doc => {
     nameAliases = doc.exists ? (doc.data().mapping || {}) : {};
     renderAbsenceHistory();
@@ -1049,6 +1061,48 @@ function resolveLocationInput(text){
   return hit ? { locationId: hit.id, locationText: null } : { locationId: null, locationText: t };
 }
 function locationName(id){ return locationNameOf(id) || '(場所未設定)'; }
+
+// ---- 担当スタッフ(複数人可) ----
+// 候補は「この校舎のスタッフ氏名」＋「全校共通の担当者」。候補になくても手入力できる。
+// 保存形式は今までどおり1つの文字列で、複数人は「・」で区切る。
+const STAFF_SEP = '・';
+let commonStaffNames = [];
+function staffCandidates(){
+  const fromAccounts = (staffList || []).map(s => (s.name || '').trim()).filter(Boolean);
+  return Array.from(new Set(fromAccounts.concat(commonStaffNames)));
+}
+function splitStaff(text){
+  return String(text || '').split(/[・,、\/]/).map(t => t.trim()).filter(Boolean);
+}
+function toggleStaffName(inputId, name){
+  const el = document.getElementById(inputId);
+  const list = splitStaff(el.value);
+  const i = list.indexOf(name);
+  if (i >= 0) list.splice(i, 1); else list.push(name);
+  el.value = list.join(STAFF_SEP);
+  renderStaffChips(inputId);
+}
+// 入力欄の上に候補を並べる。押すたびに追加・解除が切り替わる。
+function renderStaffChips(inputId){
+  const box = document.getElementById(inputId + '-chips');
+  if (!box) return;
+  const el = document.getElementById(inputId);
+  const selected = splitStaff(el ? el.value : '');
+  const cands = staffCandidates();
+  if (cands.length === 0){
+    box.innerHTML = '<span class="note" style="margin:0;">候補がありません。設定タブでスタッフの氏名を登録すると、ここから選べます。</span>';
+    return;
+  }
+  box.innerHTML = cands.map(n =>
+    `<button type="button" class="staff-chip ${selected.includes(n) ? 'on' : ''}" data-staff-input="${escAttr(inputId)}" data-staff-name="${escAttr(n)}">${escAttr(n)}</button>`
+  ).join('');
+}
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest && e.target.closest('.staff-chip');
+  if (!btn) return;
+  e.preventDefault();
+  toggleStaffName(btn.dataset.staffInput, btn.dataset.staffName);
+});
 
 function occurrencesForDate(dateStr){
   const wd = weekdayOf(dateStr);
@@ -1198,6 +1252,7 @@ function openOccurrenceEditor(key){
   document.getElementById('occ-end').value = occ.endTime || '';
   document.getElementById('occ-location').value = locationInputValue(occ);
   document.getElementById('occ-staff').value = occ.staffInCharge || '';
+  renderStaffChips('occ-staff');
   document.getElementById('occ-target').value = occ.targetGroup || '';
   document.getElementById('occ-note').value = occ.note || '';
   document.getElementById('occ-cancelled').checked = occ.cancelled;
@@ -1394,6 +1449,7 @@ function renderStaffTable(){
     const lockNote = isSelf ? '<span class="note">(自分)</span>' : (locked ? '<span class="note">(最後の管理者)</span>' : '');
     return `
     <tr data-id="${s.id}">
+      <td><input type="text" class="stf-name" data-id="${s.id}" value="${escAttr(s.name || '')}" placeholder="未入力" style="width:110px;" ${dis}></td>
       <td>${escAttr(s.email || s.id)} ${lockNote}</td>
       <td><select class="stf-role" data-id="${s.id}" ${rowDis}><option value="staff" ${s.role!=='admin'?'selected':''}>スタッフ</option><option value="admin" ${s.role==='admin'?'selected':''}>管理者</option></select></td>
       <td class="note">${escAttr(staffIssuedLabel(s))}</td>
@@ -1418,7 +1474,14 @@ function isLastAdmin(id){
 
 async function handleStaffChange(e){
   const id = e.target.dataset.id;
-  if (!id || !e.target.classList.contains('stf-role')) return;
+  if (!id) return;
+  // 氏名は権限に影響しないため、自分自身の分も含めて編集できる
+  if (e.target.classList.contains('stf-name')){
+    try { await staffRef.doc(id).set({ name: e.target.value.trim() }, { merge:true }); }
+    catch(err){ console.error(err); alert('保存に失敗しました: ' + err.message); }
+    return;
+  }
+  if (!e.target.classList.contains('stf-role')) return;
   if (currentUser && id === currentUser.uid){
     alert('自分自身の役割は変更できません。管理者権限が必要な変更は、他の管理者または本部にご依頼ください。');
     renderStaffTable();
@@ -1453,6 +1516,7 @@ async function handleAddStaff(){
   const email = document.getElementById('new-staff-email').value.trim();
   const password = document.getElementById('new-staff-password').value;
   const role = document.getElementById('new-staff-role').value;
+  const name = document.getElementById('new-staff-name').value.trim();
   if (!email || !password){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = 'メールアドレスとパスワードの両方を入力してください。'; return; }
   if (password.length < 6){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = 'パスワードは6文字以上にしてください。'; return; }
   statusEl.style.color = 'var(--text-secondary)';
@@ -1462,7 +1526,7 @@ async function handleAddStaff(){
     const newUid = cred.user.uid;
     await secondaryAuth.signOut();
     await staffRef.doc(newUid).set({
-      role, email, uid: newUid,
+      role, email, uid: newUid, name,
       createdBy: currentUser ? currentUser.email : '',
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
@@ -1470,6 +1534,7 @@ async function handleAddStaff(){
     statusEl.textContent = '✓ ' + email + ' さんのアカウントを発行しました。';
     document.getElementById('new-staff-email').value = '';
     document.getElementById('new-staff-password').value = '';
+    document.getElementById('new-staff-name').value = '';
   } catch(err){
     console.error(err);
     statusEl.style.color = 'var(--danger)';
@@ -2489,6 +2554,10 @@ function initUI(){
   });
 
   // 校舎名の変更(設定タブ・管理者のみ。ルール側でも管理者以外の書き込みは拒否される)
+  ['occ-staff','new-occ-staff'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', () => renderStaffChips(id));
+  });
   document.getElementById('btn-save-school-name').addEventListener('click', async () => {
     const statusEl = document.getElementById('school-name-status');
     const name = document.getElementById('school-name-input').value.trim();
