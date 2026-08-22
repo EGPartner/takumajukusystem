@@ -105,6 +105,13 @@
   table.grid-table .col-name input{border:none;background:transparent;font-size:13px;width:100%;padding:2px;font-family:inherit;}
   table.grid-table .col-grade input{width:46px;border:1px solid var(--border-strong);border-radius:6px;padding:2px;text-align:center;}
   table.grid-table .col-trial{width:36px;}
+  table.grid-table .col-team{min-width:90px;}
+  table.grid-table .col-size{width:64px;}
+  table.grid-table .col-memo{min-width:120px;}
+  table.grid-table .col-team input,table.grid-table .col-size input,table.grid-table .col-memo input{width:100%;border:1px solid var(--border-strong);border-radius:6px;padding:3px 5px;font-size:12.5px;font-family:inherit;background:var(--surface);color:var(--text-primary);}
+  table.grid-table .col-grade select{border:1px solid var(--border-strong);border-radius:6px;padding:3px;font-size:12.5px;font-family:inherit;background:var(--surface);color:var(--text-primary);}
+  .bulk-month{margin-top:3px;padding:1px 6px;font-size:10px;font-weight:700;border:1px solid var(--border-strong);border-radius:5px;background:var(--surface);color:var(--accent-dark);cursor:pointer;font-family:inherit;}
+  .bulk-month:hover{background:var(--accent-bg);}
   table.grid-table .cell-month{width:34px;height:34px;cursor:pointer;font-size:14px;color:var(--accent-dark);user-select:none;border-radius:8px;}
   table.grid-table .cell-month:not(:empty){background:var(--accent-bg);}
   table.grid-table .cell-month:hover{filter:brightness(0.96);}
@@ -200,6 +207,7 @@
 </div>
 <div id="app-root" style="display:none;">
 <datalist id="location-options"></datalist>
+<datalist id="size-options"><option value="120"></option><option value="130"></option><option value="140"></option><option value="150"></option><option value="160"></option><option value="S"></option><option value="M"></option><option value="L"></option><option value="O"></option></datalist>
 <div class="wrap">
   <header>
     <div class="logo-mark"></div>
@@ -732,6 +740,19 @@ function gradeLabel(g){
   return '卒業';
 }
 function studentGradeAtFY(s, fy){ return s.gradeRef + (fy - s.gradeRefFY); }
+// 学年の選択肢は小1〜中3。範囲外の値(未就学・高校生など)が入っている場合は、
+// 勝手に書き換わらないようその値も選択肢として残す。
+function gradeOptions(current){
+  const cur = Number(current);
+  let html = '';
+  for (let g = 1; g <= 9; g++){
+    html += `<option value="${g}" ${cur === g ? 'selected' : ''}>${gradeLabel(g)}</option>`;
+  }
+  if (!isNaN(cur) && (cur < 1 || cur > 9)){
+    html += `<option value="${cur}" selected>${gradeLabel(cur)}</option>`;
+  }
+  return html;
+}
 function firstActiveKey(s){ const keys = Object.keys(s.months).filter(k => s.months[k] === 'active').sort(); return keys.length ? keys[0] : null; }
 function cellMark(status){ return status === 'active' ? '★' : (status === 'pause' ? '−' : ''); }
 function cycleStatus(cur){ if (cur === 'active') return 'pause'; if (cur === 'pause') return null; return 'active'; }
@@ -1756,9 +1777,17 @@ function renderFinanceChart(rows){
 }
 function refreshDashboard(){ const rows = computeMonthly(currentFY); renderKPI(rows); renderMonthlyTable(rows); renderCharts(rows); }
 
+// 氏名より前の固定列。表示と集計行で共通に使う
+const GRID_LEAD_HEAD = '<th class="col-name">氏名</th><th class="col-team">チーム</th><th class="col-grade">学年</th><th class="col-trial">体験</th><th class="col-size">シャツ</th><th class="col-size">パンツ</th><th class="col-memo">備考</th>';
+const GRID_LEAD_BLANK = '<td class="col-team"></td><td class="col-grade"></td><td class="col-trial"></td><td class="col-size"></td><td class="col-size"></td><td class="col-memo"></td>';
+
 function renderGridHead(){
-  document.getElementById('grid-head-row').innerHTML = '<th class="col-name">氏名</th><th class="col-grade">学年</th><th class="col-trial">体験</th>' +
-    fiscalMonths(currentFY).map(mo => `<th class="cell-month">${mo.label}</th>`).join('') + '<th></th>';
+  // 各月の見出しに「前月と同じにする」ボタンを置き、月ごとの一括入力をできるようにする
+  const monthCells = fiscalMonths(currentFY).map(mo => {
+    const btn = isAdmin ? `<div><button type="button" class="bulk-month" data-key="${mo.key}" title="前の月と同じ在籍状況をこの月にコピーします">一括</button></div>` : '';
+    return `<th class="cell-month">${mo.label}${btn}</th>`;
+  }).join('');
+  document.getElementById('grid-head-row').innerHTML = GRID_LEAD_HEAD + monthCells + '<th></th>';
 }
 function renderGrid(){
   const months = fiscalMonths(currentFY);
@@ -1784,8 +1813,12 @@ function renderGrid(){
       const ro = isAdmin ? '' : 'disabled';
       return `<tr data-row="${s.id}">
         <td class="col-name"><input type="text" class="in-name" data-id="${s.id}" value="${escAttr(s.name)}" ${ro}></td>
-        <td class="col-grade"><input type="number" class="in-grade" data-id="${s.id}" value="${grade}" title="${gradeLabel(grade)}" ${ro}></td>
+        <td class="col-team"><input type="text" class="in-team" data-id="${s.id}" value="${escAttr(s.team||'')}" placeholder="-" ${ro}></td>
+        <td class="col-grade"><select class="in-grade" data-id="${s.id}" ${ro}>${gradeOptions(grade)}</select></td>
         <td class="col-trial"><input type="checkbox" class="in-trial" data-id="${s.id}" ${s.trial ? 'checked' : ''} ${ro}></td>
+        <td class="col-size"><input type="text" class="in-shirt" data-id="${s.id}" value="${escAttr(s.shirtSize||'')}" placeholder="-" list="size-options" ${ro}></td>
+        <td class="col-size"><input type="text" class="in-pants" data-id="${s.id}" value="${escAttr(s.pantsSize||'')}" placeholder="-" list="size-options" ${ro}></td>
+        <td class="col-memo"><input type="text" class="in-memo" data-id="${s.id}" value="${escAttr(s.memo||'')}" placeholder="-" ${ro}></td>
         ${cells}<td>${isAdmin ? `<button class="link-danger" data-del="${s.id}">削除</button>` : ''}</td></tr>`;
     }).join('');
   }
@@ -1793,13 +1826,13 @@ function renderGrid(){
 }
 function renderGridFooter(months){
   const countCells = months.map(mo => `<td>${activeCountAtKey(mo.key)}</td>`).join('');
-  document.getElementById('grid-foot-count').innerHTML = '<td class="col-name">在籍数(★)</td><td class="col-grade"></td><td class="col-trial"></td>' + countCells + '<td></td>';
+  document.getElementById('grid-foot-count').innerHTML = '<td class="col-name">在籍数(★)</td>' + GRID_LEAD_BLANK + countCells + '<td></td>';
   // 月謝収入はスタッフに見せない(在籍状況の把握には不要なため)
   const revRow = document.getElementById('grid-foot-revenue');
   revRow.style.display = isAdmin ? '' : 'none';
   if (!isAdmin){ revRow.innerHTML = ''; return; }
   const revCells = months.map(mo => `<td>${fmtYen(activeCountAtKey(mo.key) * Number(settings.tuition))}</td>`).join('');
-  revRow.innerHTML = '<td class="col-name">月謝収入</td><td class="col-grade"></td><td class="col-trial"></td>' + revCells + '<td></td>';
+  revRow.innerHTML = '<td class="col-name">月謝収入</td>' + GRID_LEAD_BLANK + revCells + '<td></td>';
 }
 function populateGrowthStudentSelect(){
   const sel = document.getElementById('growth-student');
@@ -1814,6 +1847,30 @@ function renderAll(){
   if (document.getElementById('summary-start').value) renderSummary();
   renderAbsenceHistory();
   renderAliasTable();
+}
+
+// その月の在籍状況を、前の月からまとめてコピーする。
+// 「全員★」ではなく前月の引き継ぎにすることで、休会(−)はそのまま、
+// 退会などで前月に印がない人を誤って在籍に戻してしまうことを防ぐ。
+async function handleBulkMonth(key){
+  const prev = prevMonthStr(key);
+  const targets = students.filter(s => s.months[prev]);
+  if (targets.length === 0){
+    alert('前の月(' + prev + ')に在籍の記録がないため、コピーできる内容がありません。\n最初の月は、お手数ですが個別に入力してください。');
+    return;
+  }
+  const already = targets.filter(s => s.months[key] === s.months[prev]).length;
+  if (!confirm(prev + ' の在籍状況を ' + key + ' にコピーします。\n対象: ' + targets.length + '名' + (already ? '(うち' + already + '名は変更なし)' : '') + '\nよろしいですか？')) return;
+  try {
+    const batch = db.batch();
+    targets.forEach(s => {
+      const months = Object.assign({}, s.months);
+      months[key] = s.months[prev];
+      batch.set(studentsRef.doc(s.id), Object.assign({}, s, { months }));
+    });
+    await batch.commit();
+    markSaved(true);
+  } catch(err){ console.error(err); markSaved(false); alert('コピーに失敗しました: ' + err.message); }
 }
 
 async function handleGridClick(e){
@@ -1840,8 +1897,12 @@ async function handleGridInput(e){
   const id = e.target.dataset.id;
   const s = students.find(x => x.id === id); if (!s) return;
   if (e.target.classList.contains('in-name')){ await saveStudent(Object.assign({}, s, { name: e.target.value })); }
-  else if (e.target.classList.contains('in-grade')){ const v = Number(e.target.value); if (!isNaN(v)){ e.target.title = gradeLabel(v); await saveStudent(Object.assign({}, s, { gradeRef:v, gradeRefFY: currentFY })); } }
+  else if (e.target.classList.contains('in-grade')){ const v = Number(e.target.value); if (!isNaN(v)){ await saveStudent(Object.assign({}, s, { gradeRef:v, gradeRefFY: currentFY })); } }
   else if (e.target.classList.contains('in-trial')){ await saveStudent(Object.assign({}, s, { trial: e.target.checked })); }
+  else if (e.target.classList.contains('in-team')){ await saveStudent(Object.assign({}, s, { team: e.target.value.trim() })); }
+  else if (e.target.classList.contains('in-shirt')){ await saveStudent(Object.assign({}, s, { shirtSize: e.target.value.trim() })); }
+  else if (e.target.classList.contains('in-pants')){ await saveStudent(Object.assign({}, s, { pantsSize: e.target.value.trim() })); }
+  else if (e.target.classList.contains('in-memo')){ await saveStudent(Object.assign({}, s, { memo: e.target.value.trim() })); }
 }
 async function handleAddStudent(){
   if (!isAdmin) return;
@@ -2066,8 +2127,8 @@ function buildCSV(){
   const months = fiscalMonths(currentFY);
   const lines = [];
   lines.push([csvField('■ 階段図 ' + currentFY + '年度')].join(','));
-  lines.push(['氏名','学年','体験会経由'].concat(months.map(m=>m.label)).map(csvField).join(','));
-  students.forEach(s => { const grade = gradeLabel(studentGradeAtFY(s, currentFY)); lines.push([s.name, grade, s.trial?'○':''].concat(months.map(m => cellMark(s.months[m.key]))).map(csvField).join(',')); });
+  lines.push(['氏名','チーム','学年','体験会経由','シャツ','パンツ','備考'].concat(months.map(m=>m.label)).map(csvField).join(','));
+  students.forEach(s => { const grade = gradeLabel(studentGradeAtFY(s, currentFY)); lines.push([s.name, s.team||'', grade, s.trial?'○':'', s.shirtSize||'', s.pantsSize||'', s.memo||''].concat(months.map(m => cellMark(s.months[m.key]))).map(csvField).join(',')); });
   lines.push(''); lines.push([csvField('■ 単価設定')].join(','));
   lines.push(['月謝単価(円)', settings.tuition].map(csvField).join(','));
   lines.push(['入会金(円)', settings.enroll].map(csvField).join(','));
@@ -2584,6 +2645,10 @@ function initUI(){
   document.getElementById('fy-prev').addEventListener('click', () => { currentFY--; renderAll(); });
   document.getElementById('fy-next').addEventListener('click', () => { currentFY++; renderAll(); });
 
+  document.getElementById('grid-head-row').addEventListener('click', (e) => {
+    const btn = e.target.closest('.bulk-month');
+    if (btn && isAdmin) handleBulkMonth(btn.dataset.key);
+  });
   document.getElementById('grid-tbody').addEventListener('click', handleGridClick);
   // 'input'(1文字ごと)ではなく'change'(入力確定時)で保存する。
   // 1文字ごとに保存→再描画が走ると、入力中の欄が作り直されてフォーカスが外れてしまうため
