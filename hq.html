@@ -106,6 +106,7 @@
   </div>
 
   <div id="main-content" style="display:none;">
+<datalist id="type-options"><option value="通常練習"></option><option value="合同練習"></option><option value="試合"></option><option value="イベント"></option></datalist>
     <div class="card">
       <div class="btn-row" style="justify-content:space-between;">
         <span id="who"></span>
@@ -161,7 +162,7 @@
           </div>
           <div class="row2">
             <div class="field"><label>種別</label>
-              <select id="hq-occ-type"><option value="通常練習">通常練習</option><option value="試合">試合</option><option value="イベント">イベント</option></select>
+              <input type="text" id="hq-occ-type" list="type-options" value="" placeholder="選択または入力" autocomplete="off">
             </div>
             <div class="field"><label>場所</label><input type="text" id="hq-occ-location" list="hq-occ-location-options" placeholder="選択または入力" autocomplete="off"><datalist id="hq-occ-location-options"></datalist></div>
           </div>
@@ -190,7 +191,7 @@
         </div>
         <div class="row2">
           <div class="field"><label>種別</label>
-            <select id="hq-new-occ-type"><option value="試合">試合</option><option value="イベント">イベント</option><option value="通常練習">通常練習</option></select>
+            <input type="text" id="hq-new-occ-type" list="type-options" value="通常練習" placeholder="選択または入力" autocomplete="off">
           </div>
           <div class="field"><label>場所</label><input type="text" id="hq-new-occ-location" list="hq-new-occ-location-options" placeholder="選択または入力" autocomplete="off"><datalist id="hq-new-occ-location-options"></datalist></div>
         </div>

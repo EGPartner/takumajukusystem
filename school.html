@@ -207,6 +207,7 @@
 </div>
 <div id="app-root" style="display:none;">
 <datalist id="location-options"></datalist>
+<datalist id="type-options"><option value="通常練習"></option><option value="合同練習"></option><option value="試合"></option><option value="イベント"></option></datalist>
 <datalist id="size-options"><option value="120"></option><option value="130"></option><option value="140"></option><option value="150"></option><option value="160"></option><option value="S"></option><option value="M"></option><option value="L"></option><option value="O"></option></datalist>
 <div class="wrap">
   <header>
@@ -470,7 +471,7 @@
         <div class="row">
           <div class="field"><label>日付</label><input type="text" id="occ-date" disabled></div>
           <div class="field"><label for="occ-type">種別</label>
-            <select id="occ-type"><option value="通常練習">通常練習</option><option value="試合">試合</option><option value="イベント">イベント</option></select>
+            <input type="text" id="occ-type" list="type-options" value="" placeholder="選択または入力" autocomplete="off">
           </div>
         </div>
         <div class="row">
@@ -499,7 +500,7 @@
       <div class="row">
         <div class="field"><label for="new-occ-date">日付</label><input type="date" id="new-occ-date"></div>
         <div class="field"><label for="new-occ-type">種別</label>
-          <select id="new-occ-type"><option value="試合">試合</option><option value="イベント">イベント</option><option value="通常練習">通常練習</option></select>
+          <input type="text" id="new-occ-type" list="type-options" value="通常練習" placeholder="選択または入力" autocomplete="off">
         </div>
       </div>
       <div class="row">
@@ -1382,7 +1383,7 @@ function renderPatternsTable(){
       <td><input type="text" class="pt-location" data-id="${p.id}" list="location-options" value="${escAttr(locationInputValue(p))}" placeholder="選択または入力" autocomplete="off" style="width:120px;" ${dis}></td>
       <td><input type="text" class="pt-staff" data-id="${p.id}" value="${escAttr(p.staffInCharge||'')}" style="width:90px;" ${dis}></td>
       <td><input type="text" class="pt-target" data-id="${p.id}" value="${escAttr(p.targetGroup||'')}" style="width:90px;" ${dis}></td>
-      <td><select class="pt-type" data-id="${p.id}" ${dis}><option ${p.type==='通常練習'?'selected':''}>通常練習</option><option ${p.type==='試合'?'selected':''}>試合</option><option ${p.type==='イベント'?'selected':''}>イベント</option></select></td>
+      <td><input type="text" class="pt-type" data-id="${p.id}" list="type-options" value="${escAttr(p.type||'')}" placeholder="選択または入力" autocomplete="off" style="width:100px;" ${dis}></td>
       <td><input type="text" class="pt-note" data-id="${p.id}" value="${escAttr(p.note||'')}" style="width:100px;" ${dis}></td>
       <td><input type="date" class="pt-startdate" data-id="${p.id}" value="${p.startDate||''}" style="width:130px;" ${dis}></td>
       <td><input type="date" class="pt-enddate" data-id="${p.id}" value="${p.endDate||''}" style="width:130px;" ${dis}></td>
