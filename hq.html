@@ -355,7 +355,7 @@
           <h2 style="font-size:15px;margin:0;">スタッフ一覧(全校舎)</h2>
           <button class="ghost-small" id="hq-btn-reload-staff">最新に更新</button>
         </div>
-        <p class="status" style="margin-top:4px;color:var(--text-muted);">各校舎に登録されているスタッフ・校舎管理者のアカウントを、校舎をまたいで一覧表示します(閲覧専用)。運用管理者・システム管理者自身のログイン状況はここには含まれません。</p>
+        <p class="status" style="margin-top:4px;color:var(--text-muted);">各校舎に登録されているスタッフ・校舎管理者のアカウントを、校舎をまたいで一覧表示します。氏名はこの画面から直接入力・修正できます。運用管理者・システム管理者自身のログイン状況はここには含まれません。</p>
         <div class="kpi-row">
           <div class="kpi-box"><div class="k">登録アカウント数</div><div class="v" id="hq-staff-total">-</div></div>
           <div class="kpi-box"><div class="k">ログイン実績あり</div><div class="v" id="hq-staff-logged-in">-</div></div>
@@ -373,7 +373,8 @@
             <tbody id="hq-staff-tbody"><tr><td colspan="6" class="status">「スタッフ一覧」タブを開くと読み込みます。</td></tr></tbody>
           </table>
         </div>
-        <p class="status" style="margin-top:10px;color:var(--text-muted);">「最終ログイン」は今回の機能追加以降にログインした分から記録されます。それより前の利用履歴は反映されません。</p>
+        <p class="status" id="hq-staff-edit-status" style="margin-top:10px;min-height:16px;"></p>
+        <p class="status" style="margin-top:0;color:var(--text-muted);">氏名の欄に入力してフォーカスを外す(Tabキーや他の場所をクリック)と自動で保存されます。メールアドレス・役割・削除は各校の設定画面、または「校舎管理」タブの発行フォームから行ってください。「最終ログイン」は今回の機能追加以降にログインした分から記録されます。それより前の利用履歴は反映されません。</p>
       </div>
     </div>
     <div class="tab-panel" id="tab-schools">
@@ -742,6 +743,8 @@ async function loadHQStaffOverview(){
       snap.docs.forEach(d => {
         const data = d.data();
         rows.push({
+          academyId: s.id,
+          uid: d.id,
           schoolName: s.name,
           name: (data.name || '').trim(),
           email: data.email || d.id,
@@ -779,11 +782,33 @@ function renderHQStaffOverview(){
   tbody.innerHTML = filtered.map(r => {
     const lastLoginStr = fmtLastLogin(r.lastLoginAt);
     const loginCell = lastLoginStr ? lastLoginStr : '<span class="badge muted">未ログイン</span>';
-    return `<tr><td>${escAttr(r.schoolName)}</td><td>${escAttr(r.name || '(未入力)')}</td><td>${escAttr(r.email)}</td><td>${escAttr(r.roleLabel)}</td><td class="status">${escAttr(r.issued)}</td><td>${loginCell}</td></tr>`;
+    const nameInput = `<input type="text" class="hq-stf-name" data-academy="${escAttr(r.academyId)}" data-uid="${escAttr(r.uid)}" value="${escAttr(r.name)}" placeholder="未入力" style="width:100%;min-width:110px;padding:5px 7px;font-size:12.5px;">`;
+    return `<tr><td>${escAttr(r.schoolName)}</td><td>${nameInput}</td><td>${escAttr(r.email)}</td><td>${escAttr(r.roleLabel)}</td><td class="status">${escAttr(r.issued)}</td><td>${loginCell}</td></tr>`;
   }).join('');
+}
+async function handleHQStaffNameChange(e){
+  if (!e.target.classList.contains('hq-stf-name')) return;
+  const academyId = e.target.dataset.academy;
+  const uid = e.target.dataset.uid;
+  const name = e.target.value.trim();
+  const statusEl = document.getElementById('hq-staff-edit-status');
+  statusEl.style.color = 'var(--text-secondary)';
+  statusEl.textContent = '保存しています…';
+  try {
+    await db.collection('academies').doc(academyId).collection('staff').doc(uid).set({ name }, { merge:true });
+    const row = hqStaffOverview.find(r => r.academyId === academyId && r.uid === uid);
+    if (row) row.name = name;
+    statusEl.style.color = 'var(--accent-dark)';
+    statusEl.textContent = '✓ 保存しました。';
+  } catch(err){
+    console.error(err);
+    statusEl.style.color = 'var(--danger)';
+    statusEl.textContent = '保存に失敗しました: ' + err.message;
+  }
 }
 document.getElementById('hq-btn-reload-staff').addEventListener('click', loadHQStaffOverview);
 document.getElementById('hq-staff-filter').addEventListener('input', renderHQStaffOverview);
+document.getElementById('hq-staff-tbody').addEventListener('change', handleHQStaffNameChange);
 
 document.getElementById('btn-add-school').addEventListener('click', async () => {
   const statusEl = document.getElementById('add-status');
