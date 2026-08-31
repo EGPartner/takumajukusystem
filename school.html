@@ -103,13 +103,14 @@
   table.grid-table .col-name{text-align:left;min-width:110px;position:sticky;left:0;background:var(--surface);z-index:1;}
   table.grid-table thead .col-name{z-index:3;}
   table.grid-table .col-name input{border:none;background:transparent;font-size:13px;width:100%;padding:2px;font-family:inherit;}
+  table.grid-table .col-grade{min-width:64px;}
   table.grid-table .col-grade input{width:46px;border:1px solid var(--border-strong);border-radius:6px;padding:2px;text-align:center;}
   table.grid-table .col-trial{width:36px;}
   table.grid-table .col-team{min-width:90px;}
   table.grid-table .col-size{width:64px;}
   table.grid-table .col-memo{min-width:120px;}
   table.grid-table .col-team input,table.grid-table .col-size input,table.grid-table .col-memo input{width:100%;border:1px solid var(--border-strong);border-radius:6px;padding:3px 5px;font-size:12.5px;font-family:inherit;background:var(--surface);color:var(--text-primary);}
-  table.grid-table .col-grade select{border:1px solid var(--border-strong);border-radius:6px;padding:3px;font-size:12.5px;font-family:inherit;background:var(--surface);color:var(--text-primary);}
+  table.grid-table .col-grade select{width:100%;border:1px solid var(--border-strong);border-radius:6px;padding:3px;font-size:12.5px;font-family:inherit;background:var(--surface);color:var(--text-primary);}
   .bulk-month{margin-top:3px;padding:1px 6px;font-size:10px;font-weight:700;border:1px solid var(--border-strong);border-radius:5px;background:var(--surface);color:var(--accent-dark);cursor:pointer;font-family:inherit;}
   .bulk-month:hover{background:var(--accent-bg);}
   table.grid-table .cell-month{width:34px;height:34px;cursor:pointer;font-size:14px;color:var(--accent-dark);user-select:none;border-radius:8px;}
@@ -176,6 +177,7 @@
     .kpi-grid{grid-template-columns:repeat(2,1fr);}
     input[type=text],input[type=number],input[type=month],select,textarea{font-size:16px;}
     table.grid-table .cell-month{width:38px;height:38px;font-size:15px;}
+    table.grid-table .col-grade{min-width:76px;}
     table.grid-table th,table.grid-table td{padding:8px 5px;}
     .btn-row button{flex:1 1 auto;}
 
@@ -495,10 +497,14 @@
         <div class="kpi-card"><div class="label">選択月の立て替え合計</div><div class="value" id="wl-expense-total">-</div></div>
         <div class="kpi-card"><div class="label">未精算</div><div class="value neg" id="wl-expense-unpaid">-</div></div>
       </div>
+      <div class="btn-row" style="margin-bottom:10px;">
+        <button class="ghost" id="btn-wl-delete-selected-receipts">選択した領収書画像を削除</button>
+      </div>
+      <p class="note" style="margin-top:0;">画像だけを削除します(立て替え額・精算状態の記録は残ります)。経理上まだ必要な領収書は削除しないようご注意ください。</p>
       <div class="table-scroll">
         <table class="mini-table">
-          <thead><tr><th>日付</th><th>スタッフ</th><th>金額</th><th>領収書</th><th>状態</th><th></th></tr></thead>
-          <tbody id="wl-expense-tbody"><tr><td colspan="6" class="empty">この月の立て替えはありません。</td></tr></tbody>
+          <thead><tr><th><input type="checkbox" id="wl-expense-select-all"></th><th>日付</th><th>スタッフ</th><th>金額</th><th>領収書</th><th>状態</th><th></th></tr></thead>
+          <tbody id="wl-expense-tbody"><tr><td colspan="7" class="empty">この月の立て替えはありません。</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -1361,13 +1367,31 @@ function renderExpenseSummary(ym){
   if (totalEl) totalEl.textContent = fmtYenPlain(total);
   if (unpaidEl) unpaidEl.textContent = fmtYenPlain(unpaid);
   tbody.innerHTML = rows.length === 0
-    ? '<tr><td colspan="6" class="empty">この月の立て替えはありません。</td></tr>'
+    ? '<tr><td colspan="7" class="empty">この月の立て替えはありません。</td></tr>'
     : rows.map(w => {
-        const receiptCell = w.receiptUrl ? `<a href="${escAttr(w.receiptUrl)}" target="_blank" rel="noopener">見る</a>` : '-';
+        const receiptCell = w.receiptUrl ? `<a href="${escAttr(w.receiptUrl)}" target="_blank" rel="noopener">見る</a>` : '<span class="note">(画像削除済み)</span>';
         const statusBadge = w.reimbursementPaid ? '<span class="badge muted">精算済み</span>' : '<span class="badge">未精算</span>';
         const toggleBtn = `<button class="ghost" data-toggle-paid="${escAttr(w.id)}" style="padding:5px 10px;font-size:12px;">${w.reimbursementPaid ? '未精算に戻す' : '精算済みにする'}</button>`;
-        return `<tr><td>${escAttr(w.date||'')}</td><td>${escAttr(w.staffName||'')}</td><td>${fmtYenPlain(w.reimbursementAmount||0)}</td><td>${receiptCell}</td><td>${statusBadge}</td><td>${toggleBtn}</td></tr>`;
+        const checkboxCell = w.receiptPath ? `<input type="checkbox" class="wl-expense-select" data-log-id="${escAttr(w.id)}">` : '';
+        return `<tr><td>${checkboxCell}</td><td>${escAttr(w.date||'')}</td><td>${escAttr(w.staffName||'')}</td><td>${fmtYenPlain(w.reimbursementAmount||0)}</td><td>${receiptCell}</td><td>${statusBadge}</td><td>${toggleBtn}</td></tr>`;
       }).join('');
+}
+async function handleDeleteSelectedReceipts(){
+  const checked = Array.from(document.querySelectorAll('.wl-expense-select:checked')).map(el => el.dataset.logId);
+  if (checked.length === 0){ alert('削除する領収書にチェックを入れてください。'); return; }
+  if (!confirm(checked.length + '件の領収書画像を削除します。立て替え額・精算状態の記録は残ります。この操作は取り消せません。よろしいですか？')) return;
+  for (const logId of checked){
+    const w = workLogs.find(x => x.id === logId);
+    if (!w || !w.receiptPath) continue;
+    try {
+      await storage.ref().child(w.receiptPath).delete();
+      await workLogsRef.doc(logId).set({
+        receiptUrl: firebase.firestore.FieldValue.delete(),
+        receiptPath: firebase.firestore.FieldValue.delete()
+      }, { merge:true });
+    } catch(err){ console.error('receipt delete failed for', logId, err); }
+  }
+  document.getElementById('wl-expense-select-all').checked = false;
 }
 async function handleExpenseTableClick(e){
   const logId = e.target.dataset.togglePaid;
@@ -3106,6 +3130,10 @@ function initUI(){
     if (e.target.id === 'wl-expense-modal') closeExpenseModal();
   });
   document.getElementById('wl-expense-tbody').addEventListener('click', handleExpenseTableClick);
+  document.getElementById('btn-wl-delete-selected-receipts').addEventListener('click', handleDeleteSelectedReceipts);
+  document.getElementById('wl-expense-select-all').addEventListener('change', (e) => {
+    document.querySelectorAll('.wl-expense-select').forEach(el => { el.checked = e.target.checked; });
+  });
   document.getElementById('grid-head-row').addEventListener('click', (e) => {
     const btn = e.target.closest('.bulk-month');
     if (btn && isAdmin) handleBulkMonth(btn.dataset.key);
