@@ -32,7 +32,7 @@
 <body>
 <div class="card">
   <h1>タクマ塾 管理システム</h1>
-  <p class="sub">メールアドレスとパスワードでログインしてください。権限に応じた画面に自動で移動します。<br>※新しいアカウントはここでは作れません。管理者から発行してもらってください。</p>
+  <p class="sub">メールアドレスとパスワードでログインしてください。権限に応じた画面に自動で移動します。</p>
 
   <div class="field"><label for="email">メールアドレス</label><input type="email" id="email" autocomplete="username"></div>
   <div class="field"><label for="password">パスワード</label><input type="password" id="password" autocomplete="current-password"></div>
@@ -46,7 +46,10 @@
   <p class="status" id="forgot-password-status" style="min-height:16px;"></p>
 
   <div class="divider"></div>
-  <div style="padding:12px 14px;border:1px solid var(--border-strong);border-radius:8px;background:var(--bg);">
+  <p class="status" style="text-align:center;">
+    <a href="#" id="link-no-account" style="color:var(--accent-dark);text-decoration:none;">まだアカウントをお持ちでない方はこちら</a>
+  </p>
+  <div id="no-account-box" style="display:none;margin-top:8px;padding:12px 14px;border:1px solid var(--border-strong);border-radius:8px;background:var(--bg);">
     <p style="font-weight:700;font-size:13px;margin:0 0 4px;">まだアカウントをお持ちでない方へ</p>
     <p class="status" style="margin:0;color:var(--text-muted);">このシステムは、ご自身で新規登録することはできません。所属する校の管理者、または本部にご連絡いただき、アカウントを発行してもらってください。</p>
   </div>
@@ -196,6 +199,11 @@ document.getElementById('btn-login').addEventListener('click', doLogin);
 document.getElementById('password').addEventListener('keydown', (e) => { if (e.key === 'Enter') doLogin(); });
 document.getElementById('email').addEventListener('keydown', (e) => { if (e.key === 'Enter') doLogin(); });
 document.getElementById('btn-forgot-password').addEventListener('click', handleForgotPassword);
+document.getElementById('link-no-account').addEventListener('click', (e) => {
+  e.preventDefault();
+  const box = document.getElementById('no-account-box');
+  box.style.display = box.style.display === 'none' ? 'block' : 'none';
+});
 </script>
 </body>
 </html>
