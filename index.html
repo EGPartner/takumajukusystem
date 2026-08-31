@@ -42,6 +42,9 @@
   <p class="status" id="status"></p>
   <div class="branch-list" id="branch-list"></div>
 
+  <button type="button" class="ghost" id="btn-forgot-password">パスワードを忘れた場合はこちら</button>
+  <p class="status" id="forgot-password-status" style="min-height:16px;"></p>
+
   <div class="divider"></div>
   <div style="padding:12px 14px;border:1px solid var(--border-strong);border-radius:8px;background:var(--bg);">
     <p style="font-weight:700;font-size:13px;margin:0 0 4px;">まだアカウントをお持ちでない方へ</p>
@@ -168,9 +171,31 @@ async function doLogin(){
   }
 }
 
+async function handleForgotPassword(){
+  const statusEl = document.getElementById('forgot-password-status');
+  const email = document.getElementById('email').value.trim();
+  if (!email){
+    statusEl.style.color = 'var(--danger)';
+    statusEl.textContent = 'まずメールアドレス欄に、ご自身のログイン用メールアドレスを入力してください。';
+    return;
+  }
+  statusEl.style.color = 'var(--text-secondary)';
+  statusEl.textContent = '送信しています…';
+  try {
+    await auth.sendPasswordResetEmail(email);
+    statusEl.style.color = 'var(--accent-dark)';
+    statusEl.textContent = '✓ パスワード再設定用のメールを送信しました。メールボックス(迷惑メールフォルダも)をご確認ください。';
+  } catch(err){
+    console.error(err);
+    statusEl.style.color = 'var(--danger)';
+    statusEl.textContent = '送信に失敗しました: ' + (err && err.message ? err.message : String(err));
+  }
+}
+
 document.getElementById('btn-login').addEventListener('click', doLogin);
 document.getElementById('password').addEventListener('keydown', (e) => { if (e.key === 'Enter') doLogin(); });
 document.getElementById('email').addEventListener('keydown', (e) => { if (e.key === 'Enter') doLogin(); });
+document.getElementById('btn-forgot-password').addEventListener('click', handleForgotPassword);
 </script>
 </body>
 </html>
