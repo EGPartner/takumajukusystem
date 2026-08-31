@@ -947,6 +947,10 @@ async function resolveRole(uid){
     if (doc.exists && doc.data().uid !== uid){
       staffRef.doc(uid).set({ uid, email: currentUser.email }, { merge:true }).catch(e => console.error(e));
     }
+    // ログイン実績の記録(本部のスタッフ一覧で「最終ログイン」を確認できるようにするため)
+    if (doc.exists){
+      staffRef.doc(uid).set({ lastLoginAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge:true }).catch(e => console.error('lastLoginAt update failed', e));
+    }
   } catch(e){ isAdmin = isHQUser; }
   const roleLabel = isHQUser ? '(本部)' : (isAdmin ? '(校舎代表者)' : '(スタッフ・閲覧のみ)');
   document.getElementById('current-user-email').textContent = currentUser.email + roleLabel;

@@ -124,6 +124,7 @@
       <button class="tab-btn" data-tab="absence">欠席連絡</button>
       <button class="tab-btn" data-tab="students">塾生</button>
       <button class="tab-btn" data-tab="worklog">出勤</button>
+      <button class="tab-btn" data-tab="staff">スタッフ一覧</button>
       <button class="tab-btn" data-tab="schools">校舎管理</button>
     </div>
 
@@ -348,6 +349,33 @@
         </div>
       </div>
     </div>
+    <div class="tab-panel" id="tab-staff">
+      <div class="card">
+        <div class="btn-row" style="justify-content:space-between;align-items:center;">
+          <h2 style="font-size:15px;margin:0;">スタッフ一覧(全校舎)</h2>
+          <button class="ghost-small" id="hq-btn-reload-staff">最新に更新</button>
+        </div>
+        <p class="status" style="margin-top:4px;color:var(--text-muted);">各校舎に登録されているスタッフ・校舎管理者のアカウントを、校舎をまたいで一覧表示します(閲覧専用)。運用管理者・システム管理者自身のログイン状況はここには含まれません。</p>
+        <div class="kpi-row">
+          <div class="kpi-box"><div class="k">登録アカウント数</div><div class="v" id="hq-staff-total">-</div></div>
+          <div class="kpi-box"><div class="k">ログイン実績あり</div><div class="v" id="hq-staff-logged-in">-</div></div>
+          <div class="kpi-box"><div class="k">未ログイン</div><div class="v" id="hq-staff-never-logged-in">-</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="btn-row" style="justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <h2 style="font-size:15px;margin:0;">アカウント一覧</h2>
+          <input type="text" id="hq-staff-filter" placeholder="氏名・メールで絞り込み" style="width:auto;max-width:220px;padding:6px 10px;font-size:13px;">
+        </div>
+        <div class="scroll-y" style="overflow-x:auto;">
+          <table class="mini-table">
+            <thead><tr><th>校舎</th><th>氏名</th><th>メールアドレス</th><th>役割</th><th>発行</th><th>最終ログイン</th></tr></thead>
+            <tbody id="hq-staff-tbody"><tr><td colspan="6" class="status">「スタッフ一覧」タブを開くと読み込みます。</td></tr></tbody>
+          </table>
+        </div>
+        <p class="status" style="margin-top:10px;color:var(--text-muted);">「最終ログイン」は今回の機能追加以降にログインした分から記録されます。それより前の利用履歴は反映されません。</p>
+      </div>
+    </div>
     <div class="tab-panel" id="tab-schools">
       <div class="card">
         <h2 style="font-size:15px;margin:0 0 12px;">校舎一覧</h2>
@@ -558,6 +586,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + btn.dataset.tab));
     if (btn.dataset.tab === 'students') loadHQStudents();
     if (btn.dataset.tab === 'worklog') loadHQWorkLogs();
+    if (btn.dataset.tab === 'staff') loadHQStaffOverview();
   });
 });
 
@@ -700,6 +729,61 @@ document.getElementById('hq-students-summary').addEventListener('click', (e) => 
   renderHQStudents();
 });
 document.getElementById('hq-btn-reload-students').addEventListener('click', () => loadHQStudents(true));
+
+// ---- スタッフ一覧タブ(全校舎横断・閲覧専用) ----
+let hqStaffOverview = [];
+async function loadHQStaffOverview(){
+  const tbody = document.getElementById('hq-staff-tbody');
+  tbody.innerHTML = '<tr><td colspan="6" class="status">読み込み中…</td></tr>';
+  const rows = [];
+  await Promise.all(schoolsArr.map(async (s) => {
+    try {
+      const snap = await db.collection('academies').doc(s.id).collection('staff').get();
+      snap.docs.forEach(d => {
+        const data = d.data();
+        rows.push({
+          schoolName: s.name,
+          name: (data.name || '').trim(),
+          email: data.email || d.id,
+          roleLabel: data.role === 'admin' ? '校舎管理者' : 'スタッフ',
+          issued: issuedLabel(data),
+          lastLoginAt: data.lastLoginAt || null
+        });
+      });
+    } catch(e){ console.error('staff overview load failed for', s.id, e); }
+  }));
+  rows.sort((a,b) => a.schoolName.localeCompare(b.schoolName, 'ja') || a.name.localeCompare(b.name, 'ja'));
+  hqStaffOverview = rows;
+  renderHQStaffOverview();
+}
+function fmtLastLogin(ts){
+  if (!ts || !ts.toDate) return null;
+  const d = ts.toDate();
+  return d.getFullYear() + '/' + (d.getMonth()+1) + '/' + d.getDate() + ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+}
+function renderHQStaffOverview(){
+  const tbody = document.getElementById('hq-staff-tbody');
+  if (!tbody) return;
+  const filterText = ((document.getElementById('hq-staff-filter') || {}).value || '').trim().toLowerCase();
+  const filtered = hqStaffOverview.filter(r =>
+    !filterText || r.name.toLowerCase().includes(filterText) || r.email.toLowerCase().includes(filterText)
+  );
+  const loggedIn = hqStaffOverview.filter(r => r.lastLoginAt).length;
+  document.getElementById('hq-staff-total').textContent = hqStaffOverview.length + '件';
+  document.getElementById('hq-staff-logged-in').textContent = loggedIn + '件';
+  document.getElementById('hq-staff-never-logged-in').textContent = (hqStaffOverview.length - loggedIn) + '件';
+  if (filtered.length === 0){
+    tbody.innerHTML = '<tr><td colspan="6" class="status">' + (hqStaffOverview.length === 0 ? '登録されているスタッフはいません。' : '該当するアカウントがありません。') + '</td></tr>';
+    return;
+  }
+  tbody.innerHTML = filtered.map(r => {
+    const lastLoginStr = fmtLastLogin(r.lastLoginAt);
+    const loginCell = lastLoginStr ? lastLoginStr : '<span class="badge muted">未ログイン</span>';
+    return `<tr><td>${escAttr(r.schoolName)}</td><td>${escAttr(r.name || '(未入力)')}</td><td>${escAttr(r.email)}</td><td>${escAttr(r.roleLabel)}</td><td class="status">${escAttr(r.issued)}</td><td>${loginCell}</td></tr>`;
+  }).join('');
+}
+document.getElementById('hq-btn-reload-staff').addEventListener('click', loadHQStaffOverview);
+document.getElementById('hq-staff-filter').addEventListener('input', renderHQStaffOverview);
 
 document.getElementById('btn-add-school').addEventListener('click', async () => {
   const statusEl = document.getElementById('add-status');
