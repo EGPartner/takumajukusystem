@@ -35,7 +35,9 @@
   <h1>塾生のご家族専用ページ</h1>
   <p class="sub">確認のため、お子さまの情報を入力してください(この端末で初回のみ)。</p>
   <div id="gate-form">
-    <div class="field"><label for="gate-school">お子さまの校舎</label><select id="gate-school"><option value="">読み込み中…</option></select></div>
+    <div class="field"><label for="gate-school">お子さまの校舎</label><select id="gate-school"><option value="">読み込み中…</option></select>
+      <p style="font-size:12px;background:#FFF4E0;border:1px solid #E0A83A;border-radius:8px;padding:9px 11px;color:#8A6A1F;margin:8px 0 0;">※「福井校(エリート)」は「坂井・福井校(エリート)」に統合されました。福井校(エリート)の選手の方は「坂井・福井校(エリート)」をお選びください。</p>
+    </div>
     <div class="field"><label for="gate-name">塾生のお名前(姓名)</label><input type="text" id="gate-name" placeholder="例: 山田 蓮"></div>
     <button type="button" class="submit" id="gate-submit">利用を開始する</button>
     <p class="status" id="gate-status"></p>
@@ -55,6 +57,7 @@
   <div class="field">
     <label for="f-school">校舎を選択</label>
     <select id="f-school"><option value="">読み込み中…</option></select>
+    <p style="font-size:12px;background:#FFF4E0;border:1px solid #E0A83A;border-radius:8px;padding:9px 11px;color:#8A6A1F;margin:8px 0 0;">※「福井校(エリート)」は「坂井・福井校(エリート)」に統合されました。福井校(エリート)の選手の方は「坂井・福井校(エリート)」をお選びください。</p>
   </div>
   <div class="field">
     <label for="f-name">選手の氏名(姓名)</label>
@@ -131,6 +134,23 @@ const schoolsRef = db.collection('schools');
 function escAttr(v){ return String(v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 const LAST_SCHOOL_KEY = 'takumajuku_last_school';
+
+// ---- LINEグループへの通知(Google Apps Script経由) ----
+// 設置後、この2つに値を入れると通知が動き出す。空のままなら通知は行われない。
+const LINE_HOOK_URL = '';  // Apps Scriptのデプロイ先URL
+const LINE_HOOK_KEY = '';  // Apps Scriptに登録した SHARED_KEY と同じ文字列
+// 通知は「送れたら送る」扱いにする。失敗しても欠席連絡そのものは保存済みで、受付を妨げない。
+function notifyLine(payload){
+  if (!LINE_HOOK_URL || !LINE_HOOK_KEY) return;
+  try {
+    fetch(LINE_HOOK_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(Object.assign({ key: LINE_HOOK_KEY }, payload))
+    }).catch(e => console.error('LINE通知に失敗', e));
+  } catch(e){ console.error('LINE通知に失敗', e); }
+}
 
 async function loadSchoolOptions(){
   const sel = document.getElementById('f-school');
@@ -278,6 +298,15 @@ document.getElementById('btn-submit').addEventListener('click', async () => {
       submittedAt: firebase.firestore.FieldValue.serverTimestamp()
     });
     try { localStorage.setItem(LAST_SCHOOL_KEY, schoolId); } catch(e){}
+    const schoolSel = document.getElementById('f-school');
+    notifyLine({
+      school: schoolSel.selectedOptions[0] ? schoolSel.selectedOptions[0].textContent : schoolId,
+      name: name,
+      grade: document.getElementById('f-grade').value || '',
+      date: date,
+      reason: selectedReason,
+      note: note
+    });
     document.getElementById('form-card').style.display = 'none';
     document.getElementById('success-card').style.display = 'block';
   } catch(err){
