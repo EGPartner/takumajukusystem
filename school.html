@@ -219,6 +219,7 @@
   </header>
 
   <p class="readonly-banner">閲覧専用のアカウントでログインしています。データの確認はできますが、登録・変更はできません。変更が必要な場合は校舎の代表者にご依頼ください。</p>
+  <p class="note" id="preview-banner" style="display:none;background:#FFF4E0;border:1px solid #E0A83A;border-radius:10px;padding:11px 14px;margin-bottom:14px;color:#8A6A1F;font-weight:600;">🔍 プレビュー中: スタッフ(閲覧のみ)の画面を確認しています。実際のデータ操作はできません(管理者アカウントの権限は変わっていません)。</p>
 
   <div class="fy-nav">
     <button class="ghost" id="fy-prev">◀ 前年度</button>
@@ -226,6 +227,11 @@
     <button class="ghost" id="fy-next">翌年度 ▶</button>
   </div>
   <p class="note" id="storage-status" style="margin-top:-8px;"></p>
+  <div class="btn-row" id="preview-mode-toggle" style="display:none;margin-bottom:6px;gap:6px;align-items:center;">
+    <span class="note" style="margin:0;">表示を確認:</span>
+    <button class="ghost view-toggle" id="btn-preview-admin">管理者として表示</button>
+    <button class="ghost view-toggle" id="btn-preview-staff">スタッフとして表示</button>
+  </div>
   <div class="btn-row" style="margin-bottom:6px;">
     <span class="note" id="current-user-email" style="margin:0;"></span>
     <button class="ghost" id="btn-logout">ログアウト</button>
@@ -740,6 +746,12 @@ let settings = {
 };
 let isAdmin = false;
 let isHQUser = false;
+// プレビューモード: 開発・確認用に、実際の権限は変えずスタッフ視点の画面だけを一時的に見る機能。
+// realIsAdmin/realIsHQUser が本当の権限、isAdmin/isHQUser は画面表示に使う「見かけ上」の値。
+let realIsAdmin = false;
+let realIsHQUser = false;
+let previewAsStaff = false;
+try { previewAsStaff = sessionStorage.getItem('previewAsStaff') === '1'; } catch(e){}
 let initialTabApplied = false;
 let pendingGridRerender = false;
 let pendingSettingsRerender = false;
@@ -952,14 +964,50 @@ async function resolveRole(uid){
       staffRef.doc(uid).set({ lastLoginAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge:true }).catch(e => console.error('lastLoginAt update failed', e));
     }
   } catch(e){ isAdmin = isHQUser; }
+  realIsAdmin = isAdmin;
+  realIsHQUser = isHQUser;
+  applyPreviewMode();
   const roleLabel = isHQUser ? '(本部)' : (isAdmin ? '(校舎代表者)' : '(スタッフ・閲覧のみ)');
-  document.getElementById('current-user-email').textContent = currentUser.email + roleLabel;
+  document.getElementById('current-user-email').textContent = currentUser.email + roleLabel + (previewAsStaff && realIsAdmin ? ' ・プレビュー中' : '');
   updateAdminUI();
   // 役割別の初期画面: スタッフは日常業務の「欠席・出欠」、管理者は「ダッシュボード」に着地する(ログイン直後の1回のみ)
   if (!initialTabApplied){
     initialTabApplied = true;
     switchTab(isAdmin ? 'dashboard' : 'absence');
   }
+}
+
+// プレビューモード: 実際の権限(realIsAdmin/realIsHQUser)は変えず、
+// previewAsStaff が有効な間だけ isAdmin/isHQUser を false にして画面をスタッフ視点にする。
+// 既存の表示分岐(body.is-readonly、.admin-only-tab、各種disabled)がすべてこの2変数を見ているため、
+// ここを切り替えるだけで実際のスタッフ画面と同じ見た目を再現できる。
+function applyPreviewMode(){
+  const toggleWrap = document.getElementById('preview-mode-toggle');
+  if (toggleWrap) toggleWrap.style.display = realIsAdmin ? 'flex' : 'none';
+  if (realIsAdmin && previewAsStaff){
+    isAdmin = false;
+    isHQUser = false;
+  } else {
+    isAdmin = realIsAdmin;
+    isHQUser = realIsHQUser;
+  }
+  const banner = document.getElementById('preview-banner');
+  if (banner) banner.style.display = (realIsAdmin && previewAsStaff) ? 'block' : 'none';
+  const btnAdmin = document.getElementById('btn-preview-admin');
+  const btnStaff = document.getElementById('btn-preview-staff');
+  if (btnAdmin) btnAdmin.classList.toggle('active', !previewAsStaff);
+  if (btnStaff) btnStaff.classList.toggle('active', previewAsStaff);
+}
+function setPreviewAsStaff(on){
+  if (!realIsAdmin) return;
+  previewAsStaff = on;
+  try { sessionStorage.setItem('previewAsStaff', on ? '1' : '0'); } catch(e){}
+  applyPreviewMode();
+  const roleLabel = realIsHQUser ? '(本部)' : (realIsAdmin ? '(校舎代表者)' : '(スタッフ・閲覧のみ)');
+  document.getElementById('current-user-email').textContent = currentUser.email + roleLabel + (previewAsStaff ? ' ・プレビュー中' : '');
+  updateAdminUI();
+  attachListeners();
+  renderAll();
 }
 
 function attachListeners(){
@@ -3021,6 +3069,8 @@ function initUI(){
   document.getElementById('login-password').addEventListener('keydown', (e) => { if (e.key === 'Enter') handleLogin(); });
   document.getElementById('btn-logout').addEventListener('click', () => auth.signOut());
   document.getElementById('btn-forgot-password').addEventListener('click', handleForgotPassword);
+  document.getElementById('btn-preview-admin').addEventListener('click', () => setPreviewAsStaff(false));
+  document.getElementById('btn-preview-staff').addEventListener('click', () => setPreviewAsStaff(true));
 }
 
 async function handleLogin(){
