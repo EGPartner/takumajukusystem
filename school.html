@@ -485,6 +485,23 @@
         </table>
       </div>
     </div>
+
+    <div class="card admin-only-tab" id="wl-expense-summary-card">
+      <div class="btn-row" style="justify-content:space-between;align-items:center;margin-bottom:4px;">
+        <h2 style="margin:0;">立て替え経費の精算(この校舎)</h2>
+      </div>
+      <p class="note" style="margin-top:0;">スタッフが出勤記録時に申告した経費の立て替えです。実際に支払ったら「精算済みにする」を押してください。</p>
+      <div class="kpi-grid" style="margin-bottom:14px;">
+        <div class="kpi-card"><div class="label">選択月の立て替え合計</div><div class="value" id="wl-expense-total">-</div></div>
+        <div class="kpi-card"><div class="label">未精算</div><div class="value neg" id="wl-expense-unpaid">-</div></div>
+      </div>
+      <div class="table-scroll">
+        <table class="mini-table">
+          <thead><tr><th>日付</th><th>スタッフ</th><th>金額</th><th>領収書</th><th>状態</th><th></th></tr></thead>
+          <tbody id="wl-expense-tbody"><tr><td colspan="6" class="empty">この月の立て替えはありません。</td></tr></tbody>
+        </table>
+      </div>
+    </div>
   </div>
   <div class="tab-panel" id="tab-calendar">
     <div class="card">
@@ -702,12 +719,36 @@
 
 <div id="pdf-render-area" style="position:fixed;left:-9999px;top:0;"></div>
 
+<div id="wl-expense-modal" style="display:none;position:fixed;inset:0;background:rgba(18,24,26,0.45);z-index:100;align-items:center;justify-content:center;padding:20px;">
+  <div class="card" style="max-width:420px;width:100%;margin:0;">
+    <h2 style="margin:0 0 4px;">出勤の記録</h2>
+    <p class="note" id="wl-expense-target-label" style="margin-top:0;"></p>
+    <div id="wl-expense-step-ask">
+      <p style="font-size:14px;font-weight:600;margin:14px 0 10px;">経費の立て替えはありますか？</p>
+      <div class="btn-row">
+        <button class="ghost" id="wl-expense-btn-no" style="flex:1 1 auto;justify-content:center;">ない</button>
+        <button class="primary" id="wl-expense-btn-yes" style="flex:1 1 auto;justify-content:center;">ある</button>
+      </div>
+    </div>
+    <div id="wl-expense-step-detail" style="display:none;">
+      <div class="field"><label for="wl-expense-amount">立て替えた金額(円)</label><input type="number" id="wl-expense-amount" min="0" step="10"></div>
+      <div class="field"><label for="wl-expense-photo">領収書の写真</label><input type="file" id="wl-expense-photo" accept="image/*" capture="environment"></div>
+      <p class="note" id="wl-expense-status" style="min-height:16px;"></p>
+      <div class="btn-row">
+        <button class="ghost" id="wl-expense-btn-back">戻る</button>
+        <button class="primary" id="wl-expense-btn-submit">登録して出勤を記録</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
 <script>
 const ABILITY_DEFS = [
   { key:'physical', short:'Physical', label:'Physical(フィジカル)', weight:30, items:[
@@ -879,6 +920,7 @@ const secondaryApp = firebase.initializeApp(firebaseConfig, 'Secondary');
 const secondaryAuth = secondaryApp.auth();
 const auth = firebase.auth();
 const db = firebase.firestore();
+const storage = firebase.storage();
 const academyRef = db.collection('academies').doc(ACADEMY_ID);
 const schoolsRef = db.collection('schools');
 const studentsRef = academyRef.collection('students');
@@ -1232,8 +1274,10 @@ function wlRowHTML(o){
   const d = new Date(o.date + 'T00:00:00');
   const label = (d.getMonth()+1) + '/' + d.getDate() + '(' + WEEKDAY_LABELS[d.getDay()] + ')';
   const id = currentUser ? wlLogId(currentUser.uid, o) : '';
-  const done = workLogs.some(w => w.id === id);
+  const rec = workLogs.find(w => w.id === id);
+  const done = !!rec;
   const mine = wlIsMine(o) ? '<span class="badge">担当</span>' : '';
+  const expenseBadge = (done && rec.hasReimbursement) ? '<span class="badge" style="margin-left:4px;">💴 立て替えあり</span>' : '';
   const key = [o.date, o.patternId || '', o.eventId || ''].join('|');
   return `<div class="calendar-row">
     <div class="cr-date">${label}</div>
@@ -1244,7 +1288,7 @@ function wlRowHTML(o){
     </div>
     <div class="cr-actions">
       ${done
-        ? `<button class="ghost" data-wl-cancel="${escAttr(key)}">✓ 記録済</button>`
+        ? `<button class="ghost" data-wl-cancel="${escAttr(key)}">✓ 記録済${expenseBadge}</button>`
         : `<button class="primary" data-wl-record="${escAttr(key)}" style="padding:6px 12px;font-size:12.5px;">出勤を記録</button>`}
     </div>
   </div>`;
@@ -1277,6 +1321,7 @@ function renderWorkLog(){
   document.getElementById('wl-my-hours').textContent = fmtHours(mine.reduce((a,w) => a + (w.minutes||0), 0)) + ' 時間';
 
   renderWorkLogSummary(ym);
+  renderExpenseSummary(ym);
 }
 
 // 管理者向け: スタッフ別の集計
@@ -1302,6 +1347,143 @@ function renderWorkLogSummary(ym){
       }).join('');
 }
 
+// 管理者向け: 立て替え経費の精算一覧
+function fmtYenPlain(n){ return '¥' + Math.round(n).toLocaleString('ja-JP'); }
+function renderExpenseSummary(ym){
+  const tbody = document.getElementById('wl-expense-tbody');
+  if (!tbody || !isAdmin) return;
+  const rows = workLogs.filter(w => (w.date||'').slice(0,7) === ym && w.hasReimbursement)
+    .sort((a,b) => (a.date||'').localeCompare(b.date||''));
+  const total = rows.reduce((a,w) => a + (w.reimbursementAmount||0), 0);
+  const unpaid = rows.filter(w => !w.reimbursementPaid).reduce((a,w) => a + (w.reimbursementAmount||0), 0);
+  const totalEl = document.getElementById('wl-expense-total');
+  const unpaidEl = document.getElementById('wl-expense-unpaid');
+  if (totalEl) totalEl.textContent = fmtYenPlain(total);
+  if (unpaidEl) unpaidEl.textContent = fmtYenPlain(unpaid);
+  tbody.innerHTML = rows.length === 0
+    ? '<tr><td colspan="6" class="empty">この月の立て替えはありません。</td></tr>'
+    : rows.map(w => {
+        const receiptCell = w.receiptUrl ? `<a href="${escAttr(w.receiptUrl)}" target="_blank" rel="noopener">見る</a>` : '-';
+        const statusBadge = w.reimbursementPaid ? '<span class="badge muted">精算済み</span>' : '<span class="badge">未精算</span>';
+        const toggleBtn = `<button class="ghost" data-toggle-paid="${escAttr(w.id)}" style="padding:5px 10px;font-size:12px;">${w.reimbursementPaid ? '未精算に戻す' : '精算済みにする'}</button>`;
+        return `<tr><td>${escAttr(w.date||'')}</td><td>${escAttr(w.staffName||'')}</td><td>${fmtYenPlain(w.reimbursementAmount||0)}</td><td>${receiptCell}</td><td>${statusBadge}</td><td>${toggleBtn}</td></tr>`;
+      }).join('');
+}
+async function handleExpenseTableClick(e){
+  const logId = e.target.dataset.togglePaid;
+  if (!logId || !isAdmin) return;
+  const w = workLogs.find(x => x.id === logId);
+  if (!w) return;
+  try {
+    await workLogsRef.doc(logId).set({ reimbursementPaid: !w.reimbursementPaid }, { merge:true });
+  } catch(err){
+    console.error(err);
+    alert('更新に失敗しました: ' + err.message);
+  }
+}
+
+// ---- 出勤の記録モーダル(経費の立て替え確認) ----
+let wlPendingOccurrence = null;
+let wlPendingLogId = null;
+
+function openExpenseModal(o, id){
+  wlPendingOccurrence = o;
+  wlPendingLogId = id;
+  const d = new Date(o.date + 'T00:00:00');
+  document.getElementById('wl-expense-target-label').textContent =
+    (d.getMonth()+1) + '月' + d.getDate() + '日(' + WEEKDAY_LABELS[d.getDay()] + ') ' + (o.type || '');
+  document.getElementById('wl-expense-amount').value = '';
+  document.getElementById('wl-expense-photo').value = '';
+  document.getElementById('wl-expense-status').textContent = '';
+  document.getElementById('wl-expense-step-ask').style.display = 'block';
+  document.getElementById('wl-expense-step-detail').style.display = 'none';
+  const modal = document.getElementById('wl-expense-modal');
+  modal.style.display = 'flex';
+}
+function closeExpenseModal(){
+  document.getElementById('wl-expense-modal').style.display = 'none';
+  wlPendingOccurrence = null;
+  wlPendingLogId = null;
+}
+
+// スマホの写真(数MB)をそのままアップロードすると容量を圧迫するため、
+// 長辺1600px・JPEG品質75%程度まで縮小してからアップロードする。
+function compressImageFile(file, maxDim, quality){
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let { width, height } = img;
+      if (width > maxDim || height > maxDim){
+        if (width >= height){ height = Math.round(height * (maxDim / width)); width = maxDim; }
+        else { width = Math.round(width * (maxDim / height)); height = maxDim; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width; canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('画像の変換に失敗しました')), 'image/jpeg', quality);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('画像を読み込めませんでした')); };
+    img.src = url;
+  });
+}
+
+async function submitWorkLogRecord(reimbursement){
+  const o = wlPendingOccurrence;
+  const id = wlPendingLogId;
+  if (!o || !id || !currentUser) return;
+  const payload = {
+    uid: currentUser.uid,
+    staffName: myStaffName() || currentUser.email,
+    date: o.date,
+    startTime: o.startTime || '',
+    endTime: o.endTime || '',
+    minutes: minutesBetween(o.startTime, o.endTime),
+    type: o.type || '',
+    hasReimbursement: !!reimbursement,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
+  if (reimbursement){
+    payload.reimbursementAmount = reimbursement.amount;
+    payload.receiptPath = reimbursement.receiptPath;
+    payload.receiptUrl = reimbursement.receiptUrl;
+    payload.reimbursementPaid = false;
+  }
+  await workLogsRef.doc(id).set(payload);
+  markSaved(true);
+  closeExpenseModal();
+}
+
+async function handleExpenseSubmit(){
+  const statusEl = document.getElementById('wl-expense-status');
+  const amount = Number(document.getElementById('wl-expense-amount').value);
+  const fileInput = document.getElementById('wl-expense-photo');
+  const file = fileInput.files && fileInput.files[0];
+  if (!amount || amount <= 0){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = '金額を入力してください。'; return; }
+  if (!file){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = '領収書の写真を選択してください。'; return; }
+  const submitBtn = document.getElementById('wl-expense-btn-submit');
+  submitBtn.disabled = true;
+  statusEl.style.color = 'var(--text-secondary)';
+  statusEl.textContent = '画像を圧縮しています…';
+  try {
+    const blob = await compressImageFile(file, 1600, 0.75);
+    statusEl.textContent = 'アップロードしています…';
+    const path = 'receipts/' + ACADEMY_ID + '/' + currentUser.uid + '/' + Date.now() + '.jpg';
+    const ref = storage.ref().child(path);
+    await ref.put(blob, { contentType: 'image/jpeg' });
+    const receiptUrl = await ref.getDownloadURL();
+    statusEl.textContent = '保存しています…';
+    await submitWorkLogRecord({ amount, receiptPath: path, receiptUrl });
+  } catch(err){
+    console.error(err);
+    statusEl.style.color = 'var(--danger)';
+    statusEl.textContent = '登録に失敗しました: ' + (err && err.message ? err.message : String(err));
+  } finally {
+    submitBtn.disabled = false;
+  }
+}
+
 async function handleWorkLogClick(e){
   const recKey = e.target.dataset.wlRecord;
   const canKey = e.target.dataset.wlCancel;
@@ -1311,27 +1493,22 @@ async function handleWorkLogClick(e){
   const o = occurrencesForDate(dateStr).find(x => (x.patternId||'') === patternId && (x.eventId||'') === eventId);
   if (!o) return;
   const id = wlLogId(currentUser.uid, o);
+  if (recKey){
+    openExpenseModal(o, id);
+    return;
+  }
+  if (!confirm('この日の出勤記録を取り消しますか？(立て替えを登録していた場合、領収書も削除されます)')) return;
   try {
-    if (recKey){
-      await workLogsRef.doc(id).set({
-        uid: currentUser.uid,
-        staffName: myStaffName() || currentUser.email,
-        date: o.date,
-        startTime: o.startTime || '',
-        endTime: o.endTime || '',
-        minutes: minutesBetween(o.startTime, o.endTime),
-        type: o.type || '',
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-    } else {
-      if (!confirm('この日の出勤記録を取り消しますか？')) return;
-      await workLogsRef.doc(id).delete();
+    const existing = workLogs.find(w => w.id === id);
+    await workLogsRef.doc(id).delete();
+    if (existing && existing.receiptPath){
+      storage.ref().child(existing.receiptPath).delete().catch(e2 => console.error('receipt delete failed', e2));
     }
     markSaved(true);
   } catch(err){
     console.error(err);
     markSaved(false);
-    alert('記録に失敗しました: ' + err.message);
+    alert('取り消しに失敗しました: ' + err.message);
   }
 }
 
@@ -2915,6 +3092,20 @@ function initUI(){
   document.getElementById('wl-list').addEventListener('click', handleWorkLogClick);
   document.getElementById('wl-today').addEventListener('click', handleWorkLogClick);
   document.getElementById('btn-wl-csv').addEventListener('click', exportWorkLogCsv);
+  document.getElementById('wl-expense-btn-no').addEventListener('click', () => submitWorkLogRecord(null));
+  document.getElementById('wl-expense-btn-yes').addEventListener('click', () => {
+    document.getElementById('wl-expense-step-ask').style.display = 'none';
+    document.getElementById('wl-expense-step-detail').style.display = 'block';
+  });
+  document.getElementById('wl-expense-btn-back').addEventListener('click', () => {
+    document.getElementById('wl-expense-step-detail').style.display = 'none';
+    document.getElementById('wl-expense-step-ask').style.display = 'block';
+  });
+  document.getElementById('wl-expense-btn-submit').addEventListener('click', handleExpenseSubmit);
+  document.getElementById('wl-expense-modal').addEventListener('click', (e) => {
+    if (e.target.id === 'wl-expense-modal') closeExpenseModal();
+  });
+  document.getElementById('wl-expense-tbody').addEventListener('click', handleExpenseTableClick);
   document.getElementById('grid-head-row').addEventListener('click', (e) => {
     const btn = e.target.closest('.bulk-month');
     if (btn && isAdmin) handleBulkMonth(btn.dataset.key);

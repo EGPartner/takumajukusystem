@@ -348,6 +348,20 @@
           </table>
         </div>
       </div>
+      <div class="card">
+        <h2 style="font-size:15px;margin:0 0 4px;">立て替え経費の精算(全校舎)</h2>
+        <p class="status" style="margin-top:0;color:var(--text-muted);">スタッフが出勤記録時に申告した経費の立て替えです。実際に支払ったら「精算済みにする」を押してください。</p>
+        <div class="kpi-row">
+          <div class="kpi-box"><div class="k">選択月の立て替え合計</div><div class="v" id="hq-expense-total">-</div></div>
+          <div class="kpi-box"><div class="k">未精算</div><div class="v" id="hq-expense-unpaid">-</div></div>
+        </div>
+        <div class="scroll-y" style="overflow-x:auto;margin-top:12px;">
+          <table class="mini-table">
+            <thead><tr><th>校舎</th><th>日付</th><th>スタッフ</th><th>金額</th><th>領収書</th><th>状態</th><th></th></tr></thead>
+            <tbody id="hq-expense-tbody"><tr><td colspan="7" class="status">月を選ぶと集計します。</td></tr></tbody>
+          </table>
+        </div>
+      </div>
     </div>
     <div class="tab-panel" id="tab-staff">
       <div class="card">
@@ -1986,12 +2000,47 @@ async function loadHQWorkLogs(){
     try {
       const snap = await db.collection('academies').doc(s.id).collection('workLogs')
         .where('date', '>=', ym + '-01').where('date', '<=', ym + '-31').get();
-      snap.docs.forEach(d => rows.push(Object.assign({ academyId: s.id }, d.data())));
+      snap.docs.forEach(d => rows.push(Object.assign({ id: d.id, academyId: s.id }, d.data())));
     } catch(e){ console.error('workLogs load failed for', s.id, e); }
   }));
   hqWorkLogs = rows;
   renderHQWorkLogs();
+  renderHQExpenseSummary();
 }
+
+function fmtYenPlain(n){ return '¥' + Math.round(n).toLocaleString('ja-JP'); }
+function renderHQExpenseSummary(){
+  const tbody = document.getElementById('hq-expense-tbody');
+  if (!tbody) return;
+  const rows = hqWorkLogs.filter(w => w.hasReimbursement).sort((a,b) => (a.date||'').localeCompare(b.date||''));
+  const total = rows.reduce((a,w) => a + (w.reimbursementAmount||0), 0);
+  const unpaid = rows.filter(w => !w.reimbursementPaid).reduce((a,w) => a + (w.reimbursementAmount||0), 0);
+  document.getElementById('hq-expense-total').textContent = fmtYenPlain(total);
+  document.getElementById('hq-expense-unpaid').textContent = fmtYenPlain(unpaid);
+  tbody.innerHTML = rows.length === 0
+    ? '<tr><td colspan="7" class="status">この月の立て替えはありません。</td></tr>'
+    : rows.map(w => {
+        const receiptCell = w.receiptUrl ? `<a href="${escAttr(w.receiptUrl)}" target="_blank" rel="noopener">見る</a>` : '-';
+        const statusBadge = w.reimbursementPaid ? '<span class="badge muted">精算済み</span>' : '<span class="badge">未精算</span>';
+        const toggleBtn = `<button class="ghost-small" data-hq-toggle-paid="${escAttr(w.academyId)}|${escAttr(w.id || '')}">${w.reimbursementPaid ? '未精算に戻す' : '精算済みにする'}</button>`;
+        return `<tr><td style="color:${schoolColor(w.academyId)};font-weight:700;">${escAttr(schoolNameFor(w.academyId))}</td><td>${escAttr(w.date||'')}</td><td>${escAttr(w.staffName||'')}</td><td>${fmtYenPlain(w.reimbursementAmount||0)}</td><td>${receiptCell}</td><td>${statusBadge}</td><td>${toggleBtn}</td></tr>`;
+      }).join('');
+}
+async function handleHQExpenseTableClick(e){
+  const key = e.target.dataset.hqTogglePaid;
+  if (!key) return;
+  const [academyId, logId] = key.split('|');
+  const w = hqWorkLogs.find(x => x.academyId === academyId && x.id === logId);
+  if (!w) return;
+  try {
+    await db.collection('academies').doc(academyId).collection('workLogs').doc(logId).set({ reimbursementPaid: !w.reimbursementPaid }, { merge:true });
+    await loadHQWorkLogs();
+  } catch(err){
+    console.error(err);
+    alert('更新に失敗しました: ' + err.message);
+  }
+}
+document.getElementById('hq-expense-tbody').addEventListener('click', handleHQExpenseTableClick);
 
 function renderHQWorkLogs(){
   const tbody = document.getElementById('hq-wl-tbody');
