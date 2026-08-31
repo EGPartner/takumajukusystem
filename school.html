@@ -235,6 +235,7 @@
     <span class="tab-group-label" data-tab-target="absence">運営</span>
     <button class="tab-btn active" data-tab="absence">欠席・出欠</button>
     <button class="tab-btn" data-tab="calendar">カレンダー</button>
+    <button class="tab-btn" data-tab="worklog">出勤</button>
     <span class="tab-group-label" data-tab-target="grid">塾生</span>
     <button class="tab-btn" data-tab="grid">塾生数</button>
     <button class="tab-btn" data-tab="growth">成長記録</button>
@@ -247,6 +248,7 @@
   <div class="bottom-nav" role="tablist">
     <button class="tab-btn active" data-tab="absence"><span class="nav-icon"></span>欠席</button>
     <button class="tab-btn" data-tab="calendar"><span class="nav-icon"></span>予定</button>
+    <button class="tab-btn" data-tab="worklog"><span class="nav-icon"></span>出勤</button>
     <button class="tab-btn" data-tab="grid"><span class="nav-icon"></span>塾生数</button>
     <button class="tab-btn" data-tab="growth"><span class="nav-icon"></span>成長</button>
     <button class="tab-btn" data-tab="summary"><span class="nav-icon"></span>サマリー</button>
@@ -439,6 +441,45 @@
   </div>
 
   <!-- Calendar -->
+
+  <div class="tab-panel" id="tab-worklog">
+    <div class="card">
+      <div class="btn-row" style="justify-content:space-between;align-items:center;margin-bottom:4px;">
+        <h2 style="margin:0;">出勤記録</h2>
+        <input type="month" id="wl-month" style="width:auto;">
+      </div>
+      <p class="note" style="margin-top:0;">練習に出たら「出勤を記録」を押すだけです。日付・時間・校舎は予定から自動で入ります。押し忘れた日も、下の一覧からあとで記録できます。</p>
+      <div class="row" style="margin-top:10px;">
+        <div class="field" style="margin:0;"><label>今月の出勤</label><div id="wl-my-count" style="font-size:22px;font-weight:700;">-</div></div>
+        <div class="field" style="margin:0;"><label>合計時間</label><div id="wl-my-hours" style="font-size:22px;font-weight:700;">-</div></div>
+      </div>
+    </div>
+
+    <div class="card" id="wl-today-card" style="display:none;">
+      <h2>今日の練習</h2>
+      <div id="wl-today"></div>
+    </div>
+
+    <div class="card">
+      <h2>今月の練習</h2>
+      <p class="note" style="margin-top:0;">自分が出た練習を記録してください。担当に名前が入っている練習には印がつきます。</p>
+      <div id="wl-list"><div class="empty">読み込み中…</div></div>
+    </div>
+
+    <div class="card admin-only-tab" id="wl-summary-card">
+      <div class="btn-row" style="justify-content:space-between;align-items:center;margin-bottom:4px;">
+        <h2 style="margin:0;">スタッフ別の集計(この校舎)</h2>
+        <button class="ghost" id="btn-wl-csv">CSVで書き出す</button>
+      </div>
+      <p class="note" style="margin-top:0;">選択中の月の出勤状況です。給与計算にお使いください。</p>
+      <div class="table-scroll">
+        <table class="mini-table">
+          <thead><tr><th>スタッフ</th><th>回数</th><th>合計時間</th><th>出勤日</th></tr></thead>
+          <tbody id="wl-summary-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
   <div class="tab-panel" id="tab-calendar">
     <div class="card">
       <h2>活動カレンダー</h2>
@@ -968,6 +1009,12 @@ function attachListeners(){
     populateLocationSelects();
     renderPatternsTable();
   }, err => console.error(err));
+  // 出勤記録: スタッフは自分の分のみ、管理者はその校舎の全員分を読む
+  const wlQuery = isAdmin ? workLogsRef : workLogsRef.where('uid', '==', currentUser.uid);
+  unsubWorkLogs = wlQuery.onSnapshot(snap => {
+    workLogs = snap.docs.map(d => Object.assign({ id:d.id }, d.data()));
+    renderWorkLog();
+  }, err => console.error('workLogs listener failed', err));
   unsubStaffList = staffRef.onSnapshot(snap => {
     staffList = snap.docs.map(d => Object.assign({ id:d.id }, d.data()));
     renderStaffTable();
@@ -998,6 +1045,7 @@ function detachListeners(){
   if (unsubEvents){ unsubEvents(); unsubEvents = null; }
   if (unsubLocationsMeta){ unsubLocationsMeta(); unsubLocationsMeta = null; }
   if (unsubStaffList){ unsubStaffList(); unsubStaffList = null; }
+  if (unsubWorkLogs){ unsubWorkLogs(); unsubWorkLogs = null; }
   if (unsubNameAliases){ unsubNameAliases(); unsubNameAliases = null; }
 }
 let unsubAbsence = null;
@@ -1083,6 +1131,169 @@ function resolveLocationInput(text){
   return hit ? { locationId: hit.id, locationText: null } : { locationId: null, locationText: t };
 }
 function locationName(id){ return locationNameOf(id) || '(場所未設定)'; }
+
+// ---- 出勤記録 ----
+// 予定(カレンダー)を土台にして、スタッフは「出た」を押すだけで記録できるようにする。
+// 記録は1件ずつ独立したドキュメントにし、自分の分だけ登録・取り消しできる。
+const workLogsRef = academyRef.collection('workLogs');
+let workLogs = [];
+let unsubWorkLogs = null;
+
+function wlMonth(){
+  const el = document.getElementById('wl-month');
+  return (el && el.value) ? el.value : currentMonthStr();
+}
+function wlLogId(uid, o){
+  return [uid, o.date, o.patternId || '-', o.eventId || '-'].join('__');
+}
+function minutesBetween(start, end){
+  if (!start || !end) return 0;
+  const [sh, sm] = start.split(':').map(Number);
+  const [eh, em] = end.split(':').map(Number);
+  const diff = (eh * 60 + em) - (sh * 60 + sm);
+  return diff > 0 ? diff : 0;
+}
+function fmtHours(min){ return (Math.round(min / 6) / 10).toFixed(1); }
+// その月に予定されている練習を、日付順に取り出す
+function wlOccurrencesOfMonth(ym){
+  const [y, m] = ym.split('-').map(Number);
+  const days = new Date(y, m, 0).getDate();
+  const out = [];
+  for (let d = 1; d <= days; d++){
+    const dateStr = y + '-' + pad(m) + '-' + pad(d);
+    occurrencesForDate(dateStr).filter(o => !o.cancelled).forEach(o => out.push(o));
+  }
+  return out;
+}
+function wlIsMine(o){
+  const me = (myStaffName() || '').trim();
+  if (!me) return false;
+  return splitStaff(o.staffInCharge).includes(me);
+}
+function myStaffName(){
+  if (!currentUser) return '';
+  const me = (staffList || []).find(x => x.id === currentUser.uid);
+  return me ? (me.name || '') : '';
+}
+
+function wlRowHTML(o){
+  const d = new Date(o.date + 'T00:00:00');
+  const label = (d.getMonth()+1) + '/' + d.getDate() + '(' + WEEKDAY_LABELS[d.getDay()] + ')';
+  const id = currentUser ? wlLogId(currentUser.uid, o) : '';
+  const done = workLogs.some(w => w.id === id);
+  const mine = wlIsMine(o) ? '<span class="badge">担当</span>' : '';
+  const key = [o.date, o.patternId || '', o.eventId || ''].join('|');
+  return `<div class="calendar-row">
+    <div class="cr-date">${label}</div>
+    <div class="cr-time">${escAttr(o.startTime||'')}${o.endTime ? '〜'+escAttr(o.endTime) : ''}</div>
+    <div class="cr-body">
+      <div class="cr-type">${escAttr(o.type||'')} ${mine}</div>
+      <div class="cr-loc">📍 ${escAttr(locationLabelOf(o))}</div>
+    </div>
+    <div class="cr-actions">
+      ${done
+        ? `<button class="ghost" data-wl-cancel="${escAttr(key)}">✓ 記録済</button>`
+        : `<button class="primary" data-wl-record="${escAttr(key)}" style="padding:6px 12px;font-size:12.5px;">出勤を記録</button>`}
+    </div>
+  </div>`;
+}
+
+function renderWorkLog(){
+  const listEl = document.getElementById('wl-list');
+  if (!listEl) return;
+  const ym = wlMonth();
+  const occs = wlOccurrencesOfMonth(ym);
+  listEl.innerHTML = occs.length === 0
+    ? '<div class="empty">この月に予定されている練習はありません。</div>'
+    : occs.map(wlRowHTML).join('');
+
+  // 今日の練習を目立つ場所に出す
+  const todayStr = (() => { const d = new Date(); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); })();
+  const todays = occurrencesForDate(todayStr).filter(o => !o.cancelled);
+  const card = document.getElementById('wl-today-card');
+  const todayEl = document.getElementById('wl-today');
+  if (todays.length > 0){
+    card.style.display = 'block';
+    todayEl.innerHTML = todays.map(wlRowHTML).join('');
+  } else {
+    card.style.display = 'none';
+  }
+
+  // 自分の集計
+  const mine = workLogs.filter(w => currentUser && w.uid === currentUser.uid && (w.date||'').slice(0,7) === ym);
+  document.getElementById('wl-my-count').textContent = mine.length + ' 回';
+  document.getElementById('wl-my-hours').textContent = fmtHours(mine.reduce((a,w) => a + (w.minutes||0), 0)) + ' 時間';
+
+  renderWorkLogSummary(ym);
+}
+
+// 管理者向け: スタッフ別の集計
+function renderWorkLogSummary(ym){
+  const tbody = document.getElementById('wl-summary-tbody');
+  if (!tbody || !isAdmin) return;
+  const rows = workLogs.filter(w => (w.date||'').slice(0,7) === ym);
+  const byStaff = {};
+  rows.forEach(w => {
+    const key = w.staffName || w.uid;
+    if (!byStaff[key]) byStaff[key] = { count:0, minutes:0, dates:[] };
+    byStaff[key].count++;
+    byStaff[key].minutes += (w.minutes || 0);
+    byStaff[key].dates.push(w.date);
+  });
+  const names = Object.keys(byStaff).sort();
+  tbody.innerHTML = names.length === 0
+    ? '<tr><td colspan="4" class="empty">この月の記録はありません。</td></tr>'
+    : names.map(n => {
+        const v = byStaff[n];
+        const days = v.dates.sort().map(d => Number(d.slice(8,10))).join('・');
+        return `<tr><td>${escAttr(n)}</td><td>${v.count}回</td><td>${fmtHours(v.minutes)}時間</td><td class="note">${escAttr(days)}</td></tr>`;
+      }).join('');
+}
+
+async function handleWorkLogClick(e){
+  const recKey = e.target.dataset.wlRecord;
+  const canKey = e.target.dataset.wlCancel;
+  const key = recKey || canKey;
+  if (!key || !currentUser) return;
+  const [dateStr, patternId, eventId] = key.split('|');
+  const o = occurrencesForDate(dateStr).find(x => (x.patternId||'') === patternId && (x.eventId||'') === eventId);
+  if (!o) return;
+  const id = wlLogId(currentUser.uid, o);
+  try {
+    if (recKey){
+      await workLogsRef.doc(id).set({
+        uid: currentUser.uid,
+        staffName: myStaffName() || currentUser.email,
+        date: o.date,
+        startTime: o.startTime || '',
+        endTime: o.endTime || '',
+        minutes: minutesBetween(o.startTime, o.endTime),
+        type: o.type || '',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    } else {
+      if (!confirm('この日の出勤記録を取り消しますか？')) return;
+      await workLogsRef.doc(id).delete();
+    }
+    markSaved(true);
+  } catch(err){
+    console.error(err);
+    markSaved(false);
+    alert('記録に失敗しました: ' + err.message);
+  }
+}
+
+function exportWorkLogCsv(){
+  const ym = wlMonth();
+  const rows = workLogs.filter(w => (w.date||'').slice(0,7) === ym)
+    .sort((a,b) => (a.staffName||'').localeCompare(b.staffName||'','ja') || (a.date||'').localeCompare(b.date||''));
+  const lines = [['校舎','スタッフ','日付','開始','終了','時間(分)','種別'].map(csvField).join(',')];
+  rows.forEach(w => lines.push([currentBranchName, w.staffName||'', w.date||'', w.startTime||'', w.endTime||'', w.minutes||0, w.type||''].map(csvField).join(',')));
+  const blob = new Blob(['\uFEFF' + lines.join('\n')], { type:'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = '出勤記録_' + currentBranchName + '_' + ym + '.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+}
 
 // ---- 担当スタッフ(複数人可) ----
 // 候補は「この校舎のスタッフ氏名」＋「全校共通の担当者」。候補になくても手入力できる。
@@ -2480,6 +2691,7 @@ function switchTab(name){
   else if (name === 'dashboard') refreshDashboard();
   else if (name === 'grid') renderGrid();
   else if (name === 'absenceHistory') { renderAbsenceHistory(); renderAliasTable(); }
+  else if (name === 'worklog') renderWorkLog();
 }
 
 async function loadBranchName(){
@@ -2646,6 +2858,11 @@ function initUI(){
   document.getElementById('fy-prev').addEventListener('click', () => { currentFY--; renderAll(); });
   document.getElementById('fy-next').addEventListener('click', () => { currentFY++; renderAll(); });
 
+  document.getElementById('wl-month').value = currentMonthStr();
+  document.getElementById('wl-month').addEventListener('change', renderWorkLog);
+  document.getElementById('wl-list').addEventListener('click', handleWorkLogClick);
+  document.getElementById('wl-today').addEventListener('click', handleWorkLogClick);
+  document.getElementById('btn-wl-csv').addEventListener('click', exportWorkLogCsv);
   document.getElementById('grid-head-row').addEventListener('click', (e) => {
     const btn = e.target.closest('.bulk-month');
     if (btn && isAdmin) handleBulkMonth(btn.dataset.key);

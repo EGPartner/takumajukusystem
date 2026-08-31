@@ -123,6 +123,7 @@
       <button class="tab-btn active" data-tab="schedule">統合スケジュール</button>
       <button class="tab-btn" data-tab="absence">欠席連絡</button>
       <button class="tab-btn" data-tab="students">塾生</button>
+      <button class="tab-btn" data-tab="worklog">出勤</button>
       <button class="tab-btn" data-tab="schools">校舎管理</button>
     </div>
 
@@ -318,6 +319,35 @@
       </div>
     </div>
 
+
+    <div class="tab-panel" id="tab-worklog">
+      <div class="card">
+        <div class="btn-row" style="justify-content:space-between;align-items:center;">
+          <h2 style="font-size:15px;margin:0;">スタッフの出勤集計(全校舎)</h2>
+          <span style="display:flex;gap:8px;align-items:center;">
+            <input type="month" id="hq-wl-month" style="width:auto;padding:6px 10px;font-size:13px;">
+            <button class="ghost-small" id="hq-btn-wl-reload">再読み込み</button>
+          </span>
+        </div>
+        <p class="status" style="margin-top:4px;color:var(--text-muted);">スタッフが記録した出勤を、校舎をまたいで集計します。掛け持ちの方は校舎別の内訳も表示されます。</p>
+        <div class="kpi-row">
+          <div class="kpi-box"><div class="k">のべ出勤回数</div><div class="v" id="hq-wl-total">-</div></div>
+          <div class="kpi-box"><div class="k">合計時間</div><div class="v" id="hq-wl-hours">-</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="btn-row" style="justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <h2 style="font-size:15px;margin:0;">スタッフ別</h2>
+          <button class="ghost-small" id="hq-btn-wl-csv">CSVで書き出す</button>
+        </div>
+        <div class="scroll-y" style="overflow-x:auto;">
+          <table class="mini-table">
+            <thead><tr><th>スタッフ</th><th>校舎別の内訳</th><th>回数</th><th>合計時間</th></tr></thead>
+            <tbody id="hq-wl-tbody"><tr><td colspan="4" class="status">月を選ぶと集計します。</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
     <div class="tab-panel" id="tab-schools">
       <div class="card">
         <h2 style="font-size:15px;margin:0 0 12px;">校舎一覧</h2>
@@ -527,6 +557,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b === btn));
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + btn.dataset.tab));
     if (btn.dataset.tab === 'students') loadHQStudents();
+    if (btn.dataset.tab === 'worklog') loadHQWorkLogs();
   });
 });
 
@@ -1829,6 +1860,71 @@ document.getElementById('common-staff-list').addEventListener('click', async (e)
 });
 clearStatusOnInput(['new-common-staff'], 'common-staff-status');
 
+// ---- スタッフの出勤集計(全校舎) ----
+let hqWorkLogs = [];
+function hqWlMonth(){
+  const el = document.getElementById('hq-wl-month');
+  return (el && el.value) ? el.value : currentMonthKey();
+}
+function fmtHours(min){ return (Math.round(min / 6) / 10).toFixed(1); }
+
+async function loadHQWorkLogs(){
+  const tbody = document.getElementById('hq-wl-tbody');
+  tbody.innerHTML = '<tr><td colspan="4" class="status">読み込み中…</td></tr>';
+  const ym = hqWlMonth();
+  const rows = [];
+  await Promise.all(schoolsArr.map(async (s) => {
+    try {
+      const snap = await db.collection('academies').doc(s.id).collection('workLogs')
+        .where('date', '>=', ym + '-01').where('date', '<=', ym + '-31').get();
+      snap.docs.forEach(d => rows.push(Object.assign({ academyId: s.id }, d.data())));
+    } catch(e){ console.error('workLogs load failed for', s.id, e); }
+  }));
+  hqWorkLogs = rows;
+  renderHQWorkLogs();
+}
+
+function renderHQWorkLogs(){
+  const tbody = document.getElementById('hq-wl-tbody');
+  const byStaff = {};
+  hqWorkLogs.forEach(w => {
+    const key = w.staffName || w.uid;
+    if (!byStaff[key]) byStaff[key] = { count:0, minutes:0, schools:{} };
+    byStaff[key].count++;
+    byStaff[key].minutes += (w.minutes || 0);
+    byStaff[key].schools[w.academyId] = (byStaff[key].schools[w.academyId] || 0) + 1;
+  });
+  const names = Object.keys(byStaff).sort((a,b) => a.localeCompare(b,'ja'));
+  document.getElementById('hq-wl-total').innerHTML = hqWorkLogs.length + '<small> 回</small>';
+  document.getElementById('hq-wl-hours').innerHTML = fmtHours(hqWorkLogs.reduce((a,w) => a + (w.minutes||0), 0)) + '<small> 時間</small>';
+  tbody.innerHTML = names.length === 0
+    ? '<tr><td colspan="4" class="status">この月の記録はありません。</td></tr>'
+    : names.map(n => {
+        const v = byStaff[n];
+        const breakdown = Object.keys(v.schools)
+          .map(id => `<span style="color:${schoolColor(id)};font-weight:700;">${escAttr(schoolNameFor(id))}</span>${v.schools[id]}`)
+          .join(' ／ ');
+        return `<tr><td style="font-weight:700;">${escAttr(n)}</td><td>${breakdown}</td><td>${v.count}回</td><td>${fmtHours(v.minutes)}時間</td></tr>`;
+      }).join('');
+}
+
+function exportHQWorkLogCsv(){
+  const ym = hqWlMonth();
+  const rows = [...hqWorkLogs].sort((a,b) =>
+    (a.staffName||'').localeCompare(b.staffName||'','ja') || (a.date||'').localeCompare(b.date||''));
+  const q = v => '"' + String(v == null ? '' : v).replace(/"/g,'""') + '"';
+  const lines = [['スタッフ','校舎','日付','開始','終了','時間(分)','種別'].map(q).join(',')];
+  rows.forEach(w => lines.push([w.staffName||'', schoolNameFor(w.academyId), w.date||'', w.startTime||'', w.endTime||'', w.minutes||0, w.type||''].map(q).join(',')));
+  const blob = new Blob(['\uFEFF' + lines.join('\n')], { type:'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = '出勤記録_全校舎_' + ym + '.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+
+document.getElementById('hq-wl-month').addEventListener('change', loadHQWorkLogs);
+document.getElementById('hq-btn-wl-reload').addEventListener('click', loadHQWorkLogs);
+document.getElementById('hq-btn-wl-csv').addEventListener('click', exportHQWorkLogCsv);
+
 auth.onAuthStateChanged(async (user) => {
   if (user && user.isAnonymous){ await auth.signOut(); return; }
   currentUser = user;
@@ -1872,6 +1968,7 @@ auth.onAuthStateChanged(async (user) => {
   document.getElementById('add-school-section').style.display = isSystemAdminUser ? 'block' : 'none';
   document.getElementById('issue-account-section').style.display = 'block';
   populateAccountRoleSelect();
+  document.getElementById('hq-wl-month').value = currentMonthKey();
   document.getElementById('hq-new-occ-date').value = (() => { const d = new Date(); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); })();
   await loadSchools();
   if (isSystemAdminUser){ loadHQAdmins(); loadSystemAdmins(); }
