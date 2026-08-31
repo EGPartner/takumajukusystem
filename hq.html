@@ -343,7 +343,7 @@
         </div>
         <div class="scroll-y" style="overflow-x:auto;">
           <table class="mini-table">
-            <thead><tr><th>スタッフ</th><th>校舎別の内訳</th><th>回数</th><th>合計時間</th></tr></thead>
+            <thead><tr><th>スタッフ</th><th>校舎</th><th>回数</th><th>時間</th></tr></thead>
             <tbody id="hq-wl-tbody"><tr><td colspan="4" class="status">月を選ぶと集計します。</td></tr></tbody>
           </table>
         </div>
@@ -2044,26 +2044,38 @@ document.getElementById('hq-expense-tbody').addEventListener('click', handleHQEx
 
 function renderHQWorkLogs(){
   const tbody = document.getElementById('hq-wl-tbody');
+  // スタッフ×校舎ごとに回数・時間を集計する(掛け持ちのスタッフも校舎ごとの内訳が完全に見えるように)
   const byStaff = {};
   hqWorkLogs.forEach(w => {
     const key = w.staffName || w.uid;
     if (!byStaff[key]) byStaff[key] = { count:0, minutes:0, schools:{} };
     byStaff[key].count++;
     byStaff[key].minutes += (w.minutes || 0);
-    byStaff[key].schools[w.academyId] = (byStaff[key].schools[w.academyId] || 0) + 1;
+    if (!byStaff[key].schools[w.academyId]) byStaff[key].schools[w.academyId] = { count:0, minutes:0 };
+    byStaff[key].schools[w.academyId].count++;
+    byStaff[key].schools[w.academyId].minutes += (w.minutes || 0);
   });
   const names = Object.keys(byStaff).sort((a,b) => a.localeCompare(b,'ja'));
   document.getElementById('hq-wl-total').innerHTML = hqWorkLogs.length + '<small> 回</small>';
   document.getElementById('hq-wl-hours').innerHTML = fmtHours(hqWorkLogs.reduce((a,w) => a + (w.minutes||0), 0)) + '<small> 時間</small>';
-  tbody.innerHTML = names.length === 0
-    ? '<tr><td colspan="4" class="status">この月の記録はありません。</td></tr>'
-    : names.map(n => {
-        const v = byStaff[n];
-        const breakdown = Object.keys(v.schools)
-          .map(id => `<span style="color:${schoolColor(id)};font-weight:700;">${escAttr(schoolNameFor(id))}</span>${v.schools[id]}`)
-          .join(' ／ ');
-        return `<tr><td style="font-weight:700;">${escAttr(n)}</td><td>${breakdown}</td><td>${v.count}回</td><td>${fmtHours(v.minutes)}時間</td></tr>`;
-      }).join('');
+  if (names.length === 0){
+    tbody.innerHTML = '<tr><td colspan="4" class="status">この月の記録はありません。</td></tr>';
+    return;
+  }
+  tbody.innerHTML = names.map(n => {
+    const v = byStaff[n];
+    const schoolIds = Object.keys(v.schools).sort((a,b) => schoolNameFor(a).localeCompare(schoolNameFor(b),'ja'));
+    const schoolRows = schoolIds.map((id, i) => {
+      const sv = v.schools[id];
+      const nameCell = i === 0 ? `<td rowspan="${schoolIds.length}" style="font-weight:700;vertical-align:top;">${escAttr(n)}</td>` : '';
+      return `<tr>${nameCell}<td><span style="color:${schoolColor(id)};font-weight:700;">${escAttr(schoolNameFor(id))}</span></td><td>${sv.count}回</td><td>${fmtHours(sv.minutes)}時間</td></tr>`;
+    }).join('');
+    // 掛け持ち(2校以上)のスタッフだけ、分かりやすいように合計行も出す
+    const totalRow = schoolIds.length > 1
+      ? `<tr style="background:var(--bg);"><td></td><td style="font-weight:700;">合計</td><td style="font-weight:700;">${v.count}回</td><td style="font-weight:700;">${fmtHours(v.minutes)}時間</td></tr>`
+      : '';
+    return schoolRows + totalRow;
+  }).join('');
 }
 
 function exportHQWorkLogCsv(){
