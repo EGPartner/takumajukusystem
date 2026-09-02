@@ -1023,7 +1023,7 @@ async function loadSchools(){
     return;
   }
   schoolsMap = {};
-  schoolsArr = snap.docs.map(d => ({ id:d.id, name: d.data().name || d.id }));
+  schoolsArr = snap.docs.map(d => ({ id:d.id, name: d.data().name || d.id, hiddenFromParents: !!d.data().hiddenFromParents }));
   schoolsArr.forEach(s => { schoolsMap[s.id] = s.name; });
 
   // 校舎一覧の表示は、他の処理より先に・独立して確実に行う
@@ -1041,10 +1041,15 @@ async function loadSchools(){
           count = studentsSnap.size;
         } catch(e){ count = '?'; }
         const url = base + 'school.html?school=' + encodeURIComponent(doc.id);
+        const hidden = !!s.hiddenFromParents;
         return `<div class="school-row">
           <div>
-            <div class="school-name">${escAttr(s.name || doc.id)} <span class="badge" data-school-absence-badge="${escAttr(doc.id)}" style="display:none;"></span></div>
+            <div class="school-name">${escAttr(s.name || doc.id)} <span class="badge" data-school-absence-badge="${escAttr(doc.id)}" style="display:none;"></span>${hidden ? ' <span class="badge muted">保護者ページ非表示</span>' : ''}</div>
             <div class="school-meta">ID: ${escAttr(doc.id)} ／ 今月の在籍: ${count}名</div>
+            <label style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--text-secondary);margin-top:4px;cursor:pointer;">
+              <input type="checkbox" data-toggle-hidden-parents="${escAttr(doc.id)}" ${hidden ? 'checked' : ''} style="width:auto;margin:0;">
+              保護者ページ(欠席連絡・活動予定・校舎選択)から非表示にする
+            </label>
           </div>
           <a class="link-btn" href="${escAttr(url)}" target="_blank" rel="noopener">開く</a>
         </div>`;
@@ -1062,6 +1067,22 @@ async function loadSchools(){
   try { renderHQPatternsTable(); } catch(e){ console.error('renderHQPatternsTable failed', e); }
   try { loadStaffNames(); } catch(e){ console.error('loadStaffNames failed', e); }
 }
+
+// 校舎を削除せずに、保護者向け3ページ(保護者メニュー・欠席連絡・活動予定)の選択肢からだけ外す。
+// 統合・移転などで使わなくなった校舎を、データを残したまま安全に隠すための機能。
+async function handleToggleHiddenFromParents(e){
+  const academyId = e.target.dataset.toggleHiddenParents;
+  if (!academyId) return;
+  try {
+    await schoolsRef.doc(academyId).set({ hiddenFromParents: e.target.checked }, { merge:true });
+    await loadSchools();
+  } catch(err){
+    console.error(err);
+    alert('更新に失敗しました: ' + err.message);
+    e.target.checked = !e.target.checked;
+  }
+}
+document.getElementById('school-list').addEventListener('change', handleToggleHiddenFromParents);
 
 let absenceDataBySchool = {};
 let selectedAbsenceSchool = null;
@@ -1409,7 +1430,9 @@ async function handleHQCalRowClick(e){
 document.getElementById('hq-cal-day-detail').addEventListener('click', handleHQCalRowClick);
 
 function populateSchoolSelects(){
-  const opts = schoolsArr.map(s => `<option value="${escAttr(s.id)}">${escAttr(s.name)}</option>`).join('');
+  // 「保護者ページから非表示」にした校舎は、本部画面の各種選択肢からも外す(データは残したまま、UI上だけ隠す)。
+  const visibleSchools = schoolsArr.filter(s => !s.hiddenFromParents);
+  const opts = visibleSchools.map(s => `<option value="${escAttr(s.id)}">${escAttr(s.name)}</option>`).join('');
   ['hq-new-occ-school','hq-new-pattern-school'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.innerHTML = opts;
@@ -1424,7 +1447,7 @@ function populateSchoolSelects(){
   const accountSchools = document.getElementById('new-account-schools');
   if (accountSchools){
     const checked = new Set(selectedAccountSchools());
-    accountSchools.innerHTML = schoolsArr.map(s =>
+    accountSchools.innerHTML = visibleSchools.map(s =>
       `<label class="${checked.has(s.id) ? 'checked' : ''}"><input type="checkbox" value="${escAttr(s.id)}" ${checked.has(s.id) ? 'checked' : ''}>${escAttr(s.name)}</label>`
     ).join('') || '<span class="status">校舎が登録されていません。</span>';
   }
@@ -1443,7 +1466,7 @@ function populateSchoolSelects(){
   }
   const legend = document.getElementById('hq-schedule-legend');
   if (legend){
-    legend.innerHTML = schoolsArr.map(s =>
+    legend.innerHTML = visibleSchools.map(s =>
       `<span style="display:inline-flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:3px;background:${schoolColor(s.id)};display:inline-block;"></span>${escAttr(s.name)}</span>`
     ).join('');
   }

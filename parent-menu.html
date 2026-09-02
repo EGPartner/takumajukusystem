@@ -117,7 +117,7 @@ async function loadGateSchoolOptions(){
   const sel = document.getElementById('gate-school');
   try {
     const snap = await db.collection('schools').orderBy('name').get();
-    sel.innerHTML = '<option value="">選択してください</option>' + snap.docs.map(d => `<option value="${d.id}">${escAttr(d.data().name || d.id)}</option>`).join('');
+    sel.innerHTML = '<option value="">選択してください</option>' + snap.docs.filter(d => !d.data().hiddenFromParents).map(d => `<option value="${d.id}">${escAttr(d.data().name || d.id)}</option>`).join('');
     let remembered = null;
     try { remembered = localStorage.getItem(LAST_SCHOOL_KEY); } catch(e){}
     if (remembered && snap.docs.some(d => d.id === remembered)) sel.value = remembered;
@@ -178,7 +178,7 @@ async function loadSchoolOptions(){
       sel.innerHTML = '<option value="">校舎が登録されていません</option>';
       return;
     }
-    sel.innerHTML = '<option value="">選択してください</option>' + snap.docs.map(d => `<option value="${d.id}">${escAttr(d.data().name || d.id)}</option>`).join('');
+    sel.innerHTML = '<option value="">選択してください</option>' + snap.docs.filter(d => !d.data().hiddenFromParents).map(d => `<option value="${d.id}">${escAttr(d.data().name || d.id)}</option>`).join('');
     let remembered = null;
     try { remembered = localStorage.getItem(LAST_SCHOOL_KEY); } catch(e){}
     if (remembered && snap.docs.some(d => d.id === remembered)) sel.value = remembered;
