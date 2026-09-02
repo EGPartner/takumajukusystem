@@ -454,9 +454,13 @@
     <div class="card">
       <div class="btn-row" style="justify-content:space-between;align-items:center;margin-bottom:4px;">
         <h2 style="margin:0;">出勤記録</h2>
-        <input type="month" id="wl-month" style="width:auto;">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <button class="ghost" id="wl-month-prev" style="padding:6px 10px;font-size:13px;" aria-label="前月">◀</button>
+          <input type="month" id="wl-month" style="width:auto;">
+          <button class="ghost" id="wl-month-next" style="padding:6px 10px;font-size:13px;" aria-label="翌月">▶</button>
+        </div>
       </div>
-      <p class="note" style="margin-top:0;">練習に出たら「出勤を記録」を押すだけです。日付・時間・校舎は予定から自動で入ります。押し忘れた日も、下の一覧からあとで記録できます。</p>
+      <p class="note" style="margin-top:0;">練習に出たら「出勤を記録」を押すだけです。日付・時間・校舎は予定から自動で入ります。押し忘れた日は、上の「◀」で前の月に戻れば、過去の月でも後からいつでも記録できます。</p>
       <div class="row" style="margin-top:10px;">
         <div class="field" style="margin:0;"><label>今月の出勤</label><div id="wl-my-count" style="font-size:22px;font-weight:700;">-</div></div>
         <div class="field" style="margin:0;"><label>合計時間</label><div id="wl-my-hours" style="font-size:22px;font-weight:700;">-</div></div>
@@ -3113,6 +3117,16 @@ function initUI(){
 
   document.getElementById('wl-month').value = currentMonthStr();
   document.getElementById('wl-month').addEventListener('change', renderWorkLog);
+  document.getElementById('wl-month-prev').addEventListener('click', () => {
+    const el = document.getElementById('wl-month');
+    el.value = prevMonthStr(wlMonth());
+    renderWorkLog();
+  });
+  document.getElementById('wl-month-next').addEventListener('click', () => {
+    const el = document.getElementById('wl-month');
+    el.value = nextMonthStr(wlMonth());
+    renderWorkLog();
+  });
   document.getElementById('wl-list').addEventListener('click', handleWorkLogClick);
   document.getElementById('wl-today').addEventListener('click', handleWorkLogClick);
   document.getElementById('btn-wl-csv').addEventListener('click', exportWorkLogCsv);
