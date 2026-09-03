@@ -202,7 +202,7 @@
     <div id="gate-pending" style="display:none;">
       <div class="pending-icon">⏳</div>
       <p class="pending-title">申請を受け付けました</p>
-      <p class="pending-desc">入力されたお名前が名簿と一致しなかったため、教室の確認をお待ちください。<br>確認が済むと、このページが自動で切り替わります。</p>
+      <p class="pending-desc">入力されたお名前が名簿と一致しなかったため、教室で確認しています。通常は当日中にご案内できるよう対応しております。<br>確認が済むと、このページが自動で切り替わります。</p>
       <button type="button" class="ghost-link" id="gate-retry">お名前を入力し直す</button>
     </div>
   </div>
@@ -252,8 +252,24 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
+// ---- LINEグループへの通知(Google Apps Script経由。承認待ちが発生した時) ----
+// 設置後、この2つに値を入れると通知が動き出す。空のままなら通知は行われない。absence-form.htmlと同じ値を使う。
+const LINE_HOOK_URL = 'https://script.google.com/macros/s/AKfycby0lmzmZ9ZoF22HauK3Mp5S6U9IsvXi8_rCbOP1IVUjRIaTWoUaaAcK3uzPN11KNVrk/exec';  // Apps Scriptのデプロイ先URL
+const LINE_HOOK_KEY = 'takuma-2026-xyz';  // Apps Scriptに登録した SHARED_KEY と同じ文字列
+function notifyLine(payload){
+  if (!LINE_HOOK_URL || !LINE_HOOK_KEY) return;
+  try {
+    fetch(LINE_HOOK_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(Object.assign({ key: LINE_HOOK_KEY }, payload))
+    }).catch(e => console.error('LINE通知に失敗', e));
+  } catch(e){ console.error('LINE通知に失敗', e); }
+}
+
 // ---- 塾生名簿との照合による関門(塾生家庭以外の閲覧を防ぐ) ----
-function normalizeName(n){ return String(n || '').replace(/[\s　]/g, ''); }
+function normalizeName(n){ return String(n || '').replace(/[\s　・･]/g, ''); }
 async function ensureAnon(){
   if (auth.currentUser) return auth.currentUser;
   const cred = await auth.signInAnonymously();
@@ -323,6 +339,8 @@ document.getElementById('gate-submit').addEventListener('click', async () => {
     try {
       // 一致しない場合は「承認待ち」として申請する
       await db.collection('parentViewers').doc(user.uid).set(Object.assign({ status: 'pending' }, base));
+      const schoolSel = document.getElementById('gate-school');
+      notifyLine({ type: 'pendingParent', school: schoolSel.selectedOptions[0] ? schoolSel.selectedOptions[0].textContent : schoolId, name });
       showPending(user.uid);
     } catch(e2){
       console.error(e2);
