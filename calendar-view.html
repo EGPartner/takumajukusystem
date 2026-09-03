@@ -4,85 +4,163 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>活動予定 - タクマ塾</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700;900&family=Noto+Sans+JP:wght@400;500;600;700&family=Outfit:wght@600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#F6F6F1; --surface:#FFFFFF; --border:#E1E7E7; --border-strong:#C7D2D2;
-    --text-primary:#12181A; --text-secondary:#5B6668; --text-muted:#8A9799;
-    --accent:#0FB8C4; --accent-dark:#0A8A93; --accent-bg:#E3F7F8;
-    --danger:#D6483F; --radius:14px;
+    --bg:#EEF5F5;
+    --surface:#FFFFFF;
+    --surface-2:#F2F8F8;
+    --border:#DEEAEA;
+    --border-strong:#C3D5D5;
+    --ink:#12181A;
+    --ink-soft:#586E70;
+    --ink-mute:#8A9DA0;
+    --accent:#0FB8C4;
+    --accent-deep:#0A6169;
+    --accent-bg:#E1F6F7;
+    --danger:#C24B41;
+    --warn-bg:#FFF3DE;
+    --warn-border:#E3AE55;
+    --warn-ink:#8A6416;
+    --radius-lg:20px;
+    --radius-md:14px;
+    --shadow:0 18px 40px -20px rgba(10,97,105,0.28), 0 2px 8px -2px rgba(18,24,26,0.06);
   }
   *{box-sizing:border-box;}
-  body{margin:0;font-family:"Hiragino Sans","Yu Gothic",-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text-primary);line-height:1.6;}
-  .wrap{max-width:640px;margin:0 auto;padding:20px 16px 60px;}
-  header{margin-bottom:18px;}
-  header h1{font-size:19px;font-weight:700;margin:0 0 4px;}
-  header p{font-size:13px;color:var(--text-secondary);margin:0;}
-  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 18px;margin-bottom:16px;}
-  label{font-size:13px;color:var(--text-secondary);display:block;margin-bottom:5px;}
-  select{width:100%;padding:10px 11px;border:1px solid var(--border-strong);border-radius:8px;font-size:16px;background:var(--surface);color:var(--text-primary);font-family:inherit;font-weight:600;}
-  .status{font-size:13px;color:var(--text-secondary);text-align:center;padding:24px 0;}
-  .row{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--border);}
+  body{
+    margin:0;
+    min-height:100vh;
+    background:
+      radial-gradient(720px 420px at 12% -8%, #CFF1F2 0%, transparent 60%),
+      radial-gradient(600px 380px at 110% 6%, #DFF6E9 0%, transparent 55%),
+      var(--bg);
+    font-family:"Noto Sans JP","Hiragino Sans","Yu Gothic",-apple-system,BlinkMacSystemFont,sans-serif;
+    color:var(--ink);
+    line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:640px;margin:0 auto;padding:28px 18px 60px;}
+
+  .brand-row{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+  .brand-mark{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--accent-deep));flex:none;box-shadow:0 4px 12px -4px rgba(10,97,105,0.5);}
+  .brand-name{font-family:"Zen Kaku Gothic New",sans-serif;font-weight:700;font-size:13px;letter-spacing:0.04em;color:var(--accent-deep);}
+
+  header{margin-bottom:20px;}
+  header h1{font-family:"Zen Kaku Gothic New",sans-serif;font-weight:900;font-size:22px;margin:0 0 6px;letter-spacing:-0.01em;}
+  header p{font-size:13px;color:var(--ink-soft);margin:0;}
+  .back-link{margin-top:8px;font-size:12.5px;}
+  .back-link a{color:var(--accent-deep);text-decoration:none;font-weight:600;}
+
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-bottom:16px;box-shadow:var(--shadow);}
+
+  label{font-size:12.5px;font-weight:700;color:var(--ink-soft);display:block;margin-bottom:7px;}
+  select,input[type=text]{
+    width:100%;padding:12px 13px;border:1.5px solid var(--border-strong);border-radius:11px;font-size:16px;
+    background:var(--surface-2);color:var(--ink);font-family:inherit;font-weight:600;
+    appearance:none;-webkit-appearance:none;transition:border-color 0.15s, background 0.15s;
+  }
+  select{
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23586E70' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 14px center;padding-right:36px;
+  }
+  select:focus,input:focus{outline:none;border-color:var(--accent);background:var(--surface);}
+
+  .notice{font-size:12px;line-height:1.6;background:var(--warn-bg);border:1px solid var(--warn-border);border-radius:10px;padding:10px 12px;color:var(--warn-ink);margin:10px 0 0;}
+
+  .status{font-size:13px;color:var(--ink-mute);text-align:center;padding:24px 0;}
+  .empty{color:var(--ink-mute);font-size:13px;text-align:center;padding:34px 0;}
+
+  .pending-icon{width:52px;height:52px;border-radius:50%;background:var(--accent-bg);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:22px;}
+  .pending-title{font-family:"Zen Kaku Gothic New",sans-serif;font-weight:700;font-size:15.5px;text-align:center;margin:0 0 8px;}
+  .pending-desc{font-size:13px;color:var(--ink-soft);text-align:center;margin:0;}
+  .ghost-link{display:block;margin:14px auto 0;background:none;border:none;color:var(--ink-soft);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:3px;}
+  button.primary-btn{
+    width:100%;padding:15px;border:none;border-radius:12px;
+    background:linear-gradient(135deg,var(--accent),var(--accent-deep));color:#fff;font-size:15px;font-weight:700;
+    cursor:pointer;font-family:inherit;box-shadow:0 10px 22px -10px rgba(10,97,105,0.55);
+    transition:transform 0.12s, box-shadow 0.12s;
+  }
+  button.primary-btn:active{transform:translateY(1px);box-shadow:0 6px 14px -8px rgba(10,97,105,0.5);}
+
+  .view-toggle-row{display:flex;gap:6px;margin-bottom:14px;}
+  .vt-btn{
+    padding:9px 16px;font-size:12.5px;font-weight:700;border:1.5px solid var(--border-strong);border-radius:20px;
+    background:var(--surface);color:var(--ink-soft);cursor:pointer;font-family:inherit;transition:all 0.12s;
+  }
+  .vt-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+
+  .row{display:flex;gap:14px;align-items:flex-start;padding:14px 0;border-bottom:1px solid var(--border);}
   .row:last-child{border-bottom:none;}
   .row.cancelled{opacity:0.5;}
-  .r-date{width:60px;flex:0 0 60px;font-weight:700;font-size:13px;font-family:'Outfit',sans-serif;padding-top:1px;}
-  .r-time{width:96px;flex:0 0 96px;font-size:13px;color:var(--text-secondary);padding-top:1px;}
-  .r-body{flex:1 1 auto;font-size:13px;}
-  .r-type{font-weight:700;margin-bottom:2px;}
-  .r-loc, .r-staff{color:var(--text-secondary);margin-bottom:2px;}
-  .r-note{color:var(--text-muted);font-size:12px;}
-  .badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:20px;background:var(--surface);color:var(--text-muted);font-weight:600;border:1px solid var(--border-strong);}
-  .empty{color:var(--text-muted);font-size:13px;text-align:center;padding:30px 0;}
-  input[type=text]{width:100%;padding:10px 11px;border:1px solid var(--border-strong);border-radius:8px;font-size:16px;background:var(--surface);color:var(--text-primary);font-family:inherit;}
-  .field{margin-bottom:14px;}
-  button.primary-btn{width:100%;padding:13px;border:none;border-radius:8px;background:var(--accent);color:#fff;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;}
-  .vt-btn{padding:7px 14px;font-size:12.5px;border:1px solid var(--border-strong);border-radius:6px;background:none;color:var(--text-primary);cursor:pointer;font-family:inherit;font-weight:600;}
-  .vt-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
-  .pcal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px;}
-  .pcal-head{font-size:10px;color:var(--text-secondary);text-align:center;padding:2px 0;font-weight:600;}
-  .pcal-day{border:1px solid var(--border);border-radius:6px;min-height:56px;padding:3px;font-size:10px;background:var(--surface);cursor:pointer;min-width:0;overflow:hidden;}
+  .r-date{width:52px;flex:0 0 52px;font-weight:700;font-size:14px;font-family:'Outfit',sans-serif;color:var(--accent-deep);padding-top:1px;}
+  .r-time{width:92px;flex:0 0 92px;font-size:12.5px;color:var(--ink-soft);padding-top:2px;font-variant-numeric:tabular-nums;}
+  .r-body{flex:1 1 auto;font-size:13px;min-width:0;}
+  .r-type{font-weight:700;margin-bottom:3px;font-family:"Zen Kaku Gothic New",sans-serif;font-size:13.5px;}
+  .r-loc,.r-staff{color:var(--ink-soft);margin-bottom:2px;}
+  .r-note{color:var(--ink-mute);font-size:12px;}
+  .badge{display:inline-block;font-size:10.5px;padding:2px 9px;border-radius:20px;background:var(--surface-2);color:var(--ink-mute);font-weight:700;border:1px solid var(--border-strong);margin-left:4px;}
+
+  .pcal-nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+  .pcal-nav strong{font-family:"Zen Kaku Gothic New",sans-serif;font-size:14.5px;}
+  .pcal-nav button{padding:7px 13px;border:1.5px solid var(--border-strong);border-radius:9px;background:var(--surface);cursor:pointer;font-family:inherit;font-size:13px;color:var(--ink);font-weight:700;}
+  .pcal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;}
+  .pcal-head{font-size:10px;color:var(--ink-mute);text-align:center;padding:3px 0;font-weight:700;}
+  .pcal-day{border:1px solid var(--border);border-radius:8px;min-height:58px;padding:4px;font-size:10px;background:var(--surface);cursor:pointer;min-width:0;overflow:hidden;transition:border-color 0.12s;}
   .pcal-day.empty-cell{border:none;background:none;cursor:default;}
   .pcal-day.selected{border-color:var(--accent);background:var(--accent-bg);}
-  .pcal-num{font-weight:700;margin-bottom:1px;}
-  .pcal-tag{font-size:8.5px;font-weight:700;background:var(--accent);color:#fff;border-radius:3px;padding:1px 3px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .pcal-tag.cancelled{background:#EEECE4;color:var(--text-muted);text-decoration:line-through;}
-  .pcal-nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
-  .pcal-nav button{padding:6px 12px;border:1px solid var(--border-strong);border-radius:6px;background:var(--surface);cursor:pointer;font-family:inherit;font-size:13px;color:var(--text-primary);}
+  .pcal-num{font-weight:700;margin-bottom:2px;font-family:'Outfit',sans-serif;}
+  .pcal-tag{font-size:8.5px;font-weight:700;background:var(--accent);color:#fff;border-radius:4px;padding:1.5px 3px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .pcal-tag.cancelled{background:var(--surface-2);color:var(--ink-mute);text-decoration:line-through;}
+
+  @media (max-width:400px){ .card{padding:16px;} }
 </style>
 </head>
 <body>
 <div class="wrap">
+  <div class="brand-row">
+    <div class="brand-mark"></div>
+    <div class="brand-name">タクマ塾</div>
+  </div>
   <header>
-    <h1>タクマ塾 活動予定</h1>
+    <h1>活動予定</h1>
     <p>今日から60日間の練習・試合・イベント予定です(閲覧専用)。</p>
-    <p style="margin-top:6px;"><a href="parent-menu.html" style="color:var(--accent-dark);font-size:13px;text-decoration:none;">← メニューへ戻る</a></p>
+    <p class="back-link"><a href="parent-menu.html">← メニューへ戻る</a></p>
   </header>
+
   <div class="card" id="gate-card" style="display:none;">
     <p style="font-weight:700;font-size:14px;margin:0 0 6px;">このページは塾生のご家族専用です</p>
-    <p style="font-size:13px;color:var(--text-secondary);margin:0 0 14px;">確認のため、お子さまの情報を入力してください(この端末で初回のみ)。</p>
+    <p style="font-size:13px;color:var(--ink-soft);margin:0 0 16px;">確認のため、お子さまの情報を入力してください(この端末で初回のみ)。</p>
     <div id="gate-form">
-      <div class="field"><label for="gate-school">お子さまの校舎</label><select id="gate-school" style="width:100%;padding:10px 11px;border:1px solid var(--border-strong);border-radius:8px;font-size:16px;background:var(--surface);color:var(--text-primary);font-family:inherit;"><option value="">読み込み中…</option></select>
-        <p style="font-size:12px;background:#FFF4E0;border:1px solid #E0A83A;border-radius:8px;padding:9px 11px;color:#8A6A1F;margin:8px 0 0;">※「福井校(エリート)」は「坂井・福井校(エリート)」に統合されました。福井校(エリート)の選手の方は「坂井・福井校(エリート)」をお選びください。</p>
+      <div style="margin-bottom:16px;">
+        <label for="gate-school">お子さまの校舎</label>
+        <select id="gate-school"><option value="">読み込み中…</option></select>
+        <p class="notice">※「福井校(エリート)」は「坂井・福井校(エリート)」に統合されました。福井校(エリート)の選手の方は「坂井・福井校(エリート)」をお選びください。</p>
       </div>
-      <div class="field"><label for="gate-name">塾生のお名前(姓名)</label><input type="text" id="gate-name" placeholder="例: 山田 蓮"></div>
+      <div style="margin-bottom:16px;">
+        <label for="gate-name">塾生のお名前(姓名)</label>
+        <input type="text" id="gate-name" placeholder="例: 山田 蓮">
+      </div>
       <button type="button" class="primary-btn" id="gate-submit">利用を開始する</button>
       <p class="status" id="gate-status" style="padding:8px 0 0;min-height:16px;"></p>
     </div>
-    <div id="gate-pending" style="display:none;text-align:center;padding:10px 0;">
-      <p style="font-weight:700;font-size:14px;margin:0 0 6px;">申請を受け付けました</p>
-      <p style="font-size:12px;color:var(--text-muted);margin:0;">入力されたお名前が名簿と一致しなかったため、教室の確認をお待ちください。<br>確認が済むと、このページが自動で切り替わります。</p>
-    
-    <button type="button" id="gate-retry" style="margin-top:12px;background:none;border:1px solid var(--border-strong);border-radius:8px;padding:8px 14px;font-size:13px;cursor:pointer;font-family:inherit;color:var(--text-primary);">お名前を入力し直す</button>
-  </div>
+    <div id="gate-pending" style="display:none;">
+      <div class="pending-icon">⏳</div>
+      <p class="pending-title">申請を受け付けました</p>
+      <p class="pending-desc">入力されたお名前が名簿と一致しなかったため、教室の確認をお待ちください。<br>確認が済むと、このページが自動で切り替わります。</p>
+      <button type="button" class="ghost-link" id="gate-retry">お名前を入力し直す</button>
+    </div>
   </div>
 
   <div id="main-content" style="display:none;">
   <div class="card">
     <label for="school-select">校舎を選択</label>
     <select id="school-select"><option value="">読み込み中…</option></select>
-    <p style="font-size:12px;background:#FFF4E0;border:1px solid #E0A83A;border-radius:8px;padding:9px 11px;color:#8A6A1F;margin:8px 0 0;">※「福井校(エリート)」は「坂井・福井校(エリート)」に統合されました。福井校(エリート)の選手の方は「坂井・福井校(エリート)」をお選びください。</p>
+    <p class="notice">※「福井校(エリート)」は「坂井・福井校(エリート)」に統合されました。福井校(エリート)の選手の方は「坂井・福井校(エリート)」をお選びください。</p>
   </div>
   <div class="card">
-    <div style="display:flex;gap:6px;margin-bottom:12px;">
+    <div class="view-toggle-row">
       <button class="vt-btn active" id="btn-view-list">一覧</button>
       <button class="vt-btn" id="btn-view-cal">カレンダー</button>
     </div>
@@ -208,7 +286,7 @@ function renderPcalGrid(){
     const MAX_TAGS = 3;
     const tags = occ.slice(0, MAX_TAGS).map(o =>
       `<div class="pcal-tag ${o.cancelled ? 'cancelled' : ''}">${escAttr(o.cancelled ? '中止' : (o.type || '予定'))}</div>`
-    ).join('') + (occ.length > MAX_TAGS ? `<div style="font-size:8px;color:var(--text-muted);font-weight:700;">+${occ.length - MAX_TAGS}件</div>` : '');
+    ).join('') + (occ.length > MAX_TAGS ? `<div style="font-size:8px;color:var(--ink-mute);font-weight:700;">+${occ.length - MAX_TAGS}件</div>` : '');
     const sel = dateStr === pcalSelectedDate ? ' selected' : '';
     html += `<div class="pcal-day${sel}" data-date="${dateStr}"><div class="pcal-num">${day}</div>${tags}</div>`;
   }
@@ -370,7 +448,7 @@ document.getElementById('gate-submit').addEventListener('click', async () => {
   const name = document.getElementById('gate-name').value.trim();
   if (!schoolId){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = '校舎を選択してください。'; return; }
   if (!name){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = '塾生のお名前を入力してください。'; return; }
-  statusEl.style.color = 'var(--text-secondary)';
+  statusEl.style.color = 'var(--ink-soft)';
   statusEl.textContent = '確認しています…';
   try {
     if (!auth.currentUser) await auth.signInAnonymously();
