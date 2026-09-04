@@ -482,6 +482,26 @@
         <p class="status" id="common-staff-status"></p>
       </div>
 
+      <div class="card">
+        <div class="btn-row" style="justify-content:space-between;align-items:center;margin-bottom:4px;">
+          <h2 style="font-size:15px;margin:0;">LINE通知の宛先</h2>
+          <button class="ghost-small" id="btn-line-reload">更新</button>
+        </div>
+        <p class="status" style="margin-top:0;color:var(--text-muted);">欠席連絡・保護者の承認待ちが発生した時に、LINEで個別に通知を受け取る人の一覧です。グループは使わず、1人ずつ直接届きます。</p>
+        <div class="scroll-y" style="margin-bottom:10px;">
+          <table class="mini-table">
+            <thead><tr><th>氏名(LINEの表示名)</th><th></th></tr></thead>
+            <tbody id="line-recipients-tbody"><tr><td colspan="2" class="status">「更新」を押すと読み込みます</td></tr></tbody>
+          </table>
+        </div>
+        <div class="btn-row">
+          <button class="primary" id="btn-line-capture-start" style="width:auto;">追加モードを開始</button>
+          <button class="ghost" id="btn-line-capture-stop" style="width:auto;display:none;">追加モードを終了</button>
+        </div>
+        <p class="status" id="line-capture-status" style="margin-top:8px;"></p>
+        <p class="status" style="color:var(--text-muted);">「追加モードを開始」を押した後、登録したい人がLINEで<b>公式アカウントに1対1で(グループではなく)</b>何かひとことメッセージを送ると、自動的にこの一覧に追加されます。何人でも続けて追加できます。終わったら「追加モードを終了」を押してください。</p>
+      </div>
+
       <div class="card" id="sysadmin-section" style="display:none;">
         <h2 style="font-size:15px;margin:0 0 4px;">システム管理者(最上位権限)</h2>
         <p class="status" style="margin-top:0;color:var(--text-muted);">すべての操作ができる権限です。安全のため<b>この画面からは追加・削除できません</b>。変更が必要な場合は Firebase コンソールの Firestore で <code>systemAdmins</code> を直接編集してください(乗っ取り時に権限を無限に増やされるのを防ぐための制限です)。</p>
@@ -540,6 +560,60 @@ const storage = firebase.storage();
 const schoolsRef = db.collection('schools');
 const hqAdminsRef = db.collection('hqAdmins');
 const systemAdminsRef = db.collection('systemAdmins');
+
+// ---- LINE通知の宛先管理(Apps Scriptを小さなAPIとして呼び出す) ----
+const LINE_HOOK_URL = 'https://script.google.com/macros/s/AKfycby0lmzmZ9ZoF22HauK3Mp5S6U9IsvXi8_rCbOP1IVUjRIaTWoUaaAcK3uzPN11KNVrk/exec';
+const LINE_HOOK_KEY = 'takuma-2026-xyz';
+async function callLineApi(payload){
+  const res = await fetch(LINE_HOOK_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(Object.assign({ key: LINE_HOOK_KEY }, payload))
+  });
+  return res.json();
+}
+async function loadLineRecipients(){
+  const tbody = document.getElementById('line-recipients-tbody');
+  tbody.innerHTML = '<tr><td colspan="2" class="status">読み込み中…</td></tr>';
+  try {
+    const data = await callLineApi({ type: 'listRecipients' });
+    if (!data || !data.ok) throw new Error('取得に失敗しました');
+    renderLineRecipients(data.recipients || []);
+    updateCaptureButtons(!!data.capturing);
+  } catch(e){
+    console.error(e);
+    tbody.innerHTML = '<tr><td colspan="2" class="status">読み込みに失敗しました: ' + escAttr(e.message) + '</td></tr>';
+  }
+}
+function renderLineRecipients(list){
+  const tbody = document.getElementById('line-recipients-tbody');
+  tbody.innerHTML = list.length === 0
+    ? '<tr><td colspan="2" class="status">まだ誰も登録されていません</td></tr>'
+    : list.map(r => `<tr><td>${escAttr(r.name)}</td><td><button class="link-danger" data-remove-line-recipient="${escAttr(r.id)}">削除</button></td></tr>`).join('');
+}
+function updateCaptureButtons(capturing){
+  document.getElementById('btn-line-capture-start').style.display = capturing ? 'none' : 'inline-block';
+  document.getElementById('btn-line-capture-stop').style.display = capturing ? 'inline-block' : 'none';
+  document.getElementById('line-capture-status').textContent = capturing ? '追加モード中です。対象者にLINEで公式アカウントへ直接メッセージを送ってもらってください。' : '';
+}
+document.getElementById('btn-line-reload').addEventListener('click', loadLineRecipients);
+document.getElementById('btn-line-capture-start').addEventListener('click', async () => {
+  try { const data = await callLineApi({ type: 'startCaptureUser' }); updateCaptureButtons(!!data.capturing); }
+  catch(e){ alert('開始に失敗しました: ' + e.message); }
+});
+document.getElementById('btn-line-capture-stop').addEventListener('click', async () => {
+  try { const data = await callLineApi({ type: 'stopCaptureUser' }); updateCaptureButtons(!!data.capturing); }
+  catch(e){ alert('終了に失敗しました: ' + e.message); }
+});
+document.getElementById('line-recipients-tbody').addEventListener('click', async (e) => {
+  const id = e.target.dataset.removeLineRecipient;
+  if (!id) return;
+  if (!confirm('この宛先を削除しますか？(以後この人には通知が届かなくなります)')) return;
+  try {
+    const data = await callLineApi({ type: 'removeRecipient', id });
+    renderLineRecipients(data.recipients || []);
+  } catch(err){ alert('削除に失敗しました: ' + err.message); }
+});
 
 let currentUser = null;
 let isSystemAdminUser = false;
@@ -1735,12 +1809,13 @@ function renderPendingBanner(count){
   }
 }
 
-document.getElementById('hq-pending-banner').addEventListener('click', () => {
+function goToParentApproval(){
   const tabBtn = document.querySelector('.tab-btn[data-tab="schools"]');
   if (tabBtn) tabBtn.click();
   const card = document.getElementById('hq-parent-access-card');
   if (card) card.scrollIntoView({ behavior:'smooth', block:'start' });
-});
+}
+document.getElementById('hq-pending-banner').addEventListener('click', goToParentApproval);
 
 let unsubParentViewers = null;
 function detachParentViewers(){
@@ -2200,6 +2275,10 @@ auth.onAuthStateChanged(async (user) => {
   loadParentViewers();
   attachAbsenceListeners();
   attachHQCalendarListeners();
+  // LINE通知のリンク(?goto=parentApproval)から開いた場合、承認待ち一覧まで自動で移動する
+  if (new URLSearchParams(window.location.search).get('goto') === 'parentApproval'){
+    setTimeout(goToParentApproval, 300);
+  }
 });
 </script>
 </body>
