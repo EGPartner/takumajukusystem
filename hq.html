@@ -562,7 +562,7 @@ const hqAdminsRef = db.collection('hqAdmins');
 const systemAdminsRef = db.collection('systemAdmins');
 
 // ---- LINE通知の宛先管理(Apps Scriptを小さなAPIとして呼び出す) ----
-const LINE_HOOK_URL = 'https://script.google.com/macros/s/AKfycby0lmzmZ9ZoF22HauK3Mp5S6U9IsvXi8_rCbOP1IVUjRIaTWoUaaAcK3uzPN11KNVrk/exec';
+const LINE_HOOK_URL = 'https://script.google.com/macros/s/AKfycbyI0km-LVtDkq1hJKyBI2Q9Y_4t8uQqERifa9XHCK9ypwHiw4N8kgpqw6Vz18WHWouS/exec';
 const LINE_HOOK_KEY = 'takuma-2026-xyz';
 async function callLineApi(payload){
   const res = await fetch(LINE_HOOK_URL, {

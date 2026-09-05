@@ -254,7 +254,7 @@ const db = firebase.firestore();
 
 // ---- LINEグループへの通知(Google Apps Script経由。承認待ちが発生した時) ----
 // 設置後、この2つに値を入れると通知が動き出す。空のままなら通知は行われない。absence-form.htmlと同じ値を使う。
-const LINE_HOOK_URL = 'https://script.google.com/macros/s/AKfycby0lmzmZ9ZoF22HauK3Mp5S6U9IsvXi8_rCbOP1IVUjRIaTWoUaaAcK3uzPN11KNVrk/exec';  // Apps Scriptのデプロイ先URL
+const LINE_HOOK_URL = 'https://script.google.com/macros/s/AKfycbyI0km-LVtDkq1hJKyBI2Q9Y_4t8uQqERifa9XHCK9ypwHiw4N8kgpqw6Vz18WHWouS/exec';  // Apps Scriptのデプロイ先URL
 const LINE_HOOK_KEY = 'takuma-2026-xyz';  // Apps Scriptに登録した SHARED_KEY と同じ文字列
 function notifyLine(payload){
   if (!LINE_HOOK_URL || !LINE_HOOK_KEY) return;
