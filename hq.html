@@ -4,86 +4,116 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>タクマ塾管理システム</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700;900&family=Noto+Sans+JP:wght@400;500;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#F6F6F1; --surface:#FFFFFF; --border:#E1E7E7; --border-strong:#C7D2D2;
-    --text-primary:#12181A; --text-secondary:#5B6668; --text-muted:#8A9799;
+    --bg:#F2F5F5; --surface:#FFFFFF; --surface-alt:#F6FAFA; --border:#E3EAEA; --border-strong:#CBD8D8;
+    --text-primary:#101B1D; --text-secondary:#586869; --text-muted:#94A3A4;
     --accent:#0FB8C4; --accent-dark:#0A8A93; --accent-bg:#E3F7F8;
-    --danger:#D6483F; --radius:14px;
+    --danger:#E0453A; --danger-bg:#FDECEA;
+    --radius:16px; --radius-sm:10px;
+    --shadow-sm:0 1px 2px rgba(16,27,29,.05);
+    --shadow-md:0 10px 30px -14px rgba(16,27,29,.20);
   }
-  *{box-sizing:border-box;}
-  body{margin:0;font-family:"Hiragino Sans","Yu Gothic",-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text-primary);line-height:1.6;}
-  .wrap{max-width:640px;margin:0 auto;padding:20px 16px 60px;}
-  header{margin-bottom:18px;}
-  header h1{font-size:19px;font-weight:700;margin:0 0 4px;}
-  header p{font-size:13px;color:var(--text-secondary);margin:0;}
-  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:16px;}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  @media (prefers-reduced-motion: reduce){*{animation-duration:.001ms !important;transition-duration:.001ms !important;}}
+  body{margin:0;font-family:'Noto Sans JP',"Hiragino Sans","Yu Gothic",-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text-primary);line-height:1.65;-webkit-font-smoothing:antialiased;}
+  h2{font-family:'Zen Kaku Gothic New',sans-serif;font-weight:700;text-wrap:balance;}
+  .wrap{max-width:880px;margin:0 auto;padding:20px 20px calc(72px + env(safe-area-inset-bottom));}
+  @media (min-width:900px){.wrap{padding:32px 32px calc(90px + env(safe-area-inset-bottom));}}
+  @media (max-width:380px){.wrap{padding-left:14px;padding-right:14px;} .card{padding:16px;} header{padding:12px 16px;}}
+  header{position:sticky;top:12px;z-index:30;background:rgba(255,255,255,.86);backdrop-filter:saturate(180%) blur(14px);-webkit-backdrop-filter:saturate(180%) blur(14px);border:1px solid var(--border);border-radius:var(--radius);padding:14px 20px;margin-bottom:20px;box-shadow:var(--shadow-md);}
+  header h1{font-family:'Zen Kaku Gothic New',sans-serif;font-size:18px;font-weight:900;margin:0 0 3px;letter-spacing:.01em;}
+  header p{font-size:12.5px;color:var(--text-secondary);margin:0;}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px;box-shadow:var(--shadow-sm);}
+  #login-card{max-width:420px;margin:40px auto 0;}
   .field{margin-bottom:14px;}
-  label{font-size:13px;color:var(--text-secondary);display:block;margin-bottom:5px;}
-  input[type=text],input[type=email],input[type=password]{width:100%;padding:10px 11px;border:1px solid var(--border-strong);border-radius:8px;font-size:16px;background:var(--surface);color:var(--text-primary);font-family:inherit;}
-  button{padding:10px 16px;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;}
-  button.primary{background:var(--accent);color:#fff;}
+  label{font-size:12.5px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:6px;letter-spacing:.01em;}
+  input[type=text],input[type=email],input[type=password],select,input[type=date],input[type=time],textarea{width:100%;padding:11px 13px;border:1px solid var(--border-strong);border-radius:var(--radius-sm);font-size:16px;background:var(--surface);color:var(--text-primary);font-family:inherit;transition:border-color .15s ease, box-shadow .15s ease;}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-bg);}
+  button{padding:12px 18px;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:transform .08s ease, box-shadow .15s ease, background .15s ease, border-color .15s ease, color .15s ease;}
+  button.primary{background:var(--accent);color:#fff;box-shadow:0 6px 16px -6px rgba(15,184,196,.55);}
+  button.primary:hover{background:var(--accent-dark);}
+  button.primary:active{transform:scale(.98);}
   button.ghost{background:none;border:1px solid var(--border-strong);color:var(--text-primary);}
+  button.ghost:hover{border-color:var(--accent);color:var(--accent-dark);}
   .btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;}
-  .status{font-size:13px;margin-top:10px;min-height:16px;}
-  .school-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border);gap:10px;}
+  .status{font-size:13px;margin-top:10px;min-height:16px;color:var(--text-secondary);}
+  .school-row{display:flex;justify-content:space-between;align-items:center;padding:14px 6px;border-bottom:1px solid var(--border);gap:10px;border-radius:10px;transition:background .15s ease;}
+  .school-row:hover{background:var(--surface-alt);}
   .school-row:last-child{border-bottom:none;}
-  .school-name{font-weight:700;font-size:14px;}
+  .school-name{font-family:'Zen Kaku Gothic New',sans-serif;font-weight:700;font-size:14.5px;}
   .school-meta{font-size:12px;color:var(--text-secondary);}
-  .empty{color:var(--text-muted);font-size:13px;text-align:center;padding:20px 0;}
-  .scroll-y{max-height:520px;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding-right:4px;}
-  .alert-banner{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;text-align:left;background:#FDECEA;border:1px solid var(--danger);border-radius:10px;padding:13px 16px;margin-bottom:16px;cursor:pointer;font-family:inherit;font-size:14px;color:var(--danger);font-weight:700;}
+  .empty{color:var(--text-muted);font-size:13px;text-align:center;padding:30px 16px;background:var(--surface-alt);border:1px dashed var(--border-strong);border-radius:var(--radius-sm);}
+  .scroll-y{max-height:520px;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding-right:4px;scrollbar-width:thin;scrollbar-color:var(--border-strong) transparent;}
+  .scroll-y::-webkit-scrollbar{width:8px;height:8px;}
+  .scroll-y::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:8px;}
+  .scroll-y::-webkit-scrollbar-track{background:transparent;}
+  .alert-banner{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;text-align:left;background:var(--danger-bg);border:1px solid #F3C6C1;border-radius:var(--radius-sm);padding:14px 18px;margin-bottom:16px;cursor:pointer;font-family:inherit;font-size:14px;color:var(--danger);font-weight:700;box-shadow:var(--shadow-sm);transition:box-shadow .15s ease;}
+  .alert-banner:hover{box-shadow:var(--shadow-md);}
   .alert-banner .ab-go{font-size:13px;white-space:nowrap;}
   .staff-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;}
-  .staff-chip{border:1px solid var(--border-strong);background:var(--surface);border-radius:20px;padding:5px 12px;font-size:12.5px;cursor:pointer;font-family:inherit;color:var(--text-primary);}
-  .staff-chip.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600;}
+  .staff-chip{border:1px solid var(--border-strong);background:var(--surface);border-radius:20px;padding:7px 14px;font-size:12.5px;cursor:pointer;font-family:inherit;color:var(--text-primary);transition:all .15s ease;}
+  .staff-chip.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600;box-shadow:0 4px 12px -4px rgba(15,184,196,.5);}
   .check-list{display:flex;flex-wrap:wrap;gap:8px;}
-  .check-list label{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border-strong);border-radius:20px;padding:7px 14px;font-size:13px;background:var(--surface);color:var(--text-primary);cursor:pointer;margin:0;}
+  .check-list label{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border-strong);border-radius:20px;padding:8px 15px;font-size:13px;background:var(--surface);color:var(--text-primary);cursor:pointer;margin:0;transition:all .15s ease;}
   .check-list label.checked{border-color:var(--accent);background:var(--accent-bg);color:var(--accent-dark);font-weight:600;}
   .check-list input{width:auto;margin:0;}
-  .kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;}
-  .kpi-box{border:1px solid var(--border);border-radius:10px;padding:10px 12px;background:var(--bg);}
-  .kpi-box .k{font-size:11px;color:var(--text-secondary);}
-  .kpi-box .v{font-size:20px;font-weight:700;}
-  .kpi-box .v small{font-size:12px;color:var(--text-secondary);font-weight:600;}
-  a.link-btn{font-size:13px;color:var(--accent-dark);text-decoration:none;border:1px solid var(--border-strong);padding:7px 12px;border-radius:8px;white-space:nowrap;}
-  .absence-row{padding:10px 0;border-bottom:1px solid var(--border);font-size:13px;}
+  .kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;}
+  .kpi-box{border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px;background:linear-gradient(180deg,var(--surface-alt),var(--surface));position:relative;overflow:hidden;}
+  .kpi-box::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent);}
+  .kpi-box .k{font-size:11px;color:var(--text-secondary);font-weight:600;letter-spacing:.02em;}
+  .kpi-box .v{font-family:'Outfit','Zen Kaku Gothic New',sans-serif;font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:2px;}
+  .kpi-box .v small{font-size:12px;color:var(--text-secondary);font-weight:600;font-family:'Noto Sans JP',sans-serif;}
+  a.link-btn{font-size:13px;color:var(--accent-dark);text-decoration:none;border:1px solid var(--border-strong);padding:8px 14px;border-radius:var(--radius-sm);white-space:nowrap;transition:all .15s ease;}
+  a.link-btn:hover{border-color:var(--accent);background:var(--accent-bg);}
+  .absence-row{padding:11px 0;border-bottom:1px solid var(--border);font-size:13px;}
   .absence-row:last-child{border-bottom:none;}
-  .badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:20px;background:var(--accent-bg);color:var(--accent-dark);font-weight:600;}
+  .badge{display:inline-block;font-size:11px;padding:3px 10px;border-radius:20px;background:var(--accent-bg);color:var(--accent-dark);font-weight:700;letter-spacing:.01em;}
   .badge.muted{background:#F0EFE9;color:var(--text-muted);}
-  .field{margin-bottom:14px;}
-  select, input[type=date], input[type=time], textarea{width:100%;padding:10px 11px;border:1px solid var(--border-strong);border-radius:8px;font-size:16px;background:var(--surface);color:var(--text-primary);font-family:inherit;}
-  .row2{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;}
-  .cal-row{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px;}
+  .row2{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;}
+  .cal-row{display:flex;gap:10px;align-items:flex-start;padding:11px 6px;border-bottom:1px solid var(--border);font-size:13px;border-radius:8px;transition:background .15s ease;}
+  .cal-row:hover{background:var(--surface-alt);}
   .cal-row:last-child{border-bottom:none;}
   .cal-row.cancelled{opacity:0.5;}
-  .cal-row .cr-date{width:56px;flex:0 0 56px;font-weight:700;}
-  .cal-row .cr-time{width:88px;flex:0 0 88px;color:var(--text-secondary);}
+  .cal-row .cr-date{width:56px;flex:0 0 56px;font-weight:700;font-family:'Outfit',sans-serif;}
+  .cal-row .cr-time{width:88px;flex:0 0 88px;color:var(--text-secondary);font-variant-numeric:tabular-nums;}
   .cal-row .cr-body{flex:1 1 auto;}
   .cal-row .cr-school{font-weight:700;color:var(--accent-dark);}
   .cal-row .cr-loc, .cal-row .cr-staff{color:var(--text-secondary);font-size:12px;}
   .cal-row .cr-actions{flex:0 0 auto;display:flex;flex-direction:column;gap:6px;}
   .checkbox-row{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
   .checkbox-row input{width:auto;}
-  .mini-table{width:100%;border-collapse:collapse;font-size:12px;}
-  .mini-table th,.mini-table td{padding:6px 5px;text-align:left;border-bottom:1px solid var(--border);}
-  .link-danger{background:none;border:none;color:var(--danger);font-size:12px;cursor:pointer;width:auto;padding:2px 4px;}
-  .ghost-small{padding:6px 10px;font-size:12px;width:auto;background:none;border:1px solid var(--border-strong);border-radius:6px;color:var(--text-primary);cursor:pointer;}
+  .mini-table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  .mini-table th,.mini-table td{padding:9px 6px;text-align:left;border-bottom:1px solid var(--border);}
+  .mini-table thead th{position:sticky;top:0;background:var(--surface);text-transform:uppercase;font-size:10.5px;letter-spacing:.04em;color:var(--text-secondary);font-weight:700;border-bottom:2px solid var(--border-strong);z-index:1;}
+  .mini-table tbody tr:nth-child(even){background:rgba(16,27,29,.02);}
+  .mini-table tbody tr:hover{background:var(--surface-alt);}
+  .link-danger{background:none;border:none;color:var(--danger);font-size:12px;cursor:pointer;width:auto;padding:4px 6px;font-weight:600;}
+  .link-danger:hover{text-decoration:underline;}
+  .ghost-small{padding:7px 12px;font-size:12px;width:auto;background:none;border:1px solid var(--border-strong);border-radius:8px;color:var(--text-primary);cursor:pointer;transition:all .15s ease;}
+  .ghost-small:hover{border-color:var(--accent);color:var(--accent-dark);}
   .ghost-small.hq-view-toggle.active{background:var(--accent);color:#fff;border-color:var(--accent);}
-  .hq-cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;}
-  .hq-cal-grid .hcg-head{font-size:10px;color:var(--text-secondary);text-align:center;padding:3px 0;font-weight:600;}
-  .hq-cal-day{border:1px solid var(--border);border-radius:6px;min-height:60px;padding:3px;font-size:10px;cursor:pointer;background:var(--surface);min-width:0;overflow:hidden;}
+  .hq-cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;}
+  .hq-cal-grid .hcg-head{font-size:10px;color:var(--text-secondary);text-align:center;padding:4px 0;font-weight:700;letter-spacing:.02em;}
+  .hq-cal-day{border:1px solid var(--border);border-radius:8px;min-height:62px;padding:4px;font-size:10px;cursor:pointer;background:var(--surface);min-width:0;overflow:hidden;transition:all .15s ease;}
+  .hq-cal-day:hover{border-color:var(--accent);box-shadow:var(--shadow-sm);}
   .hcd-more{font-size:9px;color:var(--text-muted);font-weight:700;}
   .hq-cal-day.empty-cell{border:none;background:none;cursor:default;}
-  .hq-cal-day.selected{border-color:var(--accent);background:var(--accent-bg);}
-  .hq-cal-day .hcd-num{font-weight:700;margin-bottom:2px;}
-  .hq-cal-day .hcd-tag{font-size:8.5px;font-weight:700;line-height:1.4;padding:1px 3px;border-radius:3px;background:var(--accent);color:#fff;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .hq-cal-day.empty-cell:hover{border:none;box-shadow:none;}
+  .hq-cal-day.selected{border-color:var(--accent);background:var(--accent-bg);box-shadow:0 0 0 2px var(--accent-bg);}
+  .hq-cal-day .hcd-num{font-weight:700;margin-bottom:2px;font-family:'Outfit',sans-serif;}
+  .hq-cal-day .hcd-tag{font-size:8.5px;font-weight:700;line-height:1.4;padding:2px 4px;border-radius:4px;background:var(--accent);color:#fff;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .hq-cal-day .hcd-tag.cancelled{background:#EEECE4;color:var(--text-muted);text-decoration:line-through;}
-  .tabs{display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:18px;flex-wrap:wrap;}
-  .tab-btn{padding:11px 14px;font-size:13.5px;font-weight:600;background:none;border:none;color:var(--text-secondary);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;font-family:inherit;width:auto;border-radius:0;}
-  .tab-btn.active{color:var(--accent-dark);border-bottom-color:var(--accent);}
+  .tabs{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;}
+  .tab-btn{padding:10px 18px;font-size:13.5px;font-weight:700;background:var(--surface);border:1px solid var(--border-strong);border-radius:20px;color:var(--text-secondary);cursor:pointer;white-space:nowrap;font-family:inherit;width:auto;transition:all .15s ease;}
+  .tab-btn:hover{border-color:var(--accent);color:var(--accent-dark);}
+  .tab-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:0 6px 16px -8px rgba(15,184,196,.6);}
   .tab-panel{display:none;}
-  .tab-panel.active{display:block;}
+  .tab-panel.active{display:block;animation:hqfadein .2s ease;}
+  @keyframes hqfadein{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
 </style>
 </head>
 <body>
@@ -482,26 +512,6 @@
         <p class="status" id="common-staff-status"></p>
       </div>
 
-      <div class="card">
-        <div class="btn-row" style="justify-content:space-between;align-items:center;margin-bottom:4px;">
-          <h2 style="font-size:15px;margin:0;">LINE通知の宛先</h2>
-          <button class="ghost-small" id="btn-line-reload">更新</button>
-        </div>
-        <p class="status" style="margin-top:0;color:var(--text-muted);">欠席連絡・保護者の承認待ちが発生した時に、LINEで個別に通知を受け取る人の一覧です。グループは使わず、1人ずつ直接届きます。</p>
-        <div class="scroll-y" style="margin-bottom:10px;">
-          <table class="mini-table">
-            <thead><tr><th>氏名(LINEの表示名)</th><th></th></tr></thead>
-            <tbody id="line-recipients-tbody"><tr><td colspan="2" class="status">「更新」を押すと読み込みます</td></tr></tbody>
-          </table>
-        </div>
-        <div class="btn-row">
-          <button class="primary" id="btn-line-capture-start" style="width:auto;">追加モードを開始</button>
-          <button class="ghost" id="btn-line-capture-stop" style="width:auto;display:none;">追加モードを終了</button>
-        </div>
-        <p class="status" id="line-capture-status" style="margin-top:8px;"></p>
-        <p class="status" style="color:var(--text-muted);">「追加モードを開始」を押した後、登録したい人がLINEで<b>公式アカウントに1対1で(グループではなく)</b>何かひとことメッセージを送ると、自動的にこの一覧に追加されます。何人でも続けて追加できます。終わったら「追加モードを終了」を押してください。</p>
-      </div>
-
       <div class="card" id="sysadmin-section" style="display:none;">
         <h2 style="font-size:15px;margin:0 0 4px;">システム管理者(最上位権限)</h2>
         <p class="status" style="margin-top:0;color:var(--text-muted);">すべての操作ができる権限です。安全のため<b>この画面からは追加・削除できません</b>。変更が必要な場合は Firebase コンソールの Firestore で <code>systemAdmins</code> を直接編集してください(乗っ取り時に権限を無限に増やされるのを防ぐための制限です)。</p>
@@ -537,6 +547,20 @@
   </div>
 </div>
 
+<div id="hq-add-student-modal" style="display:none;position:fixed;inset:0;background:rgba(18,24,26,0.45);z-index:100;align-items:center;justify-content:center;padding:20px;">
+  <div class="card" style="max-width:420px;width:100%;margin:0;">
+    <h2 style="margin:0 0 4px;">名簿に追加</h2>
+    <p class="status" style="margin-top:0;" id="hq-as-school-label"></p>
+    <div class="field"><label for="hq-as-name">氏名</label><input type="text" id="hq-as-name"></div>
+    <div class="field"><label for="hq-as-grade">学年</label><select id="hq-as-grade"></select></div>
+    <p class="status" id="hq-as-status" style="min-height:16px;"></p>
+    <div class="btn-row">
+      <button class="ghost" id="hq-as-btn-cancel">キャンセル</button>
+      <button class="primary" id="hq-as-btn-submit">名簿に追加する</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -561,59 +585,20 @@ const schoolsRef = db.collection('schools');
 const hqAdminsRef = db.collection('hqAdmins');
 const systemAdminsRef = db.collection('systemAdmins');
 
-// ---- LINE通知の宛先管理(Apps Scriptを小さなAPIとして呼び出す) ----
+// 保護者の承認が完了したことを、LINE連携ずみの本人にだけ知らせる(absence-form.html等と同じApps Script宛先)
 const LINE_HOOK_URL = 'https://script.google.com/macros/s/AKfycbyI0km-LVtDkq1hJKyBI2Q9Y_4t8uQqERifa9XHCK9ypwHiw4N8kgpqw6Vz18WHWouS/exec';
 const LINE_HOOK_KEY = 'takuma-2026-xyz';
-async function callLineApi(payload){
-  const res = await fetch(LINE_HOOK_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify(Object.assign({ key: LINE_HOOK_KEY }, payload))
-  });
-  return res.json();
-}
-async function loadLineRecipients(){
-  const tbody = document.getElementById('line-recipients-tbody');
-  tbody.innerHTML = '<tr><td colspan="2" class="status">読み込み中…</td></tr>';
+function notifyLineApproved(lineUserId, name){
+  if (!LINE_HOOK_URL || !LINE_HOOK_KEY || !lineUserId) return;
   try {
-    const data = await callLineApi({ type: 'listRecipients' });
-    if (!data || !data.ok) throw new Error('取得に失敗しました');
-    renderLineRecipients(data.recipients || []);
-    updateCaptureButtons(!!data.capturing);
-  } catch(e){
-    console.error(e);
-    tbody.innerHTML = '<tr><td colspan="2" class="status">読み込みに失敗しました: ' + escAttr(e.message) + '</td></tr>';
-  }
+    fetch(LINE_HOOK_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ key: LINE_HOOK_KEY, type: 'approved', lineUserId, name })
+    }).catch(e => console.error('LINE通知に失敗', e));
+  } catch(e){ console.error('LINE通知に失敗', e); }
 }
-function renderLineRecipients(list){
-  const tbody = document.getElementById('line-recipients-tbody');
-  tbody.innerHTML = list.length === 0
-    ? '<tr><td colspan="2" class="status">まだ誰も登録されていません</td></tr>'
-    : list.map(r => `<tr><td>${escAttr(r.name)}</td><td><button class="link-danger" data-remove-line-recipient="${escAttr(r.id)}">削除</button></td></tr>`).join('');
-}
-function updateCaptureButtons(capturing){
-  document.getElementById('btn-line-capture-start').style.display = capturing ? 'none' : 'inline-block';
-  document.getElementById('btn-line-capture-stop').style.display = capturing ? 'inline-block' : 'none';
-  document.getElementById('line-capture-status').textContent = capturing ? '追加モード中です。対象者にLINEで公式アカウントへ直接メッセージを送ってもらってください。' : '';
-}
-document.getElementById('btn-line-reload').addEventListener('click', loadLineRecipients);
-document.getElementById('btn-line-capture-start').addEventListener('click', async () => {
-  try { const data = await callLineApi({ type: 'startCaptureUser' }); updateCaptureButtons(!!data.capturing); }
-  catch(e){ alert('開始に失敗しました: ' + e.message); }
-});
-document.getElementById('btn-line-capture-stop').addEventListener('click', async () => {
-  try { const data = await callLineApi({ type: 'stopCaptureUser' }); updateCaptureButtons(!!data.capturing); }
-  catch(e){ alert('終了に失敗しました: ' + e.message); }
-});
-document.getElementById('line-recipients-tbody').addEventListener('click', async (e) => {
-  const id = e.target.dataset.removeLineRecipient;
-  if (!id) return;
-  if (!confirm('この宛先を削除しますか？(以後この人には通知が届かなくなります)')) return;
-  try {
-    const data = await callLineApi({ type: 'removeRecipient', id });
-    renderLineRecipients(data.recipients || []);
-  } catch(err){ alert('削除に失敗しました: ' + err.message); }
-});
 
 let currentUser = null;
 let isSystemAdminUser = false;
@@ -1857,18 +1842,24 @@ function renderParentViewers(snap){
             + '<td>' + escAttr(v.studentName || '-') + '</td>'
             + '<td>' + escAttr(schoolsMap[v.schoolId] || v.schoolId || '-') + '</td>'
             + '<td>' + escAttr(viewerDateLabel(v)) + '</td>'
-            + '<td style="white-space:nowrap;"><button class="ghost-small" data-approve-viewer="' + escAttr(d.id) + '">承認</button> <button class="link-danger" data-del-viewer="' + escAttr(d.id) + '">却下</button></td>'
+            + '<td style="white-space:nowrap;"><button class="ghost-small" data-approve-viewer="' + escAttr(d.id) + '" data-line-user-id="' + escAttr(v.lineUserId || '') + '" data-student-name="' + escAttr(v.studentName || '') + '">承認</button> <button class="link-danger" data-del-viewer="' + escAttr(d.id) + '">却下</button></td>'
             + '</tr>';
         }).join('');
     viewersTbody.innerHTML = approved.length === 0
       ? '<tr><td colspan="4" class="status">まだ登録がありません</td></tr>'
       : approved.map(d => {
           const v = d.data();
+          let rosterAction = '';
+          if (v.approvedManually){
+            rosterAction = v.rosterAdded
+              ? '<span class="badge muted">名簿追加済み</span> '
+              : '<button class="ghost-small" data-add-roster="' + escAttr(d.id) + '" data-school="' + escAttr(v.schoolId || '') + '" data-name="' + escAttr(v.studentName || '') + '">名簿に追加</button> ';
+          }
           return '<tr>'
             + '<td>' + escAttr(v.studentName || '-') + '</td>'
             + '<td>' + escAttr(schoolsMap[v.schoolId] || v.schoolId || '-') + '</td>'
             + '<td>' + escAttr(viewerDateLabel(v)) + '</td>'
-            + '<td><button class="link-danger" data-del-viewer="' + escAttr(d.id) + '">取り消し</button></td>'
+            + '<td style="white-space:nowrap;">' + rosterAction + '<button class="link-danger" data-del-viewer="' + escAttr(d.id) + '">取り消し</button></td>'
             + '</tr>';
         }).join('');
   }
@@ -1878,8 +1869,14 @@ async function handleViewerAction(e){
   const approveUid = e.target.dataset.approveViewer;
   if (approveUid){
     try {
-      await db.collection('parentViewers').doc(approveUid).update({ status: 'approved' });
+      await db.collection('parentViewers').doc(approveUid).update({ status: 'approved', approvedManually: true });
+      notifyLineApproved(e.target.dataset.lineUserId, e.target.dataset.studentName);
     } catch(err){ alert('承認に失敗しました: ' + err.message); }
+    return;
+  }
+  const addRosterUid = e.target.dataset.addRoster;
+  if (addRosterUid){
+    openAddStudentModal(addRosterUid, e.target.dataset.school, e.target.dataset.name);
     return;
   }
   const delUid = e.target.dataset.delViewer;
@@ -1892,6 +1889,53 @@ async function handleViewerAction(e){
 }
 document.getElementById('hq-pending-tbody').addEventListener('click', handleViewerAction);
 document.getElementById('hq-viewers-tbody').addEventListener('click', handleViewerAction);
+
+// ---- 承認待ちだった申請を、そのまま塾生名簿に追加する ----
+let addStudentCtx = null;
+function gradeLabelHQ(g){
+  if (g <= 6) return '小' + g;
+  return '中' + (g - 6);
+}
+function openAddStudentModal(viewerId, schoolId, name){
+  addStudentCtx = { viewerId, schoolId };
+  document.getElementById('hq-as-school-label').textContent = (schoolsMap[schoolId] || schoolId || '-') + ' の名簿に追加します';
+  document.getElementById('hq-as-name').value = name || '';
+  const gradeSel = document.getElementById('hq-as-grade');
+  gradeSel.innerHTML = Array.from({length:9}, (_,i) => i+1).map(g => '<option value="' + g + '">' + gradeLabelHQ(g) + '</option>').join('');
+  gradeSel.value = '1';
+  document.getElementById('hq-as-status').textContent = '';
+  document.getElementById('hq-add-student-modal').style.display = 'flex';
+}
+function closeAddStudentModal(){
+  document.getElementById('hq-add-student-modal').style.display = 'none';
+  addStudentCtx = null;
+}
+async function confirmAddStudent(){
+  if (!addStudentCtx) return;
+  const statusEl = document.getElementById('hq-as-status');
+  const name = document.getElementById('hq-as-name').value.trim();
+  const grade = Number(document.getElementById('hq-as-grade').value);
+  if (!name){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = '氏名を入力してください。'; return; }
+  statusEl.style.color = 'var(--text-secondary)';
+  statusEl.textContent = '追加しています…';
+  const now = new Date();
+  const fy = (now.getMonth() + 1) >= 4 ? now.getFullYear() : now.getFullYear() - 1;
+  const id = 'id_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,7);
+  try {
+    await db.collection('academies').doc(addStudentCtx.schoolId).collection('students').doc(id)
+      .set({ id, name, trial:false, gradeRef:grade, gradeRefFY:fy, months:{}, growth:{} });
+    await db.collection('parentViewers').doc(addStudentCtx.viewerId).update({ rosterAdded: true });
+    closeAddStudentModal();
+  } catch(err){
+    statusEl.style.color = 'var(--danger)';
+    statusEl.textContent = '追加に失敗しました: ' + err.message;
+  }
+}
+document.getElementById('hq-as-btn-cancel').addEventListener('click', closeAddStudentModal);
+document.getElementById('hq-as-btn-submit').addEventListener('click', confirmAddStudent);
+document.getElementById('hq-add-student-modal').addEventListener('click', (e) => {
+  if (e.target.id === 'hq-add-student-modal') closeAddStudentModal();
+});
 document.getElementById('hq-btn-reload-viewers').addEventListener('click', loadParentViewers);
 
 // ---- 予定の一括削除(テストデータ整理用) ----
