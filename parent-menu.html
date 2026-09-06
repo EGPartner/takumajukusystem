@@ -297,28 +297,26 @@ const LINE_LOGIN_REDIRECT_URI = LINE_HOOK_URL;  // Apps ScriptのURL(欠席通�
 
 function startLineLink(){
   if (!LINE_LOGIN_CHANNEL_ID){ alert('LINE連携がまだ設定されていません。管理者にご確認ください。'); return; }
-  const state = 'lk_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,10);
-  try { sessionStorage.setItem('line_link_state', state); } catch(e){}
   const url = 'https://access.line.me/oauth2/v2.1/authorize'
     + '?response_type=code'
     + '&client_id=' + encodeURIComponent(LINE_LOGIN_CHANNEL_ID)
     + '&redirect_uri=' + encodeURIComponent(LINE_LOGIN_REDIRECT_URI)
-    + '&state=' + encodeURIComponent(state)
+    + '&state=' + Date.now().toString(36)
     + '&scope=' + encodeURIComponent('profile');
   window.location.href = url;
 }
 
+// LINEアプリへの一時的な切り替えを挟むため、スマートフォンのブラウザではsessionStorageが
+// リセットされることがある。そのため状態確認(state)はApps Script側の照合のみに任せ、
+// ここでは戻ってきたlineUserIdの有無だけで判定する。
 async function checkLineLinkReturn(){
   const params = new URLSearchParams(window.location.search);
   const lineUserId = params.get('lineUserId');
   const lineError = params.get('lineError');
-  const state = params.get('state');
   if (!lineUserId && !lineError) return;
   window.history.replaceState({}, '', window.location.origin + window.location.pathname);
   const statusEl = document.getElementById('line-link-status');
-  let savedState = null;
-  try { savedState = sessionStorage.getItem('line_link_state'); } catch(e){}
-  if (lineError || !state || state !== savedState){
+  if (lineError || !lineUserId){
     if (statusEl){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = 'LINE連携に失敗しました。もう一度お試しください。'; }
     return;
   }
