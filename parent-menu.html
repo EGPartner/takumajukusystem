@@ -293,7 +293,9 @@ function notifyLine(payload){
 // ---- LINEログイン連携(承認されたことをLINEで個別に通知するための任意設定) ----
 // 「設定手順」に沿ってLINE Loginチャネルを作成し、そのチャネルIDをここに入れると使えるようになる。
 const LINE_LOGIN_CHANNEL_ID = '2011469206';  // LINE Developersの「LINEログイン」チャネルのチャネルID
-const LINE_LOGIN_REDIRECT_URI = LINE_HOOK_URL;  // Apps ScriptのURL(欠席通知と同じもの)をコールバック先として使う
+// コールバック先は、このページ自身にする(Apps Scriptの画面を経由すると、LINEアプリ内ブラウザ等で
+// 正しく表示できないことがあるため)。Apps Scriptへは裏側のfetchでコード交換だけ依頼する。
+const LINE_LOGIN_REDIRECT_URI = 'https://egpartner.github.io/takumajukusystem/parent-menu.html';
 
 function startLineLink(){
   if (!LINE_LOGIN_CHANNEL_ID){ alert('LINE連携がまだ設定されていません。管理者にご確認ください。'); return; }
@@ -306,29 +308,25 @@ function startLineLink(){
   window.location.href = url;
 }
 
-// LINEアプリへの一時的な切り替えを挟むため、スマートフォンのブラウザではsessionStorageが
-// リセットされることがある。そのため状態確認(state)はApps Script側の照合のみに任せ、
-// ここでは戻ってきたlineUserIdの有無だけで判定する。
 async function checkLineLinkReturn(){
   const params = new URLSearchParams(window.location.search);
-  const lineUserId = params.get('lineUserId');
-  const lineError = params.get('lineError');
-  if (!lineUserId && !lineError) return;
+  const code = params.get('code');
+  if (!code) return;
   window.history.replaceState({}, '', window.location.origin + window.location.pathname);
   const statusEl = document.getElementById('line-link-status');
-  if (lineError || !lineUserId){
-    if (statusEl){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = 'LINE連携に失敗しました。もう一度お試しください。'; }
-    return;
-  }
+  if (statusEl){ statusEl.style.color = 'var(--ink-soft)'; statusEl.textContent = 'LINE連携を確認しています…'; }
   try {
+    const res = await fetch(LINE_HOOK_URL + '?code=' + encodeURIComponent(code));
+    const data = await res.json();
+    if (!data.ok || !data.lineUserId) throw new Error('連携に失敗しました');
     const user = await ensureAnon();
-    await db.collection('parentViewers').doc(user.uid).update({ lineUserId });
+    await db.collection('parentViewers').doc(user.uid).update({ lineUserId: data.lineUserId });
     if (statusEl){ statusEl.style.color = 'var(--accent-deep)'; statusEl.textContent = '✓ LINE連携が完了しました。承認されると通知が届きます。'; }
     const btn = document.getElementById('btn-line-link');
     if (btn){ btn.disabled = true; btn.textContent = '✓ LINE連携ずみ'; }
   } catch(e){
     console.error(e);
-    if (statusEl){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = '保存に失敗しました: ' + e.message; }
+    if (statusEl){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = 'LINE連携に失敗しました。もう一度お試しください。'; }
   }
 }
 
