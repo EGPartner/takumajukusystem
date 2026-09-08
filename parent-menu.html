@@ -297,8 +297,22 @@ const LINE_LOGIN_CHANNEL_ID = '2011469206';  // LINE Developersの「LINEログ�
 // 正しく表示できないことがあるため)。Apps Scriptへは裏側のfetchでコード交換だけ依頼する。
 const LINE_LOGIN_REDIRECT_URI = 'https://egpartner.github.io/takumajukusystem/parent-menu.html';
 
+// LINEアプリ内の簡易ブラウザ(トークからリンクを開いた時など)は、LINEアプリとの行き来がうまく
+//戻らないことがあるため、この機能だけは外部ブラウザ(Safari/Chrome等)での利用をお願いする。
+function isLineInAppBrowser(){
+  return /\bLine\//i.test(navigator.userAgent);
+}
+
 function startLineLink(){
   if (!LINE_LOGIN_CHANNEL_ID){ alert('LINE連携がまだ設定されていません。管理者にご確認ください。'); return; }
+  if (isLineInAppBrowser()){
+    const statusEl = document.getElementById('line-link-status');
+    if (statusEl){
+      statusEl.style.color = 'var(--danger)';
+      statusEl.textContent = 'LINEアプリ内のブラウザでは連携できません。画面右上の「…」メニューから「他のブラウザで開く」を選び、Safari(またはChrome)で開き直してから、もう一度お試しください。';
+    }
+    return;
+  }
   const url = 'https://access.line.me/oauth2/v2.1/authorize'
     + '?response_type=code'
     + '&client_id=' + encodeURIComponent(LINE_LOGIN_CHANNEL_ID)
