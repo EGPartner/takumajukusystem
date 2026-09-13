@@ -304,7 +304,22 @@ document.getElementById('btn-notify-email').addEventListener('click', async () =
 
 // ---- 塾生名簿との照合による関門(塾生家庭以外の閲覧を防ぐ) ----
 function normalizeName(n){ return String(n || '').replace(/[\s　・･]/g, ''); }
+// ページを開いた直後は、Firebaseが「以前ログインした状態」を復元し終えるまで一瞬の空白がある。
+// この間に signInAnonymously() を呼んでしまうと、復元前の一瞬だけ別の(新しい)アカウントを
+// 作ってしまい、直前に保存したはずのデータと食い違うことがあった。そのため、最初の1回だけ
+// 復元が終わるのを待ってから判断する。
+let authReadyPromise = null;
+function waitForAuthReady(){
+  if (!authReadyPromise){
+    authReadyPromise = new Promise(resolve => {
+      const unsub = auth.onAuthStateChanged(user => { unsub(); resolve(user); });
+    });
+  }
+  return authReadyPromise;
+}
 async function ensureAnon(){
+  const restoredUser = await waitForAuthReady();
+  if (restoredUser) return restoredUser;
   if (auth.currentUser) return auth.currentUser;
   const cred = await auth.signInAnonymously();
   return cred.user;
