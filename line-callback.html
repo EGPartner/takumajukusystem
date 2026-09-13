@@ -10,7 +10,7 @@
 // このページはLINEログインのコールバック専用(ポップアップ窓の中でだけ開かれる)。
 // Firebaseは一切読み込まない。parent-menu.html側のFirebase認証と競合させないため。
 (async function(){
-  var LINE_HOOK_URL = 'https://script.google.com/macros/s/AKfycbyI0km-LVtDkq1hJKyBI2Q9Y_4t8uQqERifa9XHCK9ypwHiw4N8kgpqw6Vz18WHWouS/exec';
+  var LINE_HOOK_URL = 'https://script.google.com/macros/s/AKfycbw2iDqtyycsiUNLALl7PvTedMzgQ1d4YKddizYtJafSP9y6FDeIPDMB8ZadP1lCIkht/exec';
   var params = new URLSearchParams(window.location.search);
   var code = params.get('code');
   var result = { type: 'lineLinkResult', ok: false, lineUserId: '' };

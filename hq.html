@@ -586,7 +586,7 @@ const hqAdminsRef = db.collection('hqAdmins');
 const systemAdminsRef = db.collection('systemAdmins');
 
 // 保護者の承認が完了したことを、LINE連携ずみの本人にだけ知らせる(absence-form.html等と同じApps Script宛先)
-const LINE_HOOK_URL = 'https://script.google.com/macros/s/AKfycbyI0km-LVtDkq1hJKyBI2Q9Y_4t8uQqERifa9XHCK9ypwHiw4N8kgpqw6Vz18WHWouS/exec';
+const LINE_HOOK_URL = 'https://script.google.com/macros/s/AKfycbw2iDqtyycsiUNLALl7PvTedMzgQ1d4YKddizYtJafSP9y6FDeIPDMB8ZadP1lCIkht/exec';
 const LINE_HOOK_KEY = 'takuma-2026-xyz';
 function notifyLineApproved(lineUserId, name){
   if (!LINE_HOOK_URL || !LINE_HOOK_KEY || !lineUserId) return;
