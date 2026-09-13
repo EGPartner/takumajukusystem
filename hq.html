@@ -585,19 +585,19 @@ const schoolsRef = db.collection('schools');
 const hqAdminsRef = db.collection('hqAdmins');
 const systemAdminsRef = db.collection('systemAdmins');
 
-// 保護者の承認が完了したことを、LINE連携ずみの本人にだけ知らせる(absence-form.html等と同じApps Script宛先)
+// 保護者の承認が完了したことを、メール登録ずみの本人にだけ知らせる(absence-form.html等と同じApps Script宛先)
 const LINE_HOOK_URL = 'https://script.google.com/macros/s/AKfycbw2iDqtyycsiUNLALl7PvTedMzgQ1d4YKddizYtJafSP9y6FDeIPDMB8ZadP1lCIkht/exec';
 const LINE_HOOK_KEY = 'takuma-2026-xyz';
-function notifyLineApproved(lineUserId, name){
-  if (!LINE_HOOK_URL || !LINE_HOOK_KEY || !lineUserId) return;
+function notifyApprovedByEmail(email, name){
+  if (!LINE_HOOK_URL || !LINE_HOOK_KEY || !email) return;
   try {
     fetch(LINE_HOOK_URL, {
       method: 'POST',
       mode: 'no-cors',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ key: LINE_HOOK_KEY, type: 'approved', lineUserId, name })
-    }).catch(e => console.error('LINE通知に失敗', e));
-  } catch(e){ console.error('LINE通知に失敗', e); }
+      body: JSON.stringify({ key: LINE_HOOK_KEY, type: 'approvedEmail', email, name })
+    }).catch(e => console.error('承認メール通知に失敗', e));
+  } catch(e){ console.error('承認メール通知に失敗', e); }
 }
 
 let currentUser = null;
@@ -1842,7 +1842,7 @@ function renderParentViewers(snap){
             + '<td>' + escAttr(v.studentName || '-') + '</td>'
             + '<td>' + escAttr(schoolsMap[v.schoolId] || v.schoolId || '-') + '</td>'
             + '<td>' + escAttr(viewerDateLabel(v)) + '</td>'
-            + '<td style="white-space:nowrap;"><button class="ghost-small" data-approve-viewer="' + escAttr(d.id) + '" data-line-user-id="' + escAttr(v.lineUserId || '') + '" data-student-name="' + escAttr(v.studentName || '') + '">承認</button> <button class="link-danger" data-del-viewer="' + escAttr(d.id) + '">却下</button></td>'
+            + '<td style="white-space:nowrap;"><button class="ghost-small" data-approve-viewer="' + escAttr(d.id) + '">承認</button> <button class="link-danger" data-del-viewer="' + escAttr(d.id) + '">却下</button></td>'
             + '</tr>';
         }).join('');
     viewersTbody.innerHTML = approved.length === 0
@@ -1873,7 +1873,7 @@ async function handleViewerAction(e){
       const snap = await docRef.get();
       const data = snap.data() || {};
       await docRef.update({ status: 'approved', approvedManually: true });
-      notifyLineApproved(data.lineUserId, data.studentName);
+      notifyApprovedByEmail(data.notifyEmail, data.studentName);
     } catch(err){ alert('承認に失敗しました: ' + err.message); }
     return;
   }

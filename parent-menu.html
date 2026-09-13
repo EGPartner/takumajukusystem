@@ -119,6 +119,7 @@
     transition:transform 0.12s, box-shadow 0.12s;
   }
   button.primary:active{transform:translateY(1px);box-shadow:0 6px 14px -8px rgba(10,97,105,0.5);}
+  button.primary[disabled]{opacity:0.55;cursor:default;}
 
   button.ghost-link{
     display:block;
@@ -133,26 +134,6 @@
     text-decoration:underline;
     text-underline-offset:3px;
   }
-
-  button.line-connect-btn{
-    width:100%;
-    display:flex;align-items:center;justify-content:center;gap:8px;
-    text-align:center;
-    background:#06C755;
-    border:none;
-    color:#fff;
-    font-weight:700;
-    font-family:inherit;
-    cursor:pointer;
-    font-size:14px;
-    padding:13px;
-    border-radius:12px;
-    margin-top:16px;
-    box-shadow:0 8px 18px -10px rgba(6,199,85,0.55);
-    transition:transform 0.12s, box-shadow 0.12s;
-  }
-  button.line-connect-btn:active{transform:translateY(1px);}
-  button.line-connect-btn[disabled]{opacity:0.55;cursor:default;}
 
   .status-line{font-size:12.5px;text-align:center;margin:14px 0 0;min-height:16px;color:var(--ink-mute);}
 
@@ -223,8 +204,12 @@
       <div class="pending-icon">⏳</div>
       <p class="pending-title">申請を受け付けました</p>
       <p class="pending-desc">入力されたお名前が名簿と一致しなかったため、教室で確認しています。通常は当日中にご案内できるよう対応しております。<br>確認が済むと、このページが自動で切り替わります。</p>
-      <button type="button" class="line-connect-btn" id="btn-line-link">LINEで承認の通知を受け取る(任意)</button>
-      <p class="status-line" id="line-link-status"></p>
+      <div class="field" style="margin-top:16px;text-align:left;">
+        <label for="notify-email">承認された時にメールで知らせてほしい方は、メールアドレスを入力してください(任意)</label>
+        <input type="text" id="notify-email" placeholder="例: yamada@example.com">
+      </div>
+      <button type="button" class="primary" id="btn-notify-email">このメールアドレスに通知してもらう</button>
+      <p class="status-line" id="notify-email-status"></p>
       <button type="button" class="ghost-link" id="gate-retry">お名前を入力し直す</button>
     </div>
   </div>
@@ -290,67 +275,30 @@ function notifyLine(payload){
   } catch(e){ console.error('LINE通知に失敗', e); }
 }
 
-// ---- LINEログイン連携(承認されたことをLINEで個別に通知するための任意設定) ----
-// 「設定手順」に沿ってLINE Loginチャネルを作成し、そのチャネルIDをここに入れると使えるようになる。
-const LINE_LOGIN_CHANNEL_ID = '2011469206';  // LINE Developersの「LINEログイン」チャネルのチャネルID
-// コールバック先は、Firebaseを読み込まない専用の小さなページ(line-callback.html)にする。
-// このページ自身をコールバック先にすると、ポップアップ側でもFirebaseが初期化されてしまい、
-// 元のページの認証情報と競合して消えてしまうことがあったため。
-const LINE_LOGIN_REDIRECT_URI = 'https://egpartner.github.io/takumajukusystem/line-callback.html';
-
-// LINEアプリ内の簡易ブラウザ(トークからリンクを開いた時など)は、LINEアプリとの行き来がうまく
-//戻らないことがあるため、この機能だけは外部ブラウザ(Safari/Chrome等)での利用をお願いする。
-function isLineInAppBrowser(){
-  return /\bLine\//i.test(navigator.userAgent);
+// ---- 承認されたことをメールで個別に知らせるための任意設定 ----
+function isValidEmail(v){
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 }
-
-// SafariのITP(トラッキング防止機能)は、外部サイト(LINE)を経由してページ全体が移動して戻ってくると、
-// このサイトのログイン情報を消してしまうことがある。そのため、LINEの画面は別窓(ポップアップ)で開き、
-// 元のページ(このページ)自体は移動させない。ポップアップ側から結果だけをpostMessageで受け取る。
-let lineLinkPopup = null;
-
-function startLineLink(){
-  if (!LINE_LOGIN_CHANNEL_ID){ alert('LINE連携がまだ設定されていません。管理者にご確認ください。'); return; }
-  if (isLineInAppBrowser()){
-    const statusEl = document.getElementById('line-link-status');
-    if (statusEl){
-      statusEl.style.color = 'var(--danger)';
-      statusEl.textContent = 'LINEアプリ内のブラウザでは連携できません。画面右上の「…」メニューから「他のブラウザで開く」を選び、Safari(またはChrome)で開き直してから、もう一度お試しください。';
-    }
-    return;
-  }
-  const url = 'https://access.line.me/oauth2/v2.1/authorize'
-    + '?response_type=code'
-    + '&client_id=' + encodeURIComponent(LINE_LOGIN_CHANNEL_ID)
-    + '&redirect_uri=' + encodeURIComponent(LINE_LOGIN_REDIRECT_URI)
-    + '&state=' + Date.now().toString(36)
-    + '&scope=' + encodeURIComponent('profile');
-  const statusEl = document.getElementById('line-link-status');
-  lineLinkPopup = window.open(url, 'line_login', 'width=420,height=640');
-  if (!lineLinkPopup){
-    if (statusEl){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = 'ポップアップがブロックされました。ブラウザの設定でポップアップを許可してから、もう一度お試しください。'; }
-    return;
-  }
-  if (statusEl){ statusEl.style.color = 'var(--ink-soft)'; statusEl.textContent = '別ウィンドウでLINEにログインしてください…'; }
-}
-
-window.addEventListener('message', async (ev) => {
-  if (ev.origin !== window.location.origin) return;
-  if (!ev.data || ev.data.type !== 'lineLinkResult') return;
-  const statusEl = document.getElementById('line-link-status');
-  if (!ev.data.ok || !ev.data.lineUserId){
-    if (statusEl){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = 'LINE連携に失敗しました。もう一度お試しください。'; }
+document.getElementById('btn-notify-email').addEventListener('click', async () => {
+  const statusEl = document.getElementById('notify-email-status');
+  const email = document.getElementById('notify-email').value.trim();
+  if (!isValidEmail(email)){
+    statusEl.style.color = 'var(--danger)';
+    statusEl.textContent = '正しいメールアドレスを入力してください。';
     return;
   }
   try {
     const user = await ensureAnon();
-    await db.collection('parentViewers').doc(user.uid).update({ lineUserId: ev.data.lineUserId });
-    if (statusEl){ statusEl.style.color = 'var(--accent-deep)'; statusEl.textContent = '✓ LINE連携が完了しました。承認されると通知が届きます。'; }
-    const btn = document.getElementById('btn-line-link');
-    if (btn){ btn.disabled = true; btn.textContent = '✓ LINE連携ずみ'; }
+    await db.collection('parentViewers').doc(user.uid).update({ notifyEmail: email });
+    statusEl.style.color = 'var(--accent-deep)';
+    statusEl.textContent = '✓ 登録しました。承認されるとこのメールアドレスに通知が届きます。';
+    const btn = document.getElementById('btn-notify-email');
+    btn.disabled = true;
+    btn.textContent = '✓ 登録ずみ';
   } catch(e){
     console.error(e);
-    if (statusEl){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = '保存に失敗しました: ' + e.message; }
+    statusEl.style.color = 'var(--danger)';
+    statusEl.textContent = '保存に失敗しました: ' + e.message;
   }
 });
 
@@ -374,11 +322,14 @@ function showPending(uid){
     if (!doc.exists) return;
     const data = doc.data();
     if (data.status === 'approved'){ showMenu(); return; }
-    const btn = document.getElementById('btn-line-link');
-    if (btn && data.lineUserId){ btn.disabled = true; btn.textContent = '✓ LINE連携ずみ'; }
+    if (data.notifyEmail){
+      document.getElementById('notify-email').value = data.notifyEmail;
+      const btn = document.getElementById('btn-notify-email');
+      btn.disabled = true;
+      btn.textContent = '✓ 登録ずみ';
+    }
   }, err => console.error(err));
 }
-document.getElementById('btn-line-link').addEventListener('click', startLineLink);
 
 // 承認待ちの間も、名前を入力し直して再申請できる(誤字で待ち続けるのを防ぐ)
 document.getElementById('gate-retry').addEventListener('click', () => {
