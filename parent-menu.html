@@ -303,6 +303,11 @@ function isLineInAppBrowser(){
   return /\bLine\//i.test(navigator.userAgent);
 }
 
+// SafariのITP(トラッキング防止機能)は、外部サイト(LINE)を経由してページ全体が移動して戻ってくると、
+// このサイトのログイン情報を消してしまうことがある。そのため、LINEの画面は別窓(ポップアップ)で開き、
+// 元のページ(このページ)自体は移動させない。ポップアップ側から結果だけをpostMessageで受け取る。
+let lineLinkPopup = null;
+
 function startLineLink(){
   if (!LINE_LOGIN_CHANNEL_ID){ alert('LINE連携がまだ設定されていません。管理者にご確認ください。'); return; }
   if (isLineInAppBrowser()){
@@ -319,30 +324,52 @@ function startLineLink(){
     + '&redirect_uri=' + encodeURIComponent(LINE_LOGIN_REDIRECT_URI)
     + '&state=' + Date.now().toString(36)
     + '&scope=' + encodeURIComponent('profile');
-  window.location.href = url;
+  const statusEl = document.getElementById('line-link-status');
+  lineLinkPopup = window.open(url, 'line_login', 'width=420,height=640');
+  if (!lineLinkPopup){
+    if (statusEl){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = 'ポップアップがブロックされました。ブラウザの設定でポップアップを許可してから、もう一度お試しください。'; }
+    return;
+  }
+  if (statusEl){ statusEl.style.color = 'var(--ink-soft)'; statusEl.textContent = '別ウィンドウでLINEにログインしてください…'; }
 }
 
-async function checkLineLinkReturn(){
-  const params = new URLSearchParams(window.location.search);
-  const code = params.get('code');
-  if (!code) return;
-  window.history.replaceState({}, '', window.location.origin + window.location.pathname);
+window.addEventListener('message', async (ev) => {
+  if (ev.origin !== window.location.origin) return;
+  if (!ev.data || ev.data.type !== 'lineLinkResult') return;
   const statusEl = document.getElementById('line-link-status');
-  if (statusEl){ statusEl.style.color = 'var(--ink-soft)'; statusEl.textContent = 'LINE連携を確認しています…'; }
+  if (!ev.data.ok || !ev.data.lineUserId){
+    if (statusEl){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = 'LINE連携に失敗しました。もう一度お試しください。'; }
+    return;
+  }
   try {
-    const res = await fetch(LINE_HOOK_URL + '?code=' + encodeURIComponent(code));
-    const data = await res.json();
-    if (!data.ok || !data.lineUserId) throw new Error('連携に失敗しました');
     const user = await ensureAnon();
-    await db.collection('parentViewers').doc(user.uid).update({ lineUserId: data.lineUserId });
+    await db.collection('parentViewers').doc(user.uid).update({ lineUserId: ev.data.lineUserId });
     if (statusEl){ statusEl.style.color = 'var(--accent-deep)'; statusEl.textContent = '✓ LINE連携が完了しました。承認されると通知が届きます。'; }
     const btn = document.getElementById('btn-line-link');
     if (btn){ btn.disabled = true; btn.textContent = '✓ LINE連携ずみ'; }
   } catch(e){
     console.error(e);
-    if (statusEl){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = 'LINE連携に失敗しました。もう一度お試しください。'; }
+    if (statusEl){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = '保存に失敗しました: ' + e.message; }
   }
-}
+});
+
+// このページ自身が、LINEからのコールバック先としてポップアップの中で開かれた場合の処理。
+// 結果を元のウィンドウ(opener)に伝えて、ポップアップは自動で閉じる。
+(function(){
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('code');
+  if (!code || !window.opener) return;
+  (async () => {
+    try {
+      const res = await fetch(LINE_HOOK_URL + '?code=' + encodeURIComponent(code));
+      const data = await res.json();
+      window.opener.postMessage({ type: 'lineLinkResult', ok: !!(data.ok && data.lineUserId), lineUserId: data.lineUserId }, window.location.origin);
+    } catch(e){
+      window.opener.postMessage({ type: 'lineLinkResult', ok: false }, window.location.origin);
+    }
+    window.close();
+  })();
+})();
 
 // ---- 塾生名簿との照合による関門(塾生家庭以外の閲覧を防ぐ) ----
 function normalizeName(n){ return String(n || '').replace(/[\s　・･]/g, ''); }
@@ -431,7 +458,10 @@ document.getElementById('gate-submit').addEventListener('click', async () => {
     }
   }
 });
-(async () => { await checkLineLinkReturn(); initGate(); })();
+// ポップアップ(LINEからのコールバック用に開かれたウィンドウ)では、通常の画面初期化は不要。
+if (!window.opener) {
+  initGate();
+}
 
 function escAttr(v){ return String(v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
