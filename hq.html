@@ -1869,8 +1869,11 @@ async function handleViewerAction(e){
   const approveUid = e.target.dataset.approveViewer;
   if (approveUid){
     try {
-      await db.collection('parentViewers').doc(approveUid).update({ status: 'approved', approvedManually: true });
-      notifyLineApproved(e.target.dataset.lineUserId, e.target.dataset.studentName);
+      const docRef = db.collection('parentViewers').doc(approveUid);
+      const snap = await docRef.get();
+      const data = snap.data() || {};
+      await docRef.update({ status: 'approved', approvedManually: true });
+      notifyLineApproved(data.lineUserId, data.studentName);
     } catch(err){ alert('承認に失敗しました: ' + err.message); }
     return;
   }
