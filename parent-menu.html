@@ -293,9 +293,10 @@ function notifyLine(payload){
 // ---- LINEログイン連携(承認されたことをLINEで個別に通知するための任意設定) ----
 // 「設定手順」に沿ってLINE Loginチャネルを作成し、そのチャネルIDをここに入れると使えるようになる。
 const LINE_LOGIN_CHANNEL_ID = '2011469206';  // LINE Developersの「LINEログイン」チャネルのチャネルID
-// コールバック先は、このページ自身にする(Apps Scriptの画面を経由すると、LINEアプリ内ブラウザ等で
-// 正しく表示できないことがあるため)。Apps Scriptへは裏側のfetchでコード交換だけ依頼する。
-const LINE_LOGIN_REDIRECT_URI = 'https://egpartner.github.io/takumajukusystem/parent-menu.html';
+// コールバック先は、Firebaseを読み込まない専用の小さなページ(line-callback.html)にする。
+// このページ自身をコールバック先にすると、ポップアップ側でもFirebaseが初期化されてしまい、
+// 元のページの認証情報と競合して消えてしまうことがあったため。
+const LINE_LOGIN_REDIRECT_URI = 'https://egpartner.github.io/takumajukusystem/line-callback.html';
 
 // LINEアプリ内の簡易ブラウザ(トークからリンクを開いた時など)は、LINEアプリとの行き来がうまく
 //戻らないことがあるため、この機能だけは外部ブラウザ(Safari/Chrome等)での利用をお願いする。
@@ -352,24 +353,6 @@ window.addEventListener('message', async (ev) => {
     if (statusEl){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = '保存に失敗しました: ' + e.message; }
   }
 });
-
-// このページ自身が、LINEからのコールバック先としてポップアップの中で開かれた場合の処理。
-// 結果を元のウィンドウ(opener)に伝えて、ポップアップは自動で閉じる。
-(function(){
-  const params = new URLSearchParams(window.location.search);
-  const code = params.get('code');
-  if (!code || !window.opener) return;
-  (async () => {
-    try {
-      const res = await fetch(LINE_HOOK_URL + '?code=' + encodeURIComponent(code));
-      const data = await res.json();
-      window.opener.postMessage({ type: 'lineLinkResult', ok: !!(data.ok && data.lineUserId), lineUserId: data.lineUserId }, window.location.origin);
-    } catch(e){
-      window.opener.postMessage({ type: 'lineLinkResult', ok: false }, window.location.origin);
-    }
-    window.close();
-  })();
-})();
 
 // ---- 塾生名簿との照合による関門(塾生家庭以外の閲覧を防ぐ) ----
 function normalizeName(n){ return String(n || '').replace(/[\s　・･]/g, ''); }
@@ -458,10 +441,7 @@ document.getElementById('gate-submit').addEventListener('click', async () => {
     }
   }
 });
-// ポップアップ(LINEからのコールバック用に開かれたウィンドウ)では、通常の画面初期化は不要。
-if (!window.opener) {
-  initGate();
-}
+initGate();
 
 function escAttr(v){ return String(v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 

@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>LINE連携</title>
+</head>
+<body style="font-family:sans-serif;text-align:center;padding-top:60px;color:#5B6668;">
+<p>LINE連携を処理しています…</p>
+<script>
+// このページはLINEログインのコールバック専用(ポップアップ窓の中でだけ開かれる)。
+// Firebaseは一切読み込まない。parent-menu.html側のFirebase認証と競合させないため。
+(async function(){
+  var LINE_HOOK_URL = 'https://script.google.com/macros/s/AKfycbyI0km-LVtDkq1hJKyBI2Q9Y_4t8uQqERifa9XHCK9ypwHiw4N8kgpqw6Vz18WHWouS/exec';
+  var params = new URLSearchParams(window.location.search);
+  var code = params.get('code');
+  var result = { type: 'lineLinkResult', ok: false, lineUserId: '' };
+  try {
+    if (!code) throw new Error('no code');
+    var res = await fetch(LINE_HOOK_URL + '?code=' + encodeURIComponent(code));
+    var data = await res.json();
+    result.ok = !!(data.ok && data.lineUserId);
+    result.lineUserId = data.lineUserId || '';
+  } catch (e) {
+    result.ok = false;
+  }
+  if (window.opener) {
+    window.opener.postMessage(result, window.location.origin);
+  }
+  window.close();
+})();
+</script>
+</body>
+</html>
