@@ -538,6 +538,12 @@
       </div>
     </div>
 
+    <div class="card">
+      <h2>タクマ塾・全体からのお知らせ</h2>
+      <p class="note" style="margin-top:0;">大会・セレクションなど、通常の練習予定とは別の特別なお知らせです(Googleスプレッドシートの「スケジュール」タブから自動反映されます)。</p>
+      <div id="company-notices-list"><div class="empty">読み込み中…</div></div>
+    </div>
+
     <div class="card edit-only">
       <h2>この日だけの予定を編集</h2>
       <p class="note" id="occ-editor-hint" style="margin-top:0;">上の一覧またはカレンダーから「編集」を押すと、ここに内容が表示されます。</p>
@@ -869,7 +875,7 @@ function nextMonthStr(ym){ let [y,m] = ym.split('-').map(Number); m++; if(m>12){
 // 保護者ページの関門では、入力された塾生名(空白を除去したもの)がこのリストと一致すれば即通過できる。
 // 塾生の追加・改名・CSV取り込みのたびに自動で最新化される。
 let lastRosterKey = null;
-function normalizeStudentName(n){ return String(n || '').replace(/[\s　]/g, ''); }
+function normalizeStudentName(n){ return String(n || '').replace(/[\s　・･]/g, ''); }
 async function syncRosterNames(){
   // 閲覧のみのスタッフは名簿を書き込めないため、無駄な拒否エラーを出さないようにする
   if (!isAdmin) return;
@@ -941,6 +947,8 @@ const staffRef = academyRef.collection('staff');
 const absenceRef = academyRef.collection('absenceReports');
 const patternsRef = academyRef.collection('schedulePatterns');
 const eventsRef = academyRef.collection('scheduleEvents');
+// 全校共通・校舎別の特別なお知らせ(Googleスプレッドシートの「スケジュール」タブから同期される)
+const companyEventsRef = db.collection('companyEvents');
 
 let unsubStudents = null, unsubSettings = null;
 let currentUser = null;
@@ -1140,6 +1148,12 @@ function attachListeners(){
     scheduleEvents = snap.docs.map(d => Object.assign({ id:d.id }, d.data()));
     renderCalendarViews();
   }, err => console.error(err));
+  // 全件を読み、academyIdが無い(全校向け)か自校向けのものだけをその場で絞り込む(件数が少ないため)
+  unsubCompanyEvents = companyEventsRef.onSnapshot(snap => {
+    companyEvents = snap.docs.map(d => Object.assign({ id:d.id }, d.data()))
+      .filter(e => !e.academyId || e.academyId === ACADEMY_ID);
+    renderCompanyNotices();
+  }, err => console.error(err));
 }
 function detachListeners(){
   if (unsubStudents){ unsubStudents(); unsubStudents = null; }
@@ -1147,6 +1161,7 @@ function detachListeners(){
   if (unsubAbsence){ unsubAbsence(); unsubAbsence = null; }
   if (unsubPatterns){ unsubPatterns(); unsubPatterns = null; }
   if (unsubEvents){ unsubEvents(); unsubEvents = null; }
+  if (unsubCompanyEvents){ unsubCompanyEvents(); unsubCompanyEvents = null; }
   if (unsubLocationsMeta){ unsubLocationsMeta(); unsubLocationsMeta = null; }
   if (unsubStaffList){ unsubStaffList(); unsubStaffList = null; }
   if (unsubWorkLogs){ unsubWorkLogs(); unsubWorkLogs = null; }
@@ -1155,6 +1170,8 @@ function detachListeners(){
 let unsubAbsence = null;
 let unsubPatterns = null;
 let unsubEvents = null;
+let unsubCompanyEvents = null;
+let companyEvents = [];
 let unsubLocationsMeta = null;
 let unsubStaffList = null;
 let unsubNameAliases = null;
@@ -1722,6 +1739,27 @@ function renderCalendarViews(){
   renderCalGrid();
   if (calSelectedDate) renderCalDayDetail(calSelectedDate);
   populateLocationSelects();
+}
+
+function renderCompanyNotices(){
+  const el = document.getElementById('company-notices-list');
+  if (!el) return;
+  const todayStr = dateStrOf(new Date());
+  const upcoming = (companyEvents || [])
+    .filter(e => e.date && e.date >= todayStr)
+    .sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+  if (upcoming.length === 0){ el.innerHTML = '<div class="empty">今のところ、特別なお知らせはありません。</div>'; return; }
+  el.innerHTML = upcoming.map(e => {
+    const [y, m, d] = e.date.split('-').map(Number);
+    const label = m + '月' + d + '日';
+    const scope = e.academyId ? '' : '<span class="badge muted">全校</span> ';
+    const sub = [e.place, e.staffInCharge].filter(Boolean).map(escAttr).join(' ・ ');
+    return '<div style="padding:8px 0;border-bottom:1px solid var(--border);">'
+      + '<div style="font-size:13px;color:var(--text-muted);">' + escAttr(label) + '</div>'
+      + '<div>' + scope + escAttr(e.event) + '</div>'
+      + (sub ? '<div style="font-size:12px;color:var(--text-muted);">' + sub + '</div>' : '')
+      + '</div>';
+  }).join('');
 }
 
 function populateLocationSelects(){
