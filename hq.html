@@ -596,17 +596,19 @@ const schoolsRef = db.collection('schools');
 const hqAdminsRef = db.collection('hqAdmins');
 const systemAdminsRef = db.collection('systemAdmins');
 
-// 保護者の承認が完了したことを、メール登録ずみの本人にだけ知らせる(absence-form.html等と同じApps Script宛先)
+// 保護者の承認が完了したことを、メール登録ずみの本人にだけ知らせる(absence-form.html等と同じApps Script宛先)。
+// 固定の合言葉ではなく、その場で取得したFirebase AuthのIDトークンで本人確認する(ページのソースに
+// 秘密を書かないため)。line-notify.gs側でも、このuidが本部権限を持つかを別途確認している。
 const LINE_HOOK_URL = 'https://script.google.com/macros/s/AKfycbw2iDqtyycsiUNLALl7PvTedMzgQ1d4YKddizYtJafSP9y6FDeIPDMB8ZadP1lCIkht/exec';
-const LINE_HOOK_KEY = 'f62db5cbec45d46cf44ba30dcbab4977';
-function notifyApprovedByEmail(email, name){
-  if (!LINE_HOOK_URL || !LINE_HOOK_KEY || !email) return;
+async function notifyApprovedByEmail(email, name){
+  if (!LINE_HOOK_URL || !email || !currentUser) return;
   try {
+    const idToken = await currentUser.getIdToken();
     fetch(LINE_HOOK_URL, {
       method: 'POST',
       mode: 'no-cors',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ key: LINE_HOOK_KEY, type: 'approvedEmail', email, name })
+      body: JSON.stringify({ idToken, type: 'approvedEmail', email, name })
     }).catch(e => console.error('承認メール通知に失敗', e));
   } catch(e){ console.error('承認メール通知に失敗', e); }
 }

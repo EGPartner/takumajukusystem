@@ -199,17 +199,18 @@ const db = firebase.firestore();
 const schoolsRef = db.collection('schools');
 
 // ---- LINEグループへの通知(Google Apps Script経由。承認待ちが発生した時) ----
-// 設置後、この2つに値を入れると通知が動き出す。空のままなら通知は行われない。absence-form.htmlと同じ値を使う。
+// 固定の合言葉ではなく、その場で取得したFirebase AuthのIDトークンで本人確認する
+// (ページのソースに秘密を書かないため。呼び出し前に必ずサインイン済みにしておくこと)。
 const LINE_HOOK_URL = 'https://script.google.com/macros/s/AKfycbw2iDqtyycsiUNLALl7PvTedMzgQ1d4YKddizYtJafSP9y6FDeIPDMB8ZadP1lCIkht/exec';  // Apps Scriptのデプロイ先URL
-const LINE_HOOK_KEY = 'f62db5cbec45d46cf44ba30dcbab4977';  // Apps Scriptに登録した SHARED_KEY と同じ文字列
-function notifyLine(payload){
-  if (!LINE_HOOK_URL || !LINE_HOOK_KEY) return;
+async function notifyLine(payload){
+  if (!LINE_HOOK_URL || !auth.currentUser) return;
   try {
+    const idToken = await auth.currentUser.getIdToken();
     fetch(LINE_HOOK_URL, {
       method: 'POST',
       mode: 'no-cors',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(Object.assign({ key: LINE_HOOK_KEY }, payload))
+      body: JSON.stringify(Object.assign({ idToken }, payload))
     }).catch(e => console.error('LINE通知に失敗', e));
   } catch(e){ console.error('LINE通知に失敗', e); }
 }
