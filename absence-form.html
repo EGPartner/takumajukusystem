@@ -237,7 +237,7 @@ const LAST_SCHOOL_KEY = 'takumajuku_last_school';
 // ---- LINEグループへの通知(Google Apps Script経由) ----
 // 設置後、この2つに値を入れると通知が動き出す。空のままなら通知は行われない。
 const LINE_HOOK_URL = 'https://script.google.com/macros/s/AKfycbw2iDqtyycsiUNLALl7PvTedMzgQ1d4YKddizYtJafSP9y6FDeIPDMB8ZadP1lCIkht/exec';  // Apps Scriptのデプロイ先URL
-const LINE_HOOK_KEY = 'takuma-2026-xyz';  // Apps Scriptに登録した SHARED_KEY と同じ文字列
+const LINE_HOOK_KEY = 'f62db5cbec45d46cf44ba30dcbab4977';  // Apps Scriptに登録した SHARED_KEY と同じ文字列
 // 通知は「送れたら送る」扱いにする。失敗しても欠席連絡そのものは保存済みで、受付を妨げない。
 function notifyLine(payload){
   if (!LINE_HOOK_URL || !LINE_HOOK_KEY) return;

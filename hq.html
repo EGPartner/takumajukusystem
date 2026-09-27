@@ -598,7 +598,7 @@ const systemAdminsRef = db.collection('systemAdmins');
 
 // 保護者の承認が完了したことを、メール登録ずみの本人にだけ知らせる(absence-form.html等と同じApps Script宛先)
 const LINE_HOOK_URL = 'https://script.google.com/macros/s/AKfycbw2iDqtyycsiUNLALl7PvTedMzgQ1d4YKddizYtJafSP9y6FDeIPDMB8ZadP1lCIkht/exec';
-const LINE_HOOK_KEY = 'takuma-2026-xyz';
+const LINE_HOOK_KEY = 'f62db5cbec45d46cf44ba30dcbab4977';
 function notifyApprovedByEmail(email, name){
   if (!LINE_HOOK_URL || !LINE_HOOK_KEY || !email) return;
   try {
