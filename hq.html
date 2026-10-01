@@ -325,8 +325,8 @@
 
     <div class="tab-panel" id="tab-students">
       <div class="card">
-        <h2 style="font-size:15px;margin:0 0 4px;">入塾・体験のお申し込み</h2>
-        <p class="status" style="margin-top:0;color:var(--text-muted);">Googleフォームからの申し込みです。入塾希望は内容を確認し「反映」を押すと、次の同期(最大10分後)で塾生リストに自動で加わります(体験希望は反映できません)。</p>
+        <h2 style="font-size:15px;margin:0 0 4px;">入塾・体験・退塾・休塾のお申し込み</h2>
+        <p class="status" style="margin-top:0;color:var(--text-muted);">Googleフォームからの申し込みです。内容を確認し「反映」を押すと、次の同期(最大10分後)で塾生リストに自動で反映されます。入塾は塾生リストに追加、退塾は「退会月」、休塾は「休塾開始月」「復帰予定月」に記入されます(体験希望は反映できません)。</p>
         <div id="hq-enrollment-list" class="scroll-y"><div class="empty">読み込み中…</div></div>
       </div>
       <div class="card">
@@ -825,7 +825,12 @@ document.getElementById('hq-btn-reload-students').addEventListener('click', () =
 document.getElementById('hq-enrollment-list').addEventListener('click', async (e) => {
   const id = e.target.dataset.reflectApp;
   if (!id) return;
-  if (!confirm('この選手を塾生リストへ反映しますか？(次の同期で自動的に反映されます)')) return;
+  const app = (enrollmentApps || []).find(a => a.id === id) || {};
+  const kind = app.kind || '';
+  const msg = kind.indexOf('退塾') !== -1 ? '「' + (app.name || '') + '」の退塾(' + (app.detail || '') + ')を塾生リストへ反映しますか？(次の同期で自動的に反映されます)'
+    : kind.indexOf('休塾') !== -1 ? '「' + (app.name || '') + '」の休塾(' + (app.detail || '') + ')を塾生リストへ反映しますか？(次の同期で自動的に反映されます)'
+    : 'この選手を塾生リストへ反映しますか？(次の同期で自動的に反映されます)';
+  if (!confirm(msg)) return;
   e.target.disabled = true;
   try {
     await db.collection('enrollmentApplications').doc(id).update({ reflectRequested: true });
@@ -2117,13 +2122,14 @@ function renderHQEnrollmentList(){
   if (!el) return;
   const rows = (enrollmentApps || []).slice().sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''));
   if (rows.length === 0){ el.innerHTML = '<div class="empty">今のところ、申し込みはありません。</div>'; return; }
-  el.innerHTML = '<table class="mini-table"><thead><tr><th>校舎</th><th>種別</th><th>学年</th><th>氏名</th><th>所属</th><th>状況</th></tr></thead><tbody>' +
+  el.innerHTML = '<table class="mini-table"><thead><tr><th>校舎</th><th>種別</th><th>学年</th><th>氏名</th><th>所属・内容</th><th>状況</th></tr></thead><tbody>' +
     rows.map(a => {
-      const isEnrollment = (a.kind || '').indexOf('入塾') !== -1;
+      // 体験以外(入塾・退塾・休塾)は反映できる
+      const isEnrollment = /入塾|退塾|休塾/.test(a.kind || '');
       const statusCell = a.status === 'reflected' ? '<span class="badge muted">反映済み</span>'
         : a.reflectRequested ? '<span class="badge muted">反映待ち(次回同期)</span>'
         : (isEnrollment ? '<button class="ghost-small" data-reflect-app="' + escAttr(a.id) + '">反映</button>' : '<span class="badge muted">体験</span>');
-      return '<tr><td>' + escAttr(a.academyName || '') + '</td><td>' + escAttr(a.kind || '') + '</td><td>' + escAttr(a.grade || '') + '</td><td>' + escAttr(a.name || '') + '</td><td>' + escAttr(a.team || '') + '</td><td>' + statusCell + '</td></tr>';
+      return '<tr><td>' + escAttr(a.academyName || '') + '</td><td>' + escAttr(a.kind || '') + '</td><td>' + escAttr(a.grade || '') + '</td><td>' + escAttr(a.name || '') + '</td><td>' + escAttr(a.detail || a.team || '') + '</td><td>' + statusCell + '</td></tr>';
     }).join('') + '</tbody></table>';
 }
 
