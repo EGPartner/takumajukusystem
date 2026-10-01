@@ -227,6 +227,8 @@ function dateStrOf(d){ return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' 
 function weekdayOf(dateStr){ return new Date(dateStr + 'T00:00:00').getDay(); }
 const WEEKDAY_LABELS = ['日','月','火','水','木','金','土'];
 function locationName(id){ const l = (locationsList||[]).find(x => x.id === id); return l ? l.name : ''; }
+// 担当欄は「山田・佐藤」「山田,佐藤」など区切りがまちまちなので、school.htmlのsplitStaffと同じ区切りで分けて「・」でそろえる
+function coachText(text){ return String(text || '').split(/[・,、\/]/).map(t => t.trim()).filter(Boolean).join('・'); }
 
 function occurrencesForDate(dateStr){
   const wd = weekdayOf(dateStr);
@@ -264,6 +266,7 @@ function rowHTML(o){
     <div class="r-body">
       <div class="r-type">${escAttr(o.type||'')}${cancelledTag}</div>
       <div class="r-loc">📍 ${escAttr(locationName(o.locationId) || o.locationText || '場所未設定')}</div>
+      ${coachText(o.staffInCharge) ? '<div class="r-staff">👤 担当コーチ: ' + escAttr(coachText(o.staffInCharge)) + '</div>' : ''}
       <div class="r-staff">対象: ${escAttr(o.targetGroup||'-')}</div>
       ${o.note ? '<div class="r-note">' + escAttr(o.note) + '</div>' : ''}
     </div>
