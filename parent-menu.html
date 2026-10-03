@@ -2,246 +2,354 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0B1416">
 <title>タクマ塾 保護者ページ</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700;900&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700;900&family=Noto+Sans+JP:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
 <style>
+  /* 色はタクマ塾システム(hq.html / school.html)と同じティール系にそろえる */
   :root{
-    --bg:#EEF5F5;
+    --bg:#F4F7F7;
     --surface:#FFFFFF;
-    --surface-2:#F2F8F8;
-    --border:#DEEAEA;
-    --border-strong:#C3D5D5;
-    --ink:#12181A;
-    --ink-soft:#586E70;
-    --ink-mute:#8A9DA0;
+    --surface-2:#EEF3F3;
+    --border:#E3EAEA;
+    --border-strong:#CBD8D8;
+    --ink:#0E1517;
+    --ink-soft:#56686A;
+    --ink-mute:#8C9C9E;
     --accent:#0FB8C4;
-    --accent-deep:#0A6169;
-    --accent-bg:#E1F6F7;
-    --danger:#C24B41;
-    --warn-bg:#FFF3DE;
-    --warn-border:#E3AE55;
-    --warn-ink:#8A6416;
-    --radius-lg:20px;
-    --radius-md:14px;
-    --shadow:0 18px 40px -20px rgba(10,97,105,0.28), 0 2px 8px -2px rgba(18,24,26,0.06);
+    --accent-deep:#0A8A93;
+    --accent-ink:#06555B;
+    --accent-bg:#E3F7F8;
+    --hero:#0B1416;
+    --hero-2:#11292C;
+    --danger:#D6483F;
+    --radius-xl:28px;
+    --radius-lg:22px;
+    --radius-md:16px;
+    --ease:cubic-bezier(.22,.61,.36,1);
+    --shadow-card:0 1px 2px rgba(14,21,23,.04), 0 12px 32px -16px rgba(14,21,23,.18);
+    --shadow-float:0 24px 60px -28px rgba(6,85,91,.45), 0 2px 6px rgba(14,21,23,.05);
   }
-  *{box-sizing:border-box;}
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#070C0D;
+      --surface:#101A1C;
+      --surface-2:#162326;
+      --border:#1E2D30;
+      --border-strong:#2A3E42;
+      --ink:#EEF4F4;
+      --ink-soft:#9FB1B3;
+      --ink-mute:#6E8285;
+      --accent-ink:#7FE3EA;
+      --accent-bg:#0E2A2D;
+      --shadow-card:0 1px 2px rgba(0,0,0,.4), 0 12px 32px -16px rgba(0,0,0,.6);
+      --shadow-float:0 24px 60px -28px rgba(0,0,0,.8);
+    }
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html{background:var(--hero);}
   body{
     margin:0;
     min-height:100vh;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    padding:28px 18px;
-    background:
-      radial-gradient(720px 420px at 12% -8%, #CFF1F2 0%, transparent 60%),
-      radial-gradient(600px 380px at 110% 10%, #DFF6E9 0%, transparent 55%),
-      var(--bg);
+    background:var(--bg);
     font-family:"Noto Sans JP","Hiragino Sans","Yu Gothic",-apple-system,BlinkMacSystemFont,sans-serif;
     color:var(--ink);
     line-height:1.7;
     -webkit-font-smoothing:antialiased;
+    word-break:auto-phrase; /* 日本語を文節で改行し、「きます。」だけが次の行に落ちるのを防ぐ(対応ブラウザのみ) */
   }
-  .shell{width:100%;max-width:420px;}
-  .brand-row{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:18px;}
-  .brand-mark{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent-deep));flex:none;box-shadow:0 4px 12px -4px rgba(10,97,105,0.5);}
-  .brand-name{font-family:"Zen Kaku Gothic New",sans-serif;font-weight:700;font-size:13.5px;letter-spacing:0.04em;color:var(--accent-deep);}
+  .en{font-family:"Outfit","Noto Sans JP",sans-serif;}
 
-  .card{
+  /* ---------- ヒーロー(上部の濃色エリア) ---------- */
+  .hero{
+    position:relative;
+    overflow:hidden;
+    color:#fff;
+    background:
+      radial-gradient(120% 90% at 100% 0%, rgba(15,184,196,.38) 0%, rgba(15,184,196,0) 55%),
+      radial-gradient(90% 70% at 0% 100%, rgba(10,138,147,.30) 0%, rgba(10,138,147,0) 60%),
+      linear-gradient(180deg,var(--hero-2) 0%,var(--hero) 100%);
+    padding:calc(18px + env(safe-area-inset-top)) 22px 96px;
+  }
+  .hero::after{ /* 細いグリッドで質感を出す */
+    content:"";position:absolute;inset:0;pointer-events:none;
+    background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);
+    background-size:28px 28px;
+    mask-image:linear-gradient(180deg,#000 0%,transparent 85%);
+    -webkit-mask-image:linear-gradient(180deg,#000 0%,transparent 85%);
+  }
+  .hero-inner{position:relative;z-index:1;max-width:560px;margin:0 auto;}
+  .topbar{display:flex;align-items:center;justify-content:space-between;}
+  .brand{display:flex;align-items:center;gap:10px;}
+  .brand-mark{
+    width:30px;height:30px;border-radius:9px;flex:none;
+    background:linear-gradient(140deg,#3FD6DF 0%,var(--accent) 45%,var(--accent-deep) 100%);
+    box-shadow:0 0 0 1px rgba(255,255,255,.18) inset, 0 8px 20px -8px rgba(15,184,196,.8);
+  }
+  .brand-name{font-weight:800;font-size:13px;letter-spacing:.18em;}
+  .chip{
+    font-size:11px;font-weight:600;letter-spacing:.14em;
+    padding:6px 11px;border-radius:999px;
+    background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);
+    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  }
+  .hero-copy{margin-top:46px;}
+  .eyebrow{font-size:12px;font-weight:700;letter-spacing:.22em;color:#7FE3EA;margin:0 0 10px;}
+  .hero h1{
+    font-family:"Zen Kaku Gothic New",sans-serif;font-weight:900;
+    font-size:clamp(34px,10vw,46px);line-height:1.15;letter-spacing:-.01em;
+    margin:0;text-wrap:balance;
+  }
+  .hero-lead{font-size:14px;color:rgba(255,255,255,.72);margin:14px 0 0;max-width:30em;}
+
+  /* ---------- 本文 ---------- */
+  .main{max-width:560px;margin:-64px auto 0;padding:0 16px calc(40px + env(safe-area-inset-bottom));position:relative;z-index:2;}
+  .panel{
     background:var(--surface);
     border:1px solid var(--border);
-    border-radius:var(--radius-lg);
-    padding:32px 26px;
-    box-shadow:var(--shadow);
+    border-radius:var(--radius-xl);
+    padding:26px 22px;
+    box-shadow:var(--shadow-float);
   }
-  h1{
-    font-family:"Zen Kaku Gothic New",sans-serif;
-    font-weight:900;
-    font-size:22px;
-    margin:0 0 8px;
-    text-align:center;
-    letter-spacing:-0.01em;
-    text-wrap:balance;
-  }
-  p.sub{font-size:13.5px;color:var(--ink-soft);margin:0 0 26px;text-align:center;}
+  .panel + .panel{margin-top:14px;}
+  .panel-title{font-family:"Zen Kaku Gothic New",sans-serif;font-weight:900;font-size:20px;line-height:1.35;margin:0 0 6px;letter-spacing:-.005em;}
+  .panel-sub{font-size:13.5px;color:var(--ink-soft);margin:0 0 22px;}
 
-  label{font-size:12.5px;font-weight:700;color:var(--ink-soft);display:block;margin-bottom:7px;letter-spacing:0.01em;}
+  label{font-size:12px;font-weight:700;color:var(--ink-soft);display:block;margin:0 0 8px;letter-spacing:.04em;}
   .field{margin-bottom:18px;}
   select,input[type=text]{
     width:100%;
-    padding:13px 14px;
-    border:1.5px solid var(--border-strong);
-    border-radius:11px;
+    padding:15px 16px;
+    border:1px solid var(--border-strong);
+    border-radius:14px;
     font-size:16px;
     background:var(--surface-2);
     color:var(--ink);
     font-family:inherit;
     font-weight:600;
-    appearance:none;
-    -webkit-appearance:none;
-    transition:border-color 0.15s, background 0.15s;
+    appearance:none;-webkit-appearance:none;
+    transition:border-color .2s var(--ease), box-shadow .2s var(--ease), background .2s var(--ease);
   }
   select{
-    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23586E70' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-    background-repeat:no-repeat;
-    background-position:right 14px center;
-    padding-right:36px;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238C9C9E' stroke-width='1.8' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 16px center;padding-right:42px;
   }
-  select:focus,input:focus{outline:none;border-color:var(--accent);background:var(--surface);}
+  select:focus,input:focus{outline:none;border-color:var(--accent);background:var(--surface);box-shadow:0 0 0 4px var(--accent-bg);}
+  input::placeholder{color:var(--ink-mute);font-weight:500;}
 
   .notice{
-    font-size:12px;
-    line-height:1.6;
-    background:var(--warn-bg);
-    border:1px solid var(--warn-border);
-    border-radius:10px;
-    padding:10px 12px;
-    color:var(--warn-ink);
-    margin:9px 0 0;
+    display:flex;gap:9px;align-items:flex-start;
+    font-size:12px;line-height:1.6;color:var(--ink-soft);
+    background:var(--surface-2);border-radius:12px;padding:10px 12px;margin:10px 0 0;
   }
+  .notice svg{flex:none;margin-top:2px;color:var(--accent-deep);}
 
   button.primary{
-    width:100%;
-    text-align:center;
-    background:linear-gradient(135deg,var(--accent),var(--accent-deep));
-    border:none;
-    color:#fff;
-    font-weight:700;
-    font-family:inherit;
-    cursor:pointer;
-    font-size:15px;
-    padding:15px;
-    border-radius:12px;
-    box-shadow:0 10px 22px -10px rgba(10,97,105,0.55);
-    transition:transform 0.12s, box-shadow 0.12s;
+    width:100%;display:flex;align-items:center;justify-content:center;gap:8px;
+    background:var(--ink);color:var(--surface);
+    border:none;border-radius:999px;
+    font-family:inherit;font-weight:700;font-size:15.5px;letter-spacing:.02em;
+    padding:17px 20px;cursor:pointer;
+    transition:transform .15s var(--ease), background .2s var(--ease), opacity .2s;
   }
-  button.primary:active{transform:translateY(1px);box-shadow:0 6px 14px -8px rgba(10,97,105,0.5);}
-  button.primary[disabled]{opacity:0.55;cursor:default;}
+  button.primary:hover{background:var(--accent-ink);}
+  button.primary:active{transform:scale(.98);}
+  button.primary[disabled]{opacity:.5;cursor:default;}
+  @media (prefers-color-scheme: dark){ button.primary{background:var(--accent);color:#04282B;} button.primary:hover{background:#3FD6DF;} }
 
   button.ghost-link{
-    display:block;
-    margin:14px auto 0;
-    background:none;
-    border:none;
-    color:var(--ink-soft);
-    font-family:inherit;
-    font-size:12.5px;
-    font-weight:600;
-    cursor:pointer;
-    text-decoration:underline;
-    text-underline-offset:3px;
+    display:block;margin:16px auto 0;background:none;border:none;
+    color:var(--ink-soft);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;
+    text-decoration:underline;text-underline-offset:4px;text-decoration-color:var(--border-strong);
   }
+  .status-line{font-size:13px;text-align:center;margin:14px 0 0;min-height:18px;color:var(--ink-mute);}
 
-  .status-line{font-size:12.5px;text-align:center;margin:14px 0 0;min-height:16px;color:var(--ink-mute);}
-
-  .pending-icon{
-    width:52px;height:52px;border-radius:50%;
-    background:var(--accent-bg);
+  /* 承認待ち */
+  .pending-ring{
+    width:64px;height:64px;margin:4px auto 18px;border-radius:50%;
     display:flex;align-items:center;justify-content:center;
-    margin:0 auto 14px;
-    font-size:22px;
+    background:var(--accent-bg);color:var(--accent-deep);position:relative;
   }
-  .pending-title{font-family:"Zen Kaku Gothic New",sans-serif;font-weight:700;font-size:15.5px;text-align:center;margin:0 0 8px;}
-  .pending-desc{font-size:13px;color:var(--ink-soft);text-align:center;margin:0;}
+  .pending-ring::before{
+    content:"";position:absolute;inset:-5px;border-radius:50%;
+    border:2px solid transparent;border-top-color:var(--accent);
+    animation:spin 1.4s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .pending-title{font-family:"Zen Kaku Gothic New",sans-serif;font-weight:900;font-size:19px;text-align:center;margin:0 0 8px;}
+  .pending-desc{font-size:13.5px;color:var(--ink-soft);text-align:center;margin:0;}
+  .divider{height:1px;background:var(--border);margin:22px 0 20px;}
 
-  a.menu-btn{
-    display:flex;
-    align-items:center;
-    gap:14px;
-    border:1.5px solid var(--border);
-    border-radius:var(--radius-md);
-    padding:16px 17px;
-    margin-bottom:12px;
-    text-decoration:none;
-    color:var(--ink);
-    background:var(--surface);
-    transition:border-color 0.15s, background 0.15s, transform 0.12s;
+  /* ---------- メニュー ---------- */
+  .school-pill{
+    background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);
+    padding:16px 18px;box-shadow:var(--shadow-float);
   }
-  a.menu-btn:active{border-color:var(--accent);background:var(--accent-bg);transform:scale(0.99);}
-  .mb-icon{
-    width:42px;height:42px;flex:none;border-radius:11px;
-    background:var(--accent-bg);
+  .school-pill label{margin-bottom:6px;}
+  .school-pill select{background-color:var(--surface-2);}
+
+  .section-label{
+    display:flex;align-items:baseline;justify-content:space-between;
+    margin:30px 4px 12px;
+  }
+  .section-label h2{font-family:"Zen Kaku Gothic New",sans-serif;font-weight:900;font-size:22px;margin:0;letter-spacing:-.01em;}
+  .section-label span{font-size:11px;font-weight:700;letter-spacing:.2em;color:var(--ink-mute);}
+
+  .tiles{display:grid;gap:12px;}
+  a.tile{
+    position:relative;display:block;overflow:hidden;
+    border-radius:var(--radius-xl);
+    padding:22px 22px 20px;
+    text-decoration:none;color:var(--ink);
+    background:var(--surface);border:1px solid var(--border);
+    box-shadow:var(--shadow-card);
+    min-height:168px;
+    transition:transform .35s var(--ease), box-shadow .35s var(--ease);
+  }
+  a.tile:hover{transform:translateY(-3px);box-shadow:0 1px 2px rgba(14,21,23,.04), 0 22px 44px -18px rgba(14,21,23,.28);}
+  a.tile:active{transform:scale(.985);}
+  a.tile.feature{
+    color:#fff;border:none;
+    background:
+      radial-gradient(120% 120% at 100% 0%, rgba(63,214,223,.55) 0%, rgba(63,214,223,0) 50%),
+      linear-gradient(150deg,#0E3A3E 0%,#0A2224 60%,#081517 100%);
+  }
+  .tile-top{display:flex;align-items:flex-start;justify-content:space-between;}
+  .tile-icon{
+    width:48px;height:48px;border-radius:15px;flex:none;
     display:flex;align-items:center;justify-content:center;
-    font-size:19px;
+    background:var(--accent-bg);color:var(--accent-deep);
   }
-  .mb-title{font-weight:700;font-size:14.5px;margin-bottom:2px;font-family:"Zen Kaku Gothic New",sans-serif;}
-  .mb-desc{font-size:12px;color:var(--ink-soft);line-height:1.5;}
+  .tile.feature .tile-icon{background:rgba(255,255,255,.12);color:#9BEFF4;border:1px solid rgba(255,255,255,.14);}
+  .tile-arrow{
+    width:38px;height:38px;border-radius:50%;flex:none;
+    display:flex;align-items:center;justify-content:center;
+    background:var(--surface-2);color:var(--ink);
+    transition:transform .35s var(--ease), background .2s;
+  }
+  .tile.feature .tile-arrow{background:#fff;color:#0A2224;}
+  a.tile:hover .tile-arrow{transform:translateX(3px);}
+  .tile-kicker{font-size:11px;font-weight:700;letter-spacing:.2em;margin:26px 0 4px;color:var(--accent-deep);}
+  .tile.feature .tile-kicker{color:#7FE3EA;}
+  .tile-title{font-family:"Zen Kaku Gothic New",sans-serif;font-weight:900;font-size:22px;line-height:1.3;margin:0 0 6px;letter-spacing:-.005em;}
+  .tile-desc{font-size:13px;line-height:1.6;margin:0;color:var(--ink-soft);}
+  .tile.feature .tile-desc{color:rgba(255,255,255,.72);}
 
-  .note{font-size:11.5px;color:var(--ink-mute);text-align:center;margin:18px 0 0;}
+  .foot{font-size:11.5px;color:var(--ink-mute);text-align:center;margin:26px 0 0;}
+  .foot .en{letter-spacing:.16em;font-weight:600;}
 
-  @media (max-width:400px){
-    .card{padding:26px 20px;}
+  /* 表示時のふわっとしたアニメーション(動きを減らす設定の端末では無効) */
+  .rise{animation:rise .7s var(--ease) both;}
+  .rise.d1{animation-delay:.06s;} .rise.d2{animation-delay:.12s;} .rise.d3{animation-delay:.18s;} .rise.d4{animation-delay:.24s;}
+  @keyframes rise{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:none;}}
+  @media (prefers-reduced-motion: reduce){
+    .rise,.pending-ring::before{animation:none !important;}
+    a.tile,a.tile .tile-arrow,button.primary{transition:none !important;}
+  }
+
+  @media (min-width:640px){
+    .hero{padding-bottom:120px;}
+    .hero-copy{margin-top:64px;}
+    .main{margin-top:-84px;}
+    .panel{padding:34px 32px;}
+    .tiles{grid-template-columns:1fr 1fr;}
+    a.tile{min-height:220px;}
   }
 </style>
 </head>
 <body>
-<div class="shell">
-  <div class="brand-row">
-    <div class="brand-mark"></div>
-    <div class="brand-name">タクマ塾</div>
+<header class="hero">
+  <div class="hero-inner">
+    <div class="topbar">
+      <div class="brand"><div class="brand-mark" aria-hidden="true"></div><span class="brand-name en">TAKUMA JUKU</span></div>
+      <span class="chip en">PARENTS</span>
+    </div>
+    <div class="hero-copy rise">
+      <p class="eyebrow en">FOR FAMILIES</p>
+      <h1>保護者ページ</h1>
+      <p class="hero-lead">欠席のご連絡や、練習・試合の予定をここから確認できます。</p>
+    </div>
   </div>
+</header>
 
-  <div class="card" id="gate-card" style="display:none;">
-    <h1>保護者ページ</h1>
-    <p class="sub">このページは塾生のご家族専用です。<br>確認のため、お子さまの情報を入力してください(この端末で初回のみ)。</p>
+<main class="main">
+  <!-- 初回: 塾生名簿との照合(関門) -->
+  <section class="panel rise d1" id="gate-card" style="display:none;">
     <div id="gate-form">
+      <h2 class="panel-title">はじめに、お子さまの情報を<br>ご入力ください</h2>
+      <p class="panel-sub">塾生のご家族専用のページです。この端末での入力は初回のみです。</p>
       <div class="field">
         <label for="gate-school">お子さまの校舎</label>
         <select id="gate-school"><option value="">読み込み中…</option></select>
-        <p class="notice">※「福井校(エリート)」は「坂井・福井校(エリート)」に統合されました。福井校(エリート)の選手の方は「坂井・福井校(エリート)」をお選びください。</p>
+        <p class="notice"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16.5v.5"/></svg><span>「福井校(エリート)」は「坂井・福井校(エリート)」に統合されました。福井校(エリート)の方は「坂井・福井校(エリート)」をお選びください。</span></p>
       </div>
       <div class="field">
         <label for="gate-name">塾生のお名前(姓名)</label>
-        <input type="text" id="gate-name" placeholder="例: 山田 蓮">
+        <input type="text" id="gate-name" placeholder="例: 山田 蓮" autocomplete="off">
       </div>
-      <button type="button" class="primary" id="gate-submit">利用を開始する</button>
+      <button type="button" class="primary" id="gate-submit">利用を開始する
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </button>
       <p class="status-line" id="gate-status"></p>
     </div>
     <div id="gate-pending" style="display:none;">
-      <div class="pending-icon">⏳</div>
+      <div class="pending-ring" aria-hidden="true">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+      </div>
       <p class="pending-title">申請を受け付けました</p>
-      <p class="pending-desc">入力されたお名前が名簿と一致しなかったため、教室で確認しています。通常は当日中にご案内できるよう対応しております。<br>確認が済むと、このページが自動で切り替わります。</p>
-      <div class="field" style="margin-top:16px;text-align:left;">
-        <label for="notify-email">承認された時にメールで知らせてほしい方は、メールアドレスを入力してください(任意)</label>
-        <input type="text" id="notify-email" placeholder="例: yamada@example.com">
+      <p class="pending-desc">入力されたお名前が名簿と一致しなかったため、教室で確認しています。通常は当日中にご案内できるよう対応しております。確認が済むと、このページが自動で切り替わります。</p>
+      <div class="divider"></div>
+      <div class="field">
+        <label for="notify-email">承認されたらメールで知らせてほしい方(任意)</label>
+        <input type="text" id="notify-email" placeholder="例: yamada@example.com" inputmode="email" autocomplete="email">
       </div>
       <button type="button" class="primary" id="btn-notify-email">このメールアドレスに通知してもらう</button>
       <p class="status-line" id="notify-email-status"></p>
       <button type="button" class="ghost-link" id="gate-retry">お名前を入力し直す</button>
     </div>
-  </div>
+  </section>
 
-  <div class="card" id="menu-card" style="display:none;">
-    <h1>保護者ページ</h1>
-    <p class="sub">ログインは不要です。ご用件をお選びください。</p>
-
-    <div class="field">
+  <!-- 承認済み: メニュー -->
+  <div id="menu-card" style="display:none;">
+    <div class="school-pill rise d1">
       <label for="menu-school">お子さまの校舎</label>
       <select id="menu-school"><option value="">読み込み中…</option></select>
-      <p class="notice">※「福井校(エリート)」は「坂井・福井校(エリート)」に統合されました。福井校(エリート)の選手の方は「坂井・福井校(エリート)」をお選びください。</p>
+      <p class="notice"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16.5v.5"/></svg><span>「福井校(エリート)」は「坂井・福井校(エリート)」に統合されました。福井校(エリート)の方は「坂井・福井校(エリート)」をお選びください。</span></p>
     </div>
 
-    <a class="menu-btn" href="absence-form.html">
-      <div class="mb-icon">🙋</div>
-      <div>
-        <div class="mb-title">欠席のご連絡</div>
-        <div class="mb-desc">練習をお休みする時は、こちらからご連絡ください。</div>
-      </div>
-    </a>
-    <a class="menu-btn" href="calendar-view.html">
-      <div class="mb-icon">📅</div>
-      <div>
-        <div class="mb-title">活動予定</div>
-        <div class="mb-desc">練習・試合・イベントの予定(今日から60日分)をご覧いただけます。</div>
-      </div>
-    </a>
+    <div class="section-label rise d2"><h2>メニュー</h2><span class="en">MENU</span></div>
 
-    <p class="note">校舎を選んでおくと、各ページに選択済みの状態で移動します。</p>
+    <div class="tiles">
+      <a class="tile feature rise d3" href="absence-form.html">
+        <div class="tile-top">
+          <div class="tile-icon" aria-hidden="true">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H8l-4 4V5z"/><path d="M9 10.5h6"/></svg>
+          </div>
+          <div class="tile-arrow" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+        </div>
+        <p class="tile-kicker en">ABSENCE</p>
+        <h3 class="tile-title">欠席のご連絡</h3>
+        <p class="tile-desc">練習をお休みするときは、こちらからご連絡ください。</p>
+      </a>
+      <a class="tile rise d4" href="calendar-view.html">
+        <div class="tile-top">
+          <div class="tile-icon" aria-hidden="true">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/><circle cx="12" cy="15" r="1.2" fill="currentColor" stroke="none"/></svg>
+          </div>
+          <div class="tile-arrow" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+        </div>
+        <p class="tile-kicker en">SCHEDULE</p>
+        <h3 class="tile-title">活動予定</h3>
+        <p class="tile-desc">練習・試合・イベントの予定(今日から60日分)と担当コーチをご覧いただけます。</p>
+      </a>
+    </div>
+
+    <p class="foot">校舎を選んでおくと、各ページに選択済みの状態で移動します。<br><span class="en">© TAKUMA JUKU</span></p>
   </div>
-</div>
+</main>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
