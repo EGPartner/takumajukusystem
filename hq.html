@@ -1853,7 +1853,33 @@ function loadParentViewers(){
     });
 }
 
+// これまでに手動で承認した名前を「承認済みの呼び名」(meta/parentNameAliases)へ取り込む。
+// この仕組みを入れる前に承認した保護者も、次回から自動承認されるようにするため。
+// 一覧にまだ無い名前がある校舎だけ書き込むので、2回目以降は読み取りだけで終わる。
+let parentAliasBackfillDone = false;
+async function backfillParentNameAliases(snap){
+  if (parentAliasBackfillDone) return;
+  parentAliasBackfillDone = true;
+  const bySchool = {};
+  snap.docs.forEach(d => {
+    const v = d.data();
+    if (v.status === 'approved' && v.approvedManually && v.schoolId && v.nameKey){
+      (bySchool[v.schoolId] = bySchool[v.schoolId] || new Set()).add(v.nameKey);
+    }
+  });
+  for (const schoolId of Object.keys(bySchool)){
+    try {
+      const ref = db.collection('academies').doc(schoolId).collection('meta').doc('parentNameAliases');
+      const cur = await ref.get();
+      const have = new Set(cur.exists ? (cur.data().names || []) : []);
+      const missing = [...bySchool[schoolId]].filter(n => !have.has(n));
+      if (missing.length) await ref.set({ names: firebase.firestore.FieldValue.arrayUnion(...missing) }, { merge: true });
+    } catch(e){ console.error('parentNameAliases backfill failed', schoolId, e); }
+  }
+}
+
 function renderParentViewers(snap){
+  backfillParentNameAliases(snap);
   const pendingTbody = document.getElementById('hq-pending-tbody');
   const viewersTbody = document.getElementById('hq-viewers-tbody');
   const pendingCount = document.getElementById('hq-pending-count');
@@ -1902,7 +1928,19 @@ async function handleViewerAction(e){
       const docRef = db.collection('parentViewers').doc(approveUid);
       const snap = await docRef.get();
       const data = snap.data() || {};
-      await docRef.update({ status: 'approved', approvedManually: true });
+      // 承認した名前をその校舎の「承認済みの呼び名」として覚える。同じ保護者が別の端末やブラウザで
+      // 同じ名前を入力したときは、名簿と表記が違っても自動で承認され、本部への申請は来なくなる
+      // (firestore.rulesのvalidViewerDataがこの一覧も照合する)。
+      if (data.schoolId && data.nameKey){
+        await db.collection('academies').doc(data.schoolId).collection('meta').doc('parentNameAliases')
+          .set({ names: firebase.firestore.FieldValue.arrayUnion(data.nameKey) }, { merge: true });
+      }
+      // 同じ校舎・同じ名前で承認待ちになっている重複申請も、まとめて承認する
+      const dupSnap = await db.collection('parentViewers').where('status', '==', 'pending').get();
+      const sameDocs = dupSnap.docs.filter(d => d.id === approveUid
+        || (d.data().schoolId === data.schoolId && d.data().nameKey === data.nameKey));
+      if (!sameDocs.some(d => d.id === approveUid)) sameDocs.push(snap);
+      await Promise.all(sameDocs.map(d => db.collection('parentViewers').doc(d.id).update({ status: 'approved', approvedManually: true })));
       notifyApprovedByEmail(data.notifyEmail, data.studentName);
     } catch(err){ alert('承認に失敗しました: ' + err.message); }
     return;
