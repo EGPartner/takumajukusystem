@@ -289,7 +289,22 @@ function todayStr(){
 document.getElementById('f-date').value = todayStr();
 document.getElementById('f-date').min = todayStr();
 
+// ページを開いた直後は、Firebaseが「以前ログインした状態」を端末から復元し終えるまで一瞬の空白がある。
+// この間に signInAnonymously() を呼ぶと、復元前に新しい匿名アカウントが作られてしまい、承認済みの
+// 保護者でも「初めての端末」扱いになって、塾生名の入力と承認申請をやり直すことになる。
+// そのため、最初の1回だけ復元が終わるのを待ってから判断する(parent-menu.htmlと同じ方式)。
+let authReadyPromise = null;
+function waitForAuthReady(){
+  if (!authReadyPromise){
+    authReadyPromise = new Promise(resolve => {
+      const unsub = auth.onAuthStateChanged(user => { unsub(); resolve(user); });
+    });
+  }
+  return authReadyPromise;
+}
 async function ensureSignedIn(){
+  const restoredUser = await waitForAuthReady();
+  if (restoredUser) return restoredUser;
   if (auth.currentUser) return auth.currentUser;
   const cred = await auth.signInAnonymously();
   return cred.user;
