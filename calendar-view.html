@@ -441,9 +441,30 @@ async function loadGateSchoolOptions(){
   } catch(e){ console.error(e); sel.innerHTML = '<option value="">読み込みに失敗しました</option>'; }
 }
 
+// ページを開いた直後は、Firebaseが「以前ログインした状態」を端末から復元し終えるまで一瞬の空白がある。
+// この間に signInAnonymously() を呼ぶと、復元前に新しい匿名アカウントが作られてしまい、承認済みの
+// 保護者でも「初めての端末」扱いになって、塾生名の入力と承認申請をやり直すことになる。
+// そのため、最初の1回だけ復元が終わるのを待ってから判断する(parent-menu.htmlと同じ方式)。
+let authReadyPromise = null;
+function waitForAuthReady(){
+  if (!authReadyPromise){
+    authReadyPromise = new Promise(resolve => {
+      const unsub = auth.onAuthStateChanged(user => { unsub(); resolve(user); });
+    });
+  }
+  return authReadyPromise;
+}
+async function ensureSignedIn(){
+  const restoredUser = await waitForAuthReady();
+  if (restoredUser) return restoredUser;
+  if (auth.currentUser) return auth.currentUser;
+  const cred = await auth.signInAnonymously();
+  return cred.user;
+}
+
 async function init(){
   try {
-    await auth.signInAnonymously();
+    await ensureSignedIn();
   } catch(e){
     console.error(e);
     document.getElementById('gate-card').style.display = 'block';
@@ -471,7 +492,7 @@ document.getElementById('gate-submit').addEventListener('click', async () => {
   statusEl.style.color = 'var(--ink-soft)';
   statusEl.textContent = '確認しています…';
   try {
-    if (!auth.currentUser) await auth.signInAnonymously();
+    await ensureSignedIn();
     try { localStorage.setItem(LAST_SCHOOL_KEY, schoolId); } catch(e){}
     const base = { studentName: name, nameKey: normalizeName(name), schoolId, createdAt: firebase.firestore.FieldValue.serverTimestamp() };
     try {
