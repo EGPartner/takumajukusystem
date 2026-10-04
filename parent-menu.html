@@ -211,6 +211,13 @@
   }
   a.tile:hover{transform:translateY(-3px);box-shadow:0 1px 2px rgba(14,21,23,.04), 0 22px 44px -18px rgba(14,21,23,.28);}
   a.tile:active{transform:scale(.985);}
+  /* 書類などの小さなリンク(塾生規則のPDF) */
+  a.tile.compact{min-height:0;display:flex;align-items:center;gap:14px;padding:16px 18px;border-radius:var(--radius-lg);}
+  a.tile.compact .tile-icon{width:44px;height:44px;border-radius:13px;}
+  a.tile.compact .tile-body{flex:1;min-width:0;}
+  a.tile.compact .tile-title{font-size:17px;margin:0;}
+  a.tile.compact .tile-desc{font-size:12px;}
+  a.tile.compact .tile-arrow{width:34px;height:34px;}
   a.tile.feature{
     color:#fff;border:none;
     background:
@@ -344,6 +351,20 @@
         <p class="tile-kicker en">SCHEDULE</p>
         <h3 class="tile-title">活動予定</h3>
         <p class="tile-desc">練習・試合・イベントの予定(今日から60日分)と担当コーチをご覧いただけます。</p>
+      </a>
+    </div>
+
+    <div class="section-label rise d4"><h2>書類</h2><span class="en">DOCUMENTS</span></div>
+    <div class="tiles">
+      <a class="tile compact rise d4" href="juku-rules.pdf" target="_blank" rel="noopener">
+        <div class="tile-icon" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>
+        </div>
+        <div class="tile-body">
+          <h3 class="tile-title">塾生規則</h3>
+          <p class="tile-desc">入塾・休塾・退塾などのきまり(PDF)</p>
+        </div>
+        <div class="tile-arrow" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M9 7h8v8"/></svg></div>
       </a>
     </div>
 
