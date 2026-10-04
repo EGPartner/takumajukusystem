@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#0B1416">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>タクマ塾 保護者ページ</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -81,6 +83,14 @@
     mask-image:linear-gradient(180deg,#000 0%,transparent 85%);
     -webkit-mask-image:linear-gradient(180deg,#000 0%,transparent 85%);
   }
+  /* 背景のロゴ(筆文字)。白を薄く重ね、右側にはみ出させて模様として見せる */
+  .hero-logo{
+    position:absolute;z-index:0;pointer-events:none;user-select:none;
+    width:min(118%,760px);right:-26%;top:54px;
+    opacity:.11;transform:rotate(-7deg);
+  }
+  @media (min-width:640px){ .hero-logo{right:-6%;top:30px;width:min(80%,680px);} }
+  .brand-logo{height:40px;width:auto;display:block;}
   .hero-inner{position:relative;z-index:1;max-width:560px;margin:0 auto;}
   .topbar{display:flex;align-items:center;justify-content:space-between;}
   .brand{display:flex;align-items:center;gap:10px;}
@@ -271,9 +281,10 @@
 </head>
 <body>
 <header class="hero">
+  <img class="hero-logo" src="takuma-logo-white.png" alt="" aria-hidden="true">
   <div class="hero-inner">
     <div class="topbar">
-      <div class="brand"><div class="brand-mark" aria-hidden="true"></div><span class="brand-name en">TAKUMA JUKU</span></div>
+      <div class="brand"><img class="brand-logo" src="takuma-logo-white.png" alt="タクマ塾"></div>
       <span class="chip en">PARENTS</span>
     </div>
     <div class="hero-copy rise">
