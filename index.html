@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>タクマ塾 管理システム ログイン</title>
 <style>
   :root{
@@ -26,11 +28,19 @@
   .status{font-size:13px;margin-top:14px;text-align:center;min-height:16px;}
   .divider{border-top:1px solid var(--border);margin:18px 0;}
   .branch-list{margin-top:10px;}
+  /* ロゴ: カード上部に表示し、画面の背景にも薄く敷く */
+  .login-logo{display:block;height:64px;width:auto;margin:2px auto 14px;}
+  body::before{
+    content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+    background:url("takuma-logo-teal.png") no-repeat right -12vw bottom -6vh / min(110vw,900px) auto;
+    opacity:.06;
+  }
   .branch-btn{display:block;width:100%;padding:10px;margin-top:8px;border:1px solid var(--border-strong);border-radius:8px;background:var(--surface);text-align:left;font-size:14px;cursor:pointer;color:var(--text-primary);}
 </style>
 </head>
 <body>
 <div class="card">
+  <img class="login-logo" src="takuma-logo-teal.png" alt="タクマ塾">
   <h1>タクマ塾 管理システム</h1>
   <p class="sub">メールアドレスとパスワードでログインしてください。権限に応じた画面に自動で移動します。</p>
 
