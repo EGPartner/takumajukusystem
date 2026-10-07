@@ -116,6 +116,21 @@
   .tab-panel{display:none;}
   .tab-panel.active{display:block;animation:hqfadein .2s ease;}
   @keyframes hqfadein{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+  .rev-chart{position:relative;display:flex;align-items:flex-end;gap:10px;height:220px;padding:22px 4px 0;border-bottom:1px solid var(--border-strong);}
+  .rev-col{flex:1;min-width:0;max-width:72px;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;background:none;border:none;padding:0;cursor:pointer;font-family:inherit;position:relative;}
+  .rev-col:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px;}
+  .rev-bar{width:100%;max-width:40px;background:var(--accent);border-radius:4px 4px 0 0;min-height:2px;transition:background .15s ease;}
+  .rev-col:hover .rev-bar,.rev-col:focus-visible .rev-bar{background:var(--accent-dark);}
+  .rev-col .rev-val{font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;color:var(--text-primary);margin-bottom:4px;white-space:nowrap;font-variant-numeric:tabular-nums;}
+  .rev-axis{display:flex;gap:10px;padding:6px 4px 0;}
+  .rev-axis span{flex:1;min-width:0;max-width:72px;text-align:center;font-size:11px;color:var(--text-secondary);font-family:'Outfit',sans-serif;}
+  .rev-tip{position:absolute;z-index:5;pointer-events:none;background:var(--text-primary);color:#fff;font-size:12px;line-height:1.6;padding:8px 10px;border-radius:8px;white-space:nowrap;box-shadow:var(--shadow-md);transform:translate(-50%,-100%);display:none;}
+  .rev-down{color:var(--danger);font-weight:700;}
+  .rev-up{color:var(--accent-dark);font-weight:700;}
+  .rev-alert{display:flex;gap:8px;align-items:flex-start;padding:10px 12px;border-radius:var(--radius-sm);background:var(--danger-bg);color:var(--text-primary);font-size:13px;margin-bottom:8px;}
+  .rev-alert.ok{background:var(--accent-bg);}
+  .rev-alert .ic{font-weight:900;flex:none;}
+  .mini-table td.num,.mini-table th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}
 </style>
 </head>
 <body>
@@ -156,6 +171,7 @@
 
     <div class="tabs" role="tablist">
       <button class="tab-btn active" data-tab="schedule">統合スケジュール</button>
+      <button class="tab-btn" data-tab="revenue">売上</button>
       <button class="tab-btn" data-tab="absence">欠席連絡</button>
       <button class="tab-btn" data-tab="students">塾生</button>
       <button class="tab-btn" data-tab="worklog">出勤</button>
@@ -284,6 +300,44 @@
         <div class="checkbox-row"><input type="checkbox" id="hq-bulk-patterns"><label for="hq-bulk-patterns">定期パターン(毎週の練習)も削除</label></div>
         <div class="btn-row"><button id="hq-btn-bulk-delete" style="width:auto;background:var(--danger);color:#fff;">一括削除を実行</button></div>
         <p class="status" id="hq-bulk-status"></p>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="tab-revenue">
+      <div class="card">
+        <div class="btn-row" style="justify-content:space-between;align-items:center;">
+          <h2 style="font-size:15px;margin:0;">売上の推移(全校舎)</h2>
+          <button class="ghost-small" id="hq-btn-reload-revenue">最新に更新</button>
+        </div>
+        <p class="status" style="margin-top:4px;color:var(--text-muted);">月謝(全員一律 8,000円)× 各月の在籍数(塾生リストの◼️)で計算しています。請求ベースの金額で、実際の入金額ではありません。</p>
+        <div class="kpi-row">
+          <div class="kpi-box"><div class="k" id="hq-rev-kpi-month-label">今月の月謝売上</div><div class="v" id="hq-rev-kpi-sales">-</div></div>
+          <div class="kpi-box"><div class="k">前月比</div><div class="v" id="hq-rev-kpi-diff">-</div></div>
+          <div class="kpi-box"><div class="k">在籍数</div><div class="v" id="hq-rev-kpi-count">-</div></div>
+          <div class="kpi-box"><div class="k">入塾・復塾 / 退塾・休塾</div><div class="v" id="hq-rev-kpi-flow">-</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <h2 style="font-size:15px;margin:0 0 4px;">月謝売上の推移</h2>
+        <p class="status" style="margin-top:0;color:var(--text-muted);">棒にカーソルを合わせる(スマホはタップ)と、その月の内訳が出ます。</p>
+        <div style="position:relative;">
+          <div class="rev-chart" id="hq-rev-chart"><div class="empty" style="width:100%;">読み込み中…</div></div>
+          <div class="rev-axis" id="hq-rev-axis"></div>
+          <div class="rev-tip" id="hq-rev-tip" role="status"></div>
+        </div>
+      </div>
+      <div class="card">
+        <h2 style="font-size:15px;margin:0 0 10px;">要確認</h2>
+        <div id="hq-rev-alerts"><div class="empty">読み込み中…</div></div>
+      </div>
+      <div class="card">
+        <h2 style="font-size:15px;margin:0 0 4px;">校舎別の在籍数と売上</h2>
+        <p class="status" style="margin-top:0;color:var(--text-muted);">各月の数字は在籍数です。▼は前月より減った月です。</p>
+        <div id="hq-rev-table" class="scroll-y"></div>
+      </div>
+      <div class="card">
+        <h2 style="font-size:15px;margin:0 0 10px;" id="hq-rev-moves-title">今月の入塾・退塾</h2>
+        <div id="hq-rev-moves"></div>
       </div>
     </div>
 
@@ -682,6 +736,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b === btn));
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + btn.dataset.tab));
+    if (btn.dataset.tab === 'revenue') loadHQRevenue();
     if (btn.dataset.tab === 'students') loadHQStudents();
     if (btn.dataset.tab === 'worklog') loadHQWorkLogs();
     if (btn.dataset.tab === 'staff') loadHQStaffOverview();
@@ -827,6 +882,158 @@ document.getElementById('hq-students-summary').addEventListener('click', (e) => 
   renderHQStudents();
 });
 document.getElementById('hq-btn-reload-students').addEventListener('click', () => loadHQStudents(true));
+
+// ---- 売上タブ(月謝 × 各月の在籍数。塾生タブと同じ在籍データを使う) ----
+const HQ_TUITION = 8000; // 月謝(全校舎・全員一律)
+const HQ_REV_MAX_MONTHS = 24;
+let hqRevData = null;
+
+function hqAddMonthKey(key, d){
+  const [y, m] = key.split('-').map(Number);
+  const t = new Date(y, m - 1 + d, 1);
+  return t.getFullYear() + '-' + pad(t.getMonth() + 1);
+}
+function hqMonthShort(key){ const [y, m] = key.split('-'); return y.slice(2) + '/' + Number(m); }
+function hqMonthJa(key){ const [y, m] = key.split('-'); return y + '年' + Number(m) + '月'; }
+function hqYen(n){ return Number(n).toLocaleString('ja-JP') + '円'; }
+function hqSigned(n, unit){ return (n > 0 ? '+' : n < 0 ? '−' : '±') + Math.abs(n).toLocaleString('ja-JP') + unit; }
+
+async function loadHQRevenue(force){
+  await loadHQStudents(force);
+  renderHQRevenue();
+}
+
+function computeHQRevenue(){
+  const cur = currentMonthKey();
+  let first = null;
+  schoolsArr.forEach(s => (hqStudentsBySchool[s.id] || []).forEach(st => {
+    Object.keys(st.months || {}).forEach(k => { if (st.months[k] === 'active' && (!first || k < first)) first = k; });
+  }));
+  const keys = [];
+  for (let k = first && first < cur ? first : cur; k <= cur; k = hqAddMonthKey(k, 1)) keys.push(k);
+  const months = keys.slice(-HQ_REV_MAX_MONTHS);
+  const isActive = (st, k) => !!(st.months && st.months[k] === 'active');
+  const bySchool = schoolsArr.map(s => {
+    const list = hqStudentsBySchool[s.id] || [];
+    return { id: s.id, name: s.name, counts: months.map(k => list.filter(st => isActive(st, k)).length) };
+  });
+  const totals = months.map((k, i) => bySchool.reduce((a, s) => a + s.counts[i], 0));
+  const moves = months.map((k, i) => {
+    const prev = hqAddMonthKey(k, -1);
+    const joined = [], left = [];
+    schoolsArr.forEach(s => (hqStudentsBySchool[s.id] || []).forEach(st => {
+      const now = isActive(st, k), before = isActive(st, prev);
+      if (now && !before) joined.push({ name: st.name || '', academyId: s.id, school: s.name });
+      if (!now && before) left.push({ name: st.name || '', academyId: s.id, school: s.name });
+    }));
+    return { joined, left };
+  });
+  return { months, bySchool, totals, moves };
+}
+
+function renderHQRevenue(){
+  if (!hqStudentsBySchool) return;
+  hqRevData = computeHQRevenue();
+  const { months, bySchool, totals, moves } = hqRevData;
+  const n = months.length, last = n - 1;
+  const curCount = totals[last];
+  const prevCount = n > 1 ? totals[last - 1] : null;
+
+  document.getElementById('hq-rev-kpi-month-label').textContent = hqMonthJa(months[last]) + 'の月謝売上';
+  document.getElementById('hq-rev-kpi-sales').innerHTML = (curCount * HQ_TUITION).toLocaleString('ja-JP') + '<small> 円</small>';
+  document.getElementById('hq-rev-kpi-count').innerHTML = curCount + '<small> 名</small>';
+  if (prevCount === null){
+    document.getElementById('hq-rev-kpi-diff').innerHTML = '-';
+  } else {
+    const diff = (curCount - prevCount) * HQ_TUITION;
+    const pct = prevCount ? ((curCount - prevCount) / prevCount * 100).toFixed(1) : null;
+    document.getElementById('hq-rev-kpi-diff').innerHTML = '<span class="' + (diff < 0 ? 'rev-down' : diff > 0 ? 'rev-up' : '') + '">'
+      + (diff < 0 ? '▼ ' : diff > 0 ? '▲ ' : '') + hqSigned(diff, '') + '<small> 円</small></span>'
+      + (pct !== null ? '<small> (' + (pct > 0 ? '+' : '') + pct + '%)</small>' : '');
+  }
+  const mv = moves[last];
+  document.getElementById('hq-rev-kpi-flow').innerHTML = (n > 1 ? mv.joined.length + '<small> 名</small> / ' + mv.left.length + '<small> 名</small>' : '-');
+
+  // 推移グラフ(全校合計の1系列。最新月だけ金額を直接表示し、他はホバーで確認)
+  const max = Math.max(1, ...totals);
+  document.getElementById('hq-rev-chart').innerHTML = months.map((k, i) => {
+    const h = Math.max(1, Math.round(totals[i] / max * 100));
+    const val = i === last ? '<span class="rev-val">' + (totals[i] * HQ_TUITION / 10000).toLocaleString('ja-JP') + '万円</span>' : '';
+    return '<button type="button" class="rev-col" data-rev-idx="' + i + '" aria-label="' + hqMonthJa(k) + ' ' + hqYen(totals[i] * HQ_TUITION) + '">'
+      + val + '<span class="rev-bar" style="height:calc(' + h + '% - 24px);"></span></button>';
+  }).join('');
+  document.getElementById('hq-rev-axis').innerHTML = months.map(k => '<span>' + hqMonthShort(k) + '</span>').join('');
+
+  // 要確認: 在籍が減った校舎、今月の◼️の付け忘れの疑い
+  const alerts = [];
+  if (n > 1){
+    bySchool.forEach(s => {
+      const c = s.counts[last], p = s.counts[last - 1];
+      if (c === 0 && p > 0){
+        alerts.push('<b>' + escAttr(s.name) + '</b>：' + hqMonthJa(months[last]) + 'の在籍が0名です(前月 ' + p + '名)。塾生リストに今月の◼️が付いているか確認してください。');
+      } else if (c < p){
+        alerts.push('<b>' + escAttr(s.name) + '</b>：在籍が前月より ' + (p - c) + '名減りました(' + p + '名 → ' + c + '名、月謝 ' + hqSigned((c - p) * HQ_TUITION, '円') + ')。');
+      }
+    });
+  }
+  document.getElementById('hq-rev-alerts').innerHTML = alerts.length
+    ? alerts.map(a => '<div class="rev-alert"><span class="ic">!</span><span>' + a + '</span></div>').join('')
+    : '<div class="rev-alert ok"><span class="ic">✓</span><span>' + (n > 1 ? '前月より在籍が減った校舎はありません。' : '比較できる前月のデータがまだありません。') + '</span></div>';
+
+  // 校舎別テーブル(在籍数の推移 + 今月の売上と前月比)
+  const head = '<tr><th>校舎</th>' + months.map(k => '<th class="num">' + hqMonthShort(k) + '</th>').join('')
+    + '<th class="num">今月の売上</th><th class="num">前月比</th></tr>';
+  const cell = (counts, i) => {
+    const down = i > 0 && counts[i] < counts[i - 1];
+    return '<td class="num' + (down ? ' rev-down' : '') + '">' + (down ? '▼' : '') + counts[i] + '</td>';
+  };
+  const row = (label, counts, color, bold) => {
+    const d = n > 1 ? (counts[last] - counts[last - 1]) * HQ_TUITION : null;
+    return '<tr' + (bold ? ' style="font-weight:700;border-top:2px solid var(--border-strong);"' : '') + '>'
+      + '<td style="white-space:nowrap;font-weight:700;' + (color ? 'color:' + color + ';' : '') + '">' + label + '</td>'
+      + months.map((k, i) => cell(counts, i)).join('')
+      + '<td class="num">' + hqYen(counts[last] * HQ_TUITION) + '</td>'
+      + '<td class="num ' + (d < 0 ? 'rev-down' : d > 0 ? 'rev-up' : '') + '">' + (d === null ? '-' : hqSigned(d, '円')) + '</td></tr>';
+  };
+  document.getElementById('hq-rev-table').innerHTML = '<table class="mini-table"><thead>' + head + '</thead><tbody>'
+    + bySchool.map(s => row(escAttr(s.name), s.counts, schoolColor(s.id), false)).join('')
+    + row('全校合計', totals, null, true)
+    + '</tbody></table>';
+
+  // 今月の入塾・退塾の一覧
+  document.getElementById('hq-rev-moves-title').textContent = hqMonthJa(months[last]) + 'の入塾・復塾 / 退塾・休塾';
+  const list = (arr, empty) => arr.length
+    ? '<table class="mini-table"><tbody>' + arr.map(x => '<tr><td style="font-weight:700;">' + escAttr(x.name) + '</td><td style="color:' + schoolColor(x.academyId) + ';font-weight:700;">' + escAttr(x.school) + '</td></tr>').join('') + '</tbody></table>'
+    : '<div class="empty">' + empty + '</div>';
+  document.getElementById('hq-rev-moves').innerHTML = n > 1
+    ? '<h3 style="font-size:13px;margin:0 0 6px;">入塾・復塾(' + mv.joined.length + '名)</h3>' + list(mv.joined, 'いません。')
+      + '<h3 style="font-size:13px;margin:16px 0 6px;">退塾・休塾(' + mv.left.length + '名)</h3>' + list(mv.left, 'いません。')
+    : '<div class="empty">比較できる前月のデータがまだありません。</div>';
+}
+
+function showHQRevTip(colEl){
+  const tip = document.getElementById('hq-rev-tip');
+  if (!colEl || !hqRevData){ tip.style.display = 'none'; return; }
+  const i = Number(colEl.dataset.revIdx);
+  const { months, totals, moves } = hqRevData;
+  const diffLine = i > 0 ? '<br>前月比 ' + hqSigned((totals[i] - totals[i - 1]) * HQ_TUITION, '円')
+    + '<br>入塾・復塾 ' + moves[i].joined.length + '名 / 退塾・休塾 ' + moves[i].left.length + '名' : '';
+  tip.innerHTML = '<b>' + hqMonthJa(months[i]) + '</b><br>月謝売上 ' + hqYen(totals[i] * HQ_TUITION) + '<br>在籍 ' + totals[i] + '名' + diffLine;
+  tip.style.display = 'block';
+  const wrap = tip.parentElement.getBoundingClientRect();
+  const bar = colEl.querySelector('.rev-bar').getBoundingClientRect();
+  const half = tip.offsetWidth / 2;
+  const x = Math.min(Math.max(bar.left + bar.width / 2 - wrap.left, half), wrap.width - half);
+  tip.style.left = x + 'px';
+  tip.style.top = (bar.top - wrap.top - 8) + 'px';
+}
+const hqRevChartEl = document.getElementById('hq-rev-chart');
+hqRevChartEl.addEventListener('mouseover', e => showHQRevTip(e.target.closest('.rev-col')));
+hqRevChartEl.addEventListener('mouseleave', () => showHQRevTip(null));
+hqRevChartEl.addEventListener('focusin', e => showHQRevTip(e.target.closest('.rev-col')));
+hqRevChartEl.addEventListener('focusout', () => showHQRevTip(null));
+hqRevChartEl.addEventListener('click', e => showHQRevTip(e.target.closest('.rev-col')));
+document.getElementById('hq-btn-reload-revenue').addEventListener('click', () => loadHQRevenue(true));
 document.getElementById('hq-enrollment-list').addEventListener('click', async (e) => {
   const id = e.target.dataset.reflectApp;
   if (!id) return;
