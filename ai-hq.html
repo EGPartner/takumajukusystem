@@ -500,11 +500,11 @@ function actorOfTarget(t) { if (!t) return null; if (t.kind === 'team') return t
 
 /* ---------- 本番のデータ ---------- */
 let orders = [], decisions = [], logs = [], usage = null, apiKeyMeta = null;
-const ACTIVE = ['executing', 'consult_head', 'cross_consult', 'meeting', 'awaiting_decision', 'producing'];
+const ACTIVE = ['executing', 'consult_head', 'cross_consult', 'meeting', 'awaiting_decision', 'producing', 'reviewing', 'awaiting_adoption'];
 const STAGE = {
   executing: ['実行中', 20, 'ok'], consult_head: ['部長に相談中', 35, 'warn'], cross_consult: ['横串で相談中', 50, 'warn'],
   meeting: ['部長会議', 65, 'warn'], awaiting_decision: ['決裁待ち', 70, 'warn'], producing: ['成果物作成中', 85, 'ok'],
-  done: ['完了', 100, 'ok'], returned: ['差し戻し', 70, 'idle'], dropped: ['取り下げ', 0, 'idle'], paused_quota: ['一時停止(AIの1日の上限)', 0, 'bad'], error: ['エラー', 0, 'bad']
+  done: ['完了', 100, 'ok'], returned: ['差し戻し', 70, 'idle'], dropped: ['取り下げ', 0, 'idle'], reviewing: ['監査役が確認中', 92, 'ok'], awaiting_adoption: ['採用の決裁待ち', 95, 'warn'], paused_quota: ['一時停止(AIの1日の上限)', 0, 'bad'], error: ['エラー', 0, 'bad']
 };
 const stageLabel = s => (STAGE[s] || [s])[0];
 function teamState(id) {
@@ -567,8 +567,15 @@ function animateStage(o, prev) {
       walkTo(chair, MEETING_SEATS.chair[0], MEETING_SEATS.chair[1]);
       toast(`指示#${o.no}が決裁に上がりました`);
       break;
-    case 'producing': if (prev === 'awaiting_decision') deliverBy(messenger, t); if (actor) say(actor, 'doc', 5); break;
-    case 'done': if (actor) say(actor, 'ok', 5); toast(`指示#${o.no}が完了しました。成果物を確認できます`); break;
+    case 'reviewing': say(audit, 'doc', 5); break;
+    case 'awaiting_adoption':
+      audit.carry = true;
+      walkTo(audit, 25.6, 5.2, () => { audit.carry = false; say(boss, 'doc', 3); });
+      walkTo(audit, MEETING_SEATS.audit[0], MEETING_SEATS.audit[1]);
+      toast(`指示#${o.no}の成果物が採用の決裁に上がりました`);
+      break;
+    case 'producing': if (prev === 'awaiting_decision' || prev === 'awaiting_adoption') deliverBy(messenger, t); if (actor) say(actor, 'doc', 5); break;
+    case 'done': if (actor) say(actor, 'ok', 5); if (prev !== 'done' && prev !== 'awaiting_adoption') toast(`指示#${o.no}が完了しました。成果物を確認できます`); break;
     case 'error': case 'paused_quota': if (actor) say(actor, 'alert', 5); toast(`指示#${o.no}が止まりました: ${o.error || stageLabel(o.stage)}`); break;
   }
 }
@@ -819,7 +826,7 @@ function renderPanel() {
       <ul class="todo">${decisions.length ? decisions.map(d => `<li>${esc(d.title)}</li>`).join('') : '<li>決裁待ちはありません</li>'}</ul>
       <p class="pk">売上と在籍数は、本部画面の「売上」タブで確認できます。<a href="hq.html?goto=revenue">本部画面を開く</a></p>`;
   } else if (panelTab === 'decide') {
-    P.innerHTML = decisions.length ? decisions.map(d => `<article class="card" id="card-${d.id}">
+    P.innerHTML = decisions.length ? decisions.map(d => d.type === 'adoption' ? adoptionCard(d) : `<article class="card" id="card-${d.id}">
         <div class="card-h"><span class="pill">${esc(deptName(d.dept) || '部長会議')}</span><span class="pill due">指示#${esc(d.orderNo || '')}${d.round > 1 ? ' ・ 第' + d.round + '案' : ''}</span></div>
         <h3>${esc(d.title)}</h3>
         <div class="row rec"><span class="lb">推奨</span><span class="bd">${esc(d.recommendation)}</span></div>
@@ -840,9 +847,25 @@ function renderPanel() {
     P.innerHTML = logs.length ? `<ul class="log">${logs.map(l => `<li><span class="tm">${esc(hm(toDate(l.at)))}</span><div><div class="who">${esc(l.who)}</div>${esc(l.what)}</div></li>`).join('')}</ul>` : `<div class="empty"><b>まだ記録はありません</b></div>`;
   }
 }
+function adoptionCard(d) {
+  const o = orders.find(x => x.id === d.orderId);
+  return `<article class="card" id="card-${d.id}">
+    <div class="card-h"><span class="pill">採用の決裁</span><span class="pill due">指示#${esc(d.orderNo || '')}${d.round > 1 ? ' ・ 修正' + (d.round - 1) + '回目' : ''}</span>${d.risk ? `<span class="pill">危うさ: ${esc(d.risk)}</span>` : ''}</div>
+    <h3>${esc(d.title)}</h3>
+    <div class="row rec"><span class="lb">要約</span><span class="bd">${esc(d.summary)}</span></div>
+    <div class="row dis"><span class="lb">監査役</span><span class="bd">${(d.audit || []).length ? d.audit.map(esc).join('<br>') : '指摘なし'}</span></div>
+    ${o && o.deliverable ? `<button type="button" class="outbox" data-view-output="${o.id}"><b>成果物を開く</b><span class="more">中身を確かめてから判断 →</span></button>` : ''}
+    <div class="cmd-mini"><label for="ins-${d.id}" class="sr">コメント</label><textarea id="ins-${d.id}" placeholder="不採用・修正のときは理由や直してほしい点を書く"></textarea>
+      <button type="button" class="mic" data-mic="ins-${d.id}" aria-label="音声で入力"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button></div>
+    <div class="actions"><button type="button" class="btn primary" data-act="adopt" data-id="${d.id}">採用</button>
+      <button type="button" class="btn ghost" data-act="revise" data-id="${d.id}">修正</button>
+      <button type="button" class="btn ghost" data-act="reject" data-id="${d.id}">不採用</button></div>
+  </article>`;
+}
 const openOrders = new Set();
 function renderOrder(o) {
-  const [label, pct, tone] = STAGE[o.stage] || [o.stage, 0, 'idle'];
+  let [label, pct, tone] = STAGE[o.stage] || [o.stage, 0, 'idle'];
+  if (o.stage === 'done' && o.adoption) [label, tone] = { adopted: ['採用', 'ok'], rejected: ['不採用', 'idle'], pending: ['完了(未確認)', 'ok'] }[o.adoption.status] || [label, tone];
   const steps = o.steps || [];
   const doneSteps = o.stage === 'done' ? steps.length : Math.floor(steps.length * pct / 100);
   const open = openOrders.has(o.id);
@@ -851,10 +874,13 @@ function renderOrder(o) {
       <div class="sec-h">業務指示</div><div class="pk" style="color:var(--ink)">${esc(o.instruction)}${o.due ? '(期限: ' + esc(o.due) + ')' : ''}</div>
       <div class="sec-h">手順</div><ol class="steps">${steps.map((s, i) => `<li class="${i < doneSteps ? 'done' : i === doneSteps && o.stage !== 'done' ? 'now' : ''}">${esc(s)}</li>`).join('')}</ol>
       <div class="sec-h">相談・判断の記録</div>${(o.events || []).length ? `<ul class="cl">${o.events.map(e => `<li><span class="tm">${esc(hm(toDate(e.at)))}</span><b>${esc(e.from)}</b> → ${esc(e.to)}<br>${esc(e.what)}</li>`).join('')}</ul>` : '<div class="pk">まだ相談はありません</div>'}
-      ${o.stage === 'awaiting_decision' ? `<button type="button" class="btn primary" data-go-decide="1" style="flex:none">決裁を開く</button>` : ''}
+      ${o.stage === 'awaiting_decision' || o.stage === 'awaiting_adoption' ? `<button type="button" class="btn primary" data-go-decide="1" style="flex:none">決裁を開く</button>` : ''}
       ${o.stage === 'error' || o.stage === 'paused_quota' ? `<div class="alertbox"><b>止まった理由</b>${esc(pauseText(o))} ${retryBtn(o)}</div>` : ''}
       ${o.stage === 'producing' ? `<div class="outbox wait">成果物を作成しています(Web検索で事実を確かめています)…</div>` : ''}
       ${o.deliverable ? `<div class="sec-h">成果物(完了報告)</div><button type="button" class="outbox" data-view-output="${o.id}"><b>${esc(o.deliverable.title)}</b><span>${esc(o.deliverable.summary)}</span><span class="more">タップして詳細を見る →</span></button>` : ''}
+      ${o.adoption && o.adoption.status !== 'pending' ? `<div class="pk">${o.adoption.status === 'adopted' ? '採用済み' : '不採用'}${o.adoption.note ? ': ' + esc(o.adoption.note) : ''}</div>` : ''}
+      ${o.stage === 'done' && o.adoption && o.adoption.status === 'pending' ? `<div class="cmd-mini"><label for="ad-${o.id}" class="sr">採用の判断へのコメント</label><textarea id="ad-${o.id}" placeholder="不採用・修正のときは理由や直してほしい点を書く"></textarea></div>
+        <div class="actions"><button type="button" class="btn primary" data-adopt="adopt" data-id="${o.id}">採用</button><button type="button" class="btn ghost" data-adopt="revise" data-id="${o.id}">修正</button><button type="button" class="btn ghost" data-adopt="reject" data-id="${o.id}">不採用</button></div>` : ''}
     </div>` : '';
   return `<li class="oi"><div class="oh"><span class="tm">${esc(hm(toDate(o.createdAt)))}</span><span class="who">#${esc(o.no)} ${esc(targetName(o.target))}</span><span class="st ${tone === 'bad' ? 'warn' : tone}">${esc(label)}</span>${o.costYen ? `<span class="tm">${Math.round(o.costYen)}円</span>` : ''}
     <button type="button" class="btn chk" data-order="${o.id}" aria-expanded="${open}">${open ? '閉じる' : '進捗を確認'}</button></div>
@@ -872,7 +898,7 @@ function openViewer(o) {
   viewing = o;
   const isReq = c => /要確認/.test(String(c));
   $('#v-title').textContent = d.title;
-  $('#v-meta').textContent = `指示#${o.no} ・ ${targetName(o.target)} ・ 完了 ${hm(toDate(o.doneAt))} ・ AIが作成(事実はWeb検索の出典つき)`;
+  $('#v-meta').textContent = `指示#${o.no} ・ ${targetName(o.target)} ・ ${hm(toDate(o.doneAt))} ・ ${o.adoption && o.adoption.status === 'adopted' ? '採用済み' : o.adoption && o.adoption.status === 'rejected' ? '不採用' : o.stage === 'awaiting_adoption' ? '採用の決裁待ち' : '未確認'} ・ AIが作成`;
   $('#v-body').innerHTML = `
     <p class="v-sum">${esc(d.summary)}</p>
     ${d.table && d.table.columns ? `<div class="v-table"><table><thead><tr>${d.table.columns.map(c => `<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>${(d.table.rows || []).map(r => `<tr>${(r.cells || r).map(c => `<td class="${isReq(c) ? 'req' : ''}">${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>` : ''}
@@ -969,6 +995,14 @@ document.addEventListener('click', async e => {
   const tr = e.target.closest('tr[data-focus]');
   if (tr) { const z = ZONES[tr.dataset.focus]; if (z) { const sc = document.querySelector('.scroller'); sc.scrollTo({ left: Math.max(0, z.x * T / W * sc.scrollWidth - 40), behavior: 'smooth' }); } return; }
   if (!btn) return;
+  if (btn.dataset.adopt) {
+    const id = btn.dataset.id, kind = btn.dataset.adopt, ta = document.getElementById('ad-' + id), note = ta ? ta.value.trim() : '';
+    if (kind !== 'adopt' && !note) { ta.focus(); toast(kind === 'reject' ? '不採用の理由を書いてください' : '直してほしい点を書いてください'); return; }
+    btn.disabled = true;
+    try { await call('aiAdoptOrder')({ orderId: id, kind, note }); toast({ adopt: '採用しました', revise: '修正を指示しました', reject: '不採用にしました' }[kind]); }
+    catch (err) { btn.disabled = false; toast('送れませんでした: ' + err.message); }
+    return;
+  }
   if (btn.dataset.retry) {
     btn.disabled = true;
     try { await call('aiRetryOrder')({ orderId: btn.dataset.retry }); toast('やり直しを始めました。止まった段階から再開します'); }
@@ -977,13 +1011,13 @@ document.addEventListener('click', async e => {
   }
   if (btn.dataset.ptab) { panelTab = btn.dataset.ptab; renderPanel(); }
   if (btn.dataset.order) { const id = btn.dataset.order; openOrders.has(id) ? openOrders.delete(id) : openOrders.add(id); renderPanel(); }
-  if (btn.dataset.act === 'approve' || btn.dataset.act === 'back' || btn.dataset.act === 'drop') {
+  if (['approve', 'back', 'drop', 'adopt', 'revise', 'reject'].includes(btn.dataset.act)) {
     const id = btn.dataset.id, ta = document.getElementById('ins-' + id), note = ta ? ta.value.trim() : '';
-    if (btn.dataset.act === 'back' && !note) { ta.focus(); toast('差し戻しの理由を書くか、マイクで話してください'); return; }
+    if (['back', 'revise', 'reject'].includes(btn.dataset.act) && !note) { ta.focus(); toast(btn.dataset.act === 'reject' ? '不採用の理由を書いてください' : btn.dataset.act === 'revise' ? '直してほしい点を書いてください' : '差し戻しの理由を書くか、マイクで話してください'); return; }
     btn.disabled = true;
     if (btn.dataset.act === 'drop' && !confirm('この案件を取り下げますか?(これ以上AIの費用はかかりません)')) return;
     const kind = btn.dataset.act === 'approve' ? (note ? 'cond' : 'approve') : btn.dataset.act;
-    try { await call('aiDecide')({ decisionId: id, kind, note }); toast({ approve: '承認しました。担当が実行を再開します', cond: '条件付きで承認しました', back: '差し戻しました。部長会議が次の案を作ります', drop: '取り下げました' }[kind]); }
+    try { await call('aiDecide')({ decisionId: id, kind, note }); toast({ approve: '承認しました。担当が実行を再開します', cond: '条件付きで承認しました', back: '差し戻しました。部長会議が次の案を作ります', drop: '取り下げました', adopt: '採用しました', revise: '修正を指示しました。係が直してもう一度上げます', reject: '不採用にしました' }[kind]); }
     catch (err) { btn.disabled = false; toast('決裁を送れませんでした: ' + err.message); }
   }
 });
