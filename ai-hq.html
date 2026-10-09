@@ -479,7 +479,7 @@ const ACTIVE = ['executing', 'consult_head', 'cross_consult', 'meeting', 'awaiti
 const STAGE = {
   executing: ['実行中', 20, 'ok'], consult_head: ['部長に相談中', 35, 'warn'], cross_consult: ['横串で相談中', 50, 'warn'],
   meeting: ['部長会議', 65, 'warn'], awaiting_decision: ['決裁待ち', 70, 'warn'], producing: ['成果物作成中', 85, 'ok'],
-  done: ['完了', 100, 'ok'], returned: ['差し戻し', 70, 'idle'], paused_quota: ['一時停止(AIの1日の上限)', 0, 'bad'], error: ['エラー', 0, 'bad']
+  done: ['完了', 100, 'ok'], returned: ['差し戻し', 70, 'idle'], dropped: ['取り下げ', 0, 'idle'], paused_quota: ['一時停止(AIの1日の上限)', 0, 'bad'], error: ['エラー', 0, 'bad']
 };
 const stageLabel = s => (STAGE[s] || [s])[0];
 function teamState(id) {
@@ -745,7 +745,9 @@ function renderLabels() {
   }).join('');
 }
 function todayCount() { const s = new Date(); s.setHours(0, 0, 0, 0); return logs.filter(l => (toDate(l.at) || new Date()) >= s).length; }
-function costYen() { if (!usage) return 0; return Math.round(((usage.inputTokens || 0) * 4 + (usage.outputTokens || 0) * 20) / 1e6 * 150); }
+function costYen() { if (!usage) return 0; return Math.round(usage.yen != null ? usage.yen : ((usage.inputTokens || 0) * 4 + (usage.outputTokens || 0) * 20) / 1e6 * 150); }
+const pauseText = o => o.stage === 'paused_quota' ? (o.pauseReason === 'order' ? '1件の費用上限に達しました' : '1日の費用上限に達しました(翌日0時5分に自動で再開)') : (o.error || stageLabel(o.stage));
+const retryBtn = o => o.stage === 'error' ? `<button type="button" class="btn" data-retry="${o.id}">やり直す</button>` : o.stage === 'paused_quota' && o.pauseReason === 'order' ? `<button type="button" class="btn" data-retry="${o.id}">上限を足して続ける</button>` : '';
 function renderCounts() {
   const all = ORG.depts.flatMap(d => d.teams);
   const bad = orders.filter(o => o.stage === 'error' || o.stage === 'paused_quota').length;
@@ -775,12 +777,12 @@ function renderPanel() {
     }).join('');
     const days = apiKeyMeta && apiKeyMeta.daysLeft;
     P.innerHTML = `
-      ${bad.length ? `<div class="alertbox"><b>要対応 ${bad.length}件</b>${bad.map(o => `<div class="bad-row">指示#${o.no}: ${esc(o.error || stageLabel(o.stage))}${o.stage === 'error' ? ` <button type="button" class="btn" data-retry="${o.id}">やり直す</button>` : ''}</div>`).join('')}</div>` : ''}
+      ${bad.length ? `<div class="alertbox"><b>要対応 ${bad.length}件</b>${bad.map(o => `<div class="bad-row">指示#${o.no}: ${esc(pauseText(o))} ${retryBtn(o)}</div>`).join('')}</div>` : ''}
       ${days != null && days <= 7 ? `<div class="alertbox"><b>APIキーの更新時期です</b>期限まであと${days}日(${esc(apiKeyMeta.expiresAt)})。ai-company フォルダで ./キー更新.sh を実行してください。</div>` : ''}
       <div class="mini">
         <div><div class="k">決裁待ち</div><div class="v">${decisions.length}<small>件</small></div></div>
         <div><div class="k">進行中の指示</div><div class="v">${orders.filter(o => ACTIVE.includes(o.stage)).length}<small>件</small></div></div>
-        <div><div class="k">今日のAI費用</div><div class="v">${costYen().toLocaleString('ja-JP')}<small>円</small></div></div>
+        <div><div class="k">今日のAI費用</div><div class="v">${costYen().toLocaleString('ja-JP')}<small>円 / 上限300円</small></div></div>
       </div>
       <table class="sum"><thead><tr><th>部署</th><th>状態</th><th class="r">進行中</th><th class="r">係</th></tr></thead><tbody>${rows}</tbody></table>
       <div class="sec-h">次に統括がやること</div>
@@ -788,17 +790,19 @@ function renderPanel() {
       <p class="pk">売上と在籍数は、本部画面の「売上」タブで確認できます。<a href="hq.html?goto=revenue">本部画面を開く</a></p>`;
   } else if (panelTab === 'decide') {
     P.innerHTML = decisions.length ? decisions.map(d => `<article class="card" id="card-${d.id}">
-        <div class="card-h"><span class="pill">${esc(deptName(d.dept) || '部長会議')}</span><span class="pill due">指示#${esc(d.orderNo || '')}</span></div>
+        <div class="card-h"><span class="pill">${esc(deptName(d.dept) || '部長会議')}</span><span class="pill due">指示#${esc(d.orderNo || '')}${d.round > 1 ? ' ・ 第' + d.round + '案' : ''}</span></div>
         <h3>${esc(d.title)}</h3>
         <div class="row rec"><span class="lb">推奨</span><span class="bd">${esc(d.recommendation)}</span></div>
         <div class="row"><span class="lb">選択肢</span><span class="bd">${(d.options || []).map((x, i) => `${'ABC'[i] || '・'}. ${esc(x)}`).join('<br>')}</span></div>
         <div class="row dis"><span class="lb">反対意見</span><span class="bd">${esc(d.dissent)}</span></div>
         <div class="row"><span class="lb">根拠</span><div class="ev">${(d.evidence || []).map(e => `<span>${esc(e)}</span>`).join('')}</div></div>
+        ${(d.views || []).length ? `<div class="row"><span class="lb">横串</span><span class="bd">${d.views.map(v => `${esc(deptName(v.dept))}: ${esc(v.view)}`).join('<br>')}</span></div>` : ''}
         ${d.runAfterApproval ? `<div class="row"><span class="lb">承認後</span><span class="bd">${esc(d.runAfterApproval)}</span></div>` : ''}
-        <div class="cmd-mini"><label for="ins-${d.id}" class="sr">この案件への指示</label><textarea id="ins-${d.id}" placeholder="この案件への指示(任意)。書くか話すと、承認と一緒に担当へ届きます。差し戻すときは理由を書く"></textarea>
+        <div class="cmd-mini"><label for="ins-${d.id}" class="sr">この案件への指示</label><textarea id="ins-${d.id}" placeholder="指示(任意)。差し戻すときは直してほしい点を書く"></textarea>
           <button type="button" class="mic" data-mic="ins-${d.id}" aria-label="音声で入力"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button></div>
         <div class="actions"><button type="button" class="btn primary" data-act="approve" data-id="${d.id}">承認する</button>
-          <button type="button" class="btn ghost" data-act="back" data-id="${d.id}">差し戻す</button></div>
+          <button type="button" class="btn ghost" data-act="back" data-id="${d.id}">差し戻す</button>
+          <button type="button" class="btn ghost" data-act="drop" data-id="${d.id}">取り下げ</button></div>
       </article>`).join('') : `<div class="empty"><b>決裁待ちはありません</b>部長会議の結論が届くと、ここに並びます。</div>`;
   } else if (panelTab === 'orders') {
     P.innerHTML = orders.length ? `<ul class="orders">${orders.map(renderOrder).join('')}</ul>` : `<div class="empty"><b>まだ指示はありません</b>下の入力欄に業務命令を書くか話すと、AI秘書が宛先を判断して届けます。</div>`;
@@ -818,11 +822,11 @@ function renderOrder(o) {
       <div class="sec-h">手順</div><ol class="steps">${steps.map((s, i) => `<li class="${i < doneSteps ? 'done' : i === doneSteps && o.stage !== 'done' ? 'now' : ''}">${esc(s)}</li>`).join('')}</ol>
       <div class="sec-h">相談・判断の記録</div>${(o.events || []).length ? `<ul class="cl">${o.events.map(e => `<li><span class="tm">${esc(hm(toDate(e.at)))}</span><b>${esc(e.from)}</b> → ${esc(e.to)}<br>${esc(e.what)}</li>`).join('')}</ul>` : '<div class="pk">まだ相談はありません</div>'}
       ${o.stage === 'awaiting_decision' ? `<button type="button" class="btn primary" data-go-decide="1" style="flex:none">決裁を開く</button>` : ''}
-      ${o.stage === 'error' ? `<div class="alertbox"><b>止まった理由</b>${esc(o.error)} <button type="button" class="btn" data-retry="${o.id}">やり直す</button></div>` : ''}
+      ${o.stage === 'error' || o.stage === 'paused_quota' ? `<div class="alertbox"><b>止まった理由</b>${esc(pauseText(o))} ${retryBtn(o)}</div>` : ''}
       ${o.stage === 'producing' ? `<div class="outbox wait">成果物を作成しています(Web検索で事実を確かめています)…</div>` : ''}
       ${o.deliverable ? `<div class="sec-h">成果物(完了報告)</div><button type="button" class="outbox" data-view-output="${o.id}"><b>${esc(o.deliverable.title)}</b><span>${esc(o.deliverable.summary)}</span><span class="more">タップして詳細を見る →</span></button>` : ''}
     </div>` : '';
-  return `<li class="oi"><div class="oh"><span class="tm">${esc(hm(toDate(o.createdAt)))}</span><span class="who">#${esc(o.no)} ${esc(targetName(o.target))}</span><span class="st ${tone === 'bad' ? 'warn' : tone}">${esc(label)}</span>
+  return `<li class="oi"><div class="oh"><span class="tm">${esc(hm(toDate(o.createdAt)))}</span><span class="who">#${esc(o.no)} ${esc(targetName(o.target))}</span><span class="st ${tone === 'bad' ? 'warn' : tone}">${esc(label)}</span>${o.costYen ? `<span class="tm">${Math.round(o.costYen)}円</span>` : ''}
     <button type="button" class="btn chk" data-order="${o.id}" aria-expanded="${open}">${open ? '閉じる' : '進捗を確認'}</button></div>
     <div class="ot">${esc(o.text)}</div>${o.stage !== 'done' ? `<div class="mini-bar"><i style="width:${pct}%"></i></div>` : ''}${detail}</li>`;
 }
@@ -943,11 +947,13 @@ document.addEventListener('click', async e => {
   }
   if (btn.dataset.ptab) { panelTab = btn.dataset.ptab; renderPanel(); }
   if (btn.dataset.order) { const id = btn.dataset.order; openOrders.has(id) ? openOrders.delete(id) : openOrders.add(id); renderPanel(); }
-  if (btn.dataset.act === 'approve' || btn.dataset.act === 'back') {
+  if (btn.dataset.act === 'approve' || btn.dataset.act === 'back' || btn.dataset.act === 'drop') {
     const id = btn.dataset.id, ta = document.getElementById('ins-' + id), note = ta ? ta.value.trim() : '';
     if (btn.dataset.act === 'back' && !note) { ta.focus(); toast('差し戻しの理由を書くか、マイクで話してください'); return; }
     btn.disabled = true;
-    try { await call('aiDecide')({ decisionId: id, kind: btn.dataset.act === 'back' ? 'back' : note ? 'cond' : 'approve', note }); toast(btn.dataset.act === 'back' ? '差し戻しました' : '承認しました。担当が実行を再開します'); }
+    if (btn.dataset.act === 'drop' && !confirm('この案件を取り下げますか?(これ以上AIの費用はかかりません)')) return;
+    const kind = btn.dataset.act === 'approve' ? (note ? 'cond' : 'approve') : btn.dataset.act;
+    try { await call('aiDecide')({ decisionId: id, kind, note }); toast({ approve: '承認しました。担当が実行を再開します', cond: '条件付きで承認しました', back: '差し戻しました。部長会議が次の案を作ります', drop: '取り下げました' }[kind]); }
     catch (err) { btn.disabled = false; toast('決裁を送れませんでした: ' + err.message); }
   }
 });
