@@ -103,7 +103,8 @@
   .ticker{display:flex;align-items:center;gap:10px;margin-top:10px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px 12px;overflow:hidden}
   .ticker .lb{font-size:11.5px;font-weight:700;color:#fff;background:var(--navy);padding:3px 9px;border-radius:7px;white-space:nowrap}
   .ticker .track{flex:1;min-width:0;overflow:hidden;white-space:nowrap;mask-image:linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent)}
-  .ticker .run{display:inline-block;animation:tick 60s linear infinite;font-size:12.5px;color:var(--ink-2)}
+  .ticker .run{display:inline-block;animation:tick 300s linear infinite;font-size:12.5px;color:var(--ink-2)}
+  .ticker:hover .run,.ticker.hold .run{animation-play-state:paused}
   .ticker .run span{margin-right:28px}
   .ticker .run b{color:var(--accent-ink);font-weight:700;margin:0 6px}
   .ticker .run .tm{font-family:var(--f-num);color:var(--ink-3)}
@@ -762,7 +763,12 @@ function renderCounts() {
 }
 function renderTicker() {
   const items = logs.slice(0, 10).map(l => `<span><span class="tm">${esc(hm(toDate(l.at)))}</span><b>${esc(l.who)}</b>${esc(l.what)}</span>`).join('');
-  $('#ticker').innerHTML = items ? items + items : '<span>まだ動きはありません。下の入力欄から業務命令を出してください。</span>';
+  const html = items ? items + items : '<span>まだ動きはありません。下の入力欄から業務命令を出してください。</span>';
+  const run = $('#ticker');
+  if (run.innerHTML === html) return; // 同じ内容なら流れを最初からやり直さない
+  run.innerHTML = html;
+  // 文字の量に関係なく、ゆっくり一定の速さ(1秒に13px)で流す。マウスを乗せる・タップすると止まる
+  run.style.animationDuration = Math.max(60, run.scrollWidth / 2 / 13) + 's';
 }
 let panelTab = 'sum';
 function renderPanel() {
@@ -889,7 +895,7 @@ async function sendDraft() {
   clearTimeout(draftTimer);
   const d = draft; if (!d || d.loading) return;
   draft = null; renderRoute();
-  const payload = { text: d.text, target: d.target, instruction: d.instruction, due: d.due, steps: d.steps, needsDecision: d.needsDecision, related: d.related, question: d.question, output: d.output, by: d.by };
+  const payload = { text: d.text, target: d.target, instruction: d.instruction, due: d.due, steps: d.steps, needsDecision: d.needsDecision, needsResearch: d.needsResearch, costYen: d.costYen, related: d.related, question: d.question, output: d.output, by: d.by };
   try { const r = await call('aiSubmitOrder')({ draft: payload }); toast(`指示#${r.data.no}を伝達しました`); }
   catch (e) { toast('送信できませんでした: ' + e.message); }
 }
@@ -963,6 +969,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#viewe
 $('#v-copy').addEventListener('click', () => { navigator.clipboard.writeText(deliverableText(viewing)).then(() => toast('成果物をコピーしました'), () => toast('コピーできませんでした')); });
 $('#v-fix').addEventListener('click', () => { const o = viewing; closeViewer(); cmdText.value = `指示#${o.no}の成果物「${o.deliverable.title}」を修正して: `; autosize(); cmdText.focus(); });
 $('#chip-decide').addEventListener('click', () => openPanel('decide'));
+document.querySelector('.ticker').addEventListener('click', e => e.currentTarget.classList.toggle('hold'));
 $('#chip-alarm').addEventListener('click', () => openPanel('sum'));
 $('#btn-panel').addEventListener('click', () => $('#panel').hidden ? openPanel('sum') : closePanel());
 $('#panel-close').addEventListener('click', closePanel);
