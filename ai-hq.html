@@ -241,6 +241,29 @@
   .v-table td.req{color:var(--warn);font-weight:700;background:var(--warn-soft)}
   .vbody h4{margin:0 0 4px;font-family:var(--f-display);font-size:14px}
   .vbody p{margin:0}
+  /* 成果物のPDF(ブラウザの印刷機能で保存。AIは使わない) */
+  #print-area{display:none}
+  @media print{
+    @page{size:A4;margin:14mm}
+    body.printing{background:#fff!important}
+    body.printing>*:not(#print-area){display:none!important}
+    body.printing #print-area{display:block!important;color:#000;font-family:'Noto Sans JP',sans-serif;font-size:10.5pt;line-height:1.6}
+    #print-area .ph{display:flex;justify-content:space-between;border-bottom:2px solid #000;padding-bottom:4px;margin-bottom:10px;font-size:9pt}
+    #print-area h1{font-size:15pt;margin:0 0 2px}
+    #print-area .pm{font-size:8.5pt;color:#555;margin-bottom:10px}
+    #print-area .v-sum{font-weight:700;border:1px solid #999;padding:6px 8px;margin:0 0 10px}
+    #print-area .v-table{border:0}
+    #print-area table{border-collapse:collapse;width:100%;min-width:0;font-size:9pt;margin-bottom:10px}
+    #print-area th,#print-area td{border:1px solid #888;padding:4px 6px;text-align:left;vertical-align:top;color:#000;background:#fff}
+    #print-area th{background:#eee}
+    #print-area td.req{font-weight:700;background:#fff3d6}
+    #print-area section{margin-bottom:8px;break-inside:avoid}
+    #print-area h4{font-size:11pt;margin:0 0 2px}
+    #print-area p,#print-area ul{margin:0}
+    #print-area ul{padding-left:18px}
+    #print-area a{color:#000;word-break:break-all;text-decoration:none}
+    #print-area .v-src{display:none}
+  }
   .vbody ul{margin:0;padding-left:20px;display:grid;gap:3px}
   .v-warn{background:var(--warn-soft);border-radius:10px;padding:10px 12px}
   .v-src{border-top:1px dashed var(--line);padding-top:10px;color:var(--ink-2)}
@@ -329,10 +352,11 @@
   <div class="vbox">
     <div class="vhead"><div><h3 id="v-title">成果物</h3><div class="pk" id="v-meta"></div></div><button type="button" class="x" id="v-close" aria-label="閉じる">×</button></div>
     <div class="vbody" id="v-body"></div>
-    <div class="vfoot"><button type="button" class="btn" id="v-copy">コピー</button><button type="button" class="btn primary" id="v-fix" style="flex:none">修正を指示</button></div>
+    <div class="vfoot"><button type="button" class="btn" id="v-copy">コピー</button><button type="button" class="btn" id="v-pdf">PDFで保存</button><button type="button" class="btn primary" id="v-fix" style="flex:none">修正を指示</button></div>
   </div>
 </div>
 <div class="toast" id="toast" role="status"></div>
+<div id="print-area" aria-hidden="true"></div>
 <script>
 /* ============================================================
    タクマ塾 AI本部(本番)
@@ -966,6 +990,17 @@ document.addEventListener('click', async e => {
 $('#v-close').addEventListener('click', closeViewer);
 $('#viewer').addEventListener('click', e => { if (e.target.id === 'viewer') closeViewer(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#viewer').hidden) closeViewer(); });
+$('#v-pdf').addEventListener('click', () => {
+  const o = viewing; if (!o) return;
+  const area = $('#print-area'), d = new Date(), title = document.title;
+  area.innerHTML = `<div class="ph"><b>タクマ塾</b><span>${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()} 作成</span></div><h1>${esc(o.deliverable.title)}</h1><div class="pm">${esc($('#v-meta').textContent)}</div>${$('#v-body').innerHTML}`;
+  document.body.classList.add('printing');
+  document.title = `${o.deliverable.title}_指示${o.no}`; // 保存するPDFのファイル名になる
+  const done = () => { document.body.classList.remove('printing'); document.title = title; area.innerHTML = ''; window.removeEventListener('afterprint', done); };
+  window.addEventListener('afterprint', done);
+  window.print();
+  toast('印刷の画面で「PDFに保存」を選んでください');
+});
 $('#v-copy').addEventListener('click', () => { navigator.clipboard.writeText(deliverableText(viewing)).then(() => toast('成果物をコピーしました'), () => toast('コピーできませんでした')); });
 $('#v-fix').addEventListener('click', () => { const o = viewing; closeViewer(); cmdText.value = `指示#${o.no}の成果物「${o.deliverable.title}」を修正して: `; autosize(); cmdText.focus(); });
 $('#chip-decide').addEventListener('click', () => openPanel('decide'));
