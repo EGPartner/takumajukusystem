@@ -784,13 +784,14 @@ function renderCounts() {
   const all = ORG.depts.flatMap(d => d.teams);
   const bad = orders.filter(o => o.stage === 'error' || o.stage === 'paused_quota').length;
   $('#n-alarm').textContent = bad; $('#chip-alarm').hidden = !bad;
-  $('#n-decide').textContent = decisions.length; $('#m-badge').textContent = decisions.length; $('#m-badge').hidden = !decisions.length;
-  $('#tab-n').textContent = decisions.length; $('#tab-n').hidden = !decisions.length;
+  const nd = decisions.length + pendingB().length; // 統括が見るもの: 決裁 + 区分Bの確認待ち
+  $('#n-decide').textContent = nd; $('#m-badge').textContent = nd; $('#m-badge').hidden = !nd;
+  $('#tab-n').textContent = nd; $('#tab-n').hidden = !nd;
   $('#n-today').textContent = todayCount();
   $('#n-ok').textContent = all.filter(t => teamState(t.id) !== 'idle').length;
   $('#n-idle').textContent = all.filter(t => teamState(t.id) === 'idle').length;
   $('#n-cost').textContent = costYen().toLocaleString('ja-JP');
-  const lb = document.getElementById('lbl-boss'); if (lb) lb.textContent = decisions.length ? '決裁待ち ' + decisions.length : '';
+  const lb = document.getElementById('lbl-boss'); if (lb) lb.textContent = nd ? '決裁待ち ' + nd : '';
 }
 function renderTicker() {
   const items = logs.slice(0, 10).map(l => `<span><span class="tm">${esc(hm(toDate(l.at)))}</span><b>${esc(l.who)}</b>${esc(l.what)}</span>`).join('');
@@ -817,16 +818,16 @@ function renderPanel() {
       ${bad.length ? `<div class="alertbox"><b>要対応 ${bad.length}件</b>${bad.map(o => `<div class="bad-row">指示#${o.no}: ${esc(pauseText(o))} ${retryBtn(o)}</div>`).join('')}</div>` : ''}
       ${days != null && days <= 7 ? `<div class="alertbox"><b>APIキーの更新時期です</b>期限まであと${days}日(${esc(apiKeyMeta.expiresAt)})。ai-company フォルダで ./キー更新.sh を実行してください。</div>` : ''}
       <div class="mini">
-        <div><div class="k">決裁待ち</div><div class="v">${decisions.length}<small>件</small></div></div>
+        <div><div class="k">決裁・確認待ち</div><div class="v">${decisions.length + pendingB().length}<small>件</small></div></div>
         <div><div class="k">進行中の指示</div><div class="v">${orders.filter(o => ACTIVE.includes(o.stage)).length}<small>件</small></div></div>
         <div><div class="k">今日のAI費用</div><div class="v">${costYen().toLocaleString('ja-JP')}<small>円 / 上限300円</small></div></div>
       </div>
       <table class="sum"><thead><tr><th>部署</th><th>状態</th><th class="r">進行中</th><th class="r">係</th></tr></thead><tbody>${rows}</tbody></table>
       <div class="sec-h">次に統括がやること</div>
-      <ul class="todo">${decisions.length ? decisions.map(d => `<li>${esc(d.title)}</li>`).join('') : '<li>決裁待ちはありません</li>'}</ul>
+      <ul class="todo">${decisions.length + pendingB().length ? [...decisions.map(d => `<li>${d.type === 'adoption' ? '採用の決裁: ' : ''}${esc(d.title)}</li>`), ...pendingB().map(o => `<li>確認待ち: ${esc(o.deliverable.title)}</li>`)].join('') : '<li>決裁待ちはありません</li>'}</ul>
       <p class="pk">売上と在籍数は、本部画面の「売上」タブで確認できます。<a href="hq.html?goto=revenue">本部画面を開く</a></p>`;
   } else if (panelTab === 'decide') {
-    P.innerHTML = decisions.length ? decisions.map(d => d.type === 'adoption' ? adoptionCard(d) : `<article class="card" id="card-${d.id}">
+    P.innerHTML = decisions.length + pendingB().length ? pendingB().map(reviewCard).join('') + decisions.map(d => d.type === 'adoption' ? adoptionCard(d) : `<article class="card" id="card-${d.id}">
         <div class="card-h"><span class="pill">${esc(deptName(d.dept) || '部長会議')}</span><span class="pill due">指示#${esc(d.orderNo || '')}${d.round > 1 ? ' ・ 第' + d.round + '案' : ''}</span></div>
         <h3>${esc(d.title)}</h3>
         <div class="row rec"><span class="lb">推奨</span><span class="bd">${esc(d.recommendation)}</span></div>
@@ -846,6 +847,18 @@ function renderPanel() {
   } else {
     P.innerHTML = logs.length ? `<ul class="log">${logs.map(l => `<li><span class="tm">${esc(hm(toDate(l.at)))}</span><div><div class="who">${esc(l.who)}</div>${esc(l.what)}</div></li>`).join('')}</ul>` : `<div class="empty"><b>まだ記録はありません</b></div>`;
   }
+}
+/** 区分Bの確認待ち(完了した社内の資料・調査。押さなくても業務は止まらない) */
+const pendingB = () => orders.filter(o => o.stage === 'done' && o.adoption && o.adoption.status === 'pending' && o.deliverable);
+function reviewCard(o) {
+  return `<article class="card" id="card-b-${o.id}">
+    <div class="card-h"><span class="pill">確認待ち</span><span class="pill due">指示#${esc(o.no)} ・ ${esc(targetName(o.target))}</span></div>
+    <h3>${esc(o.deliverable.title)}</h3>
+    <div class="row rec"><span class="lb">要約</span><span class="bd">${esc(o.deliverable.summary)}</span></div>
+    <button type="button" class="outbox" data-view-output="${o.id}"><b>成果物を開く</b><span class="more">中身を確かめてから判断 →</span></button>
+    <div class="cmd-mini"><label for="ad-${o.id}" class="sr">コメント</label><textarea id="ad-${o.id}" placeholder="不採用・修正のときは理由や直してほしい点を書く"></textarea></div>
+    <div class="actions"><button type="button" class="btn primary" data-adopt="adopt" data-id="${o.id}">採用</button><button type="button" class="btn ghost" data-adopt="revise" data-id="${o.id}">修正</button><button type="button" class="btn ghost" data-adopt="reject" data-id="${o.id}">不採用</button></div>
+  </article>`;
 }
 function adoptionCard(d) {
   const o = orders.find(x => x.id === d.orderId);
