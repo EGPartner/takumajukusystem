@@ -256,6 +256,8 @@
   .gbox .btn{text-decoration:none;justify-self:center;padding:10px 18px}
   [hidden]{display:none!important}
   a.chip{text-decoration:none;color:inherit}
+  .alertbox .bad-row{margin-top:4px}
+  .alertbox .btn{margin-left:6px;padding:4px 10px;font-size:12px}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -773,7 +775,7 @@ function renderPanel() {
     }).join('');
     const days = apiKeyMeta && apiKeyMeta.daysLeft;
     P.innerHTML = `
-      ${bad.length ? `<div class="alertbox"><b>要対応 ${bad.length}件</b>${bad.map(o => `指示#${o.no}: ${esc(o.error || stageLabel(o.stage))}`).join('<br>')}</div>` : ''}
+      ${bad.length ? `<div class="alertbox"><b>要対応 ${bad.length}件</b>${bad.map(o => `<div class="bad-row">指示#${o.no}: ${esc(o.error || stageLabel(o.stage))}${o.stage === 'error' ? ` <button type="button" class="btn" data-retry="${o.id}">やり直す</button>` : ''}</div>`).join('')}</div>` : ''}
       ${days != null && days <= 7 ? `<div class="alertbox"><b>APIキーの更新時期です</b>期限まであと${days}日(${esc(apiKeyMeta.expiresAt)})。ai-company フォルダで ./キー更新.sh を実行してください。</div>` : ''}
       <div class="mini">
         <div><div class="k">決裁待ち</div><div class="v">${decisions.length}<small>件</small></div></div>
@@ -816,7 +818,7 @@ function renderOrder(o) {
       <div class="sec-h">手順</div><ol class="steps">${steps.map((s, i) => `<li class="${i < doneSteps ? 'done' : i === doneSteps && o.stage !== 'done' ? 'now' : ''}">${esc(s)}</li>`).join('')}</ol>
       <div class="sec-h">相談・判断の記録</div>${(o.events || []).length ? `<ul class="cl">${o.events.map(e => `<li><span class="tm">${esc(hm(toDate(e.at)))}</span><b>${esc(e.from)}</b> → ${esc(e.to)}<br>${esc(e.what)}</li>`).join('')}</ul>` : '<div class="pk">まだ相談はありません</div>'}
       ${o.stage === 'awaiting_decision' ? `<button type="button" class="btn primary" data-go-decide="1" style="flex:none">決裁を開く</button>` : ''}
-      ${o.stage === 'error' ? `<div class="alertbox"><b>止まった理由</b>${esc(o.error)}</div>` : ''}
+      ${o.stage === 'error' ? `<div class="alertbox"><b>止まった理由</b>${esc(o.error)} <button type="button" class="btn" data-retry="${o.id}">やり直す</button></div>` : ''}
       ${o.stage === 'producing' ? `<div class="outbox wait">成果物を作成しています(Web検索で事実を確かめています)…</div>` : ''}
       ${o.deliverable ? `<div class="sec-h">成果物(完了報告)</div><button type="button" class="outbox" data-view-output="${o.id}"><b>${esc(o.deliverable.title)}</b><span>${esc(o.deliverable.summary)}</span><span class="more">タップして詳細を見る →</span></button>` : ''}
     </div>` : '';
@@ -839,7 +841,7 @@ function openViewer(o) {
   $('#v-meta').textContent = `指示#${o.no} ・ ${targetName(o.target)} ・ 完了 ${hm(toDate(o.doneAt))} ・ AIが作成(事実はWeb検索の出典つき)`;
   $('#v-body').innerHTML = `
     <p class="v-sum">${esc(d.summary)}</p>
-    ${d.table && d.table.columns ? `<div class="v-table"><table><thead><tr>${d.table.columns.map(c => `<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>${(d.table.rows || []).map(r => `<tr>${r.map(c => `<td class="${isReq(c) ? 'req' : ''}">${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>` : ''}
+    ${d.table && d.table.columns ? `<div class="v-table"><table><thead><tr>${d.table.columns.map(c => `<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>${(d.table.rows || []).map(r => `<tr>${(r.cells || r).map(c => `<td class="${isReq(c) ? 'req' : ''}">${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>` : ''}
     ${(d.sections || []).map(s => `<section><h4>${esc(s.heading)}</h4><p>${esc(s.body).replace(/\n/g, '<br>')}</p></section>`).join('')}
     ${(d.unverified || []).length ? `<section class="v-warn"><h4>確認が必要なこと</h4><ul>${d.unverified.map(x => `<li>${esc(x)}</li>`).join('')}</ul></section>` : ''}
     ${(d.next || []).length ? `<section><h4>次にやること</h4><ul>${d.next.map(x => `<li>${esc(x)}</li>`).join('')}</ul></section>` : ''}
@@ -849,7 +851,7 @@ function openViewer(o) {
 }
 function deliverableText(o) {
   const d = o.deliverable; const L = [d.title, `(指示#${o.no} ${targetName(o.target)})`, '', d.summary, ''];
-  if (d.table && d.table.columns) { L.push(d.table.columns.join('\t')); (d.table.rows || []).forEach(r => L.push(r.join('\t'))); L.push(''); }
+  if (d.table && d.table.columns) { L.push(d.table.columns.join('\t')); (d.table.rows || []).forEach(r => L.push((r.cells || r).join('\t'))); L.push(''); }
   (d.sections || []).forEach(s => L.push('■ ' + s.heading, s.body, ''));
   if ((d.unverified || []).length) { L.push('■ 確認が必要なこと'); d.unverified.forEach(x => L.push('・' + x)); L.push(''); }
   if ((d.next || []).length) { L.push('■ 次にやること'); d.next.forEach(x => L.push('・' + x)); L.push(''); }
@@ -933,6 +935,12 @@ document.addEventListener('click', async e => {
   const tr = e.target.closest('tr[data-focus]');
   if (tr) { const z = ZONES[tr.dataset.focus]; if (z) { const sc = document.querySelector('.scroller'); sc.scrollTo({ left: Math.max(0, z.x * T / W * sc.scrollWidth - 40), behavior: 'smooth' }); } return; }
   if (!btn) return;
+  if (btn.dataset.retry) {
+    btn.disabled = true;
+    try { await call('aiRetryOrder')({ orderId: btn.dataset.retry }); toast('やり直しを始めました。止まった段階から再開します'); }
+    catch (err) { btn.disabled = false; toast('やり直せませんでした: ' + err.message); }
+    return;
+  }
   if (btn.dataset.ptab) { panelTab = btn.dataset.ptab; renderPanel(); }
   if (btn.dataset.order) { const id = btn.dataset.order; openOrders.has(id) ? openOrders.delete(id) : openOrders.add(id); renderPanel(); }
   if (btn.dataset.act === 'approve' || btn.dataset.act === 'back') {
