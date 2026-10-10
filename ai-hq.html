@@ -281,6 +281,9 @@
   [hidden]{display:none!important}
   a.chip{text-decoration:none;color:inherit}
   .alertbox .bad-row{margin-top:4px}
+  .next-list li{display:flex;gap:8px;align-items:flex-start;justify-content:space-between}
+  .next-list .next-go{flex:none;padding:3px 10px;font-size:12px}
+  @media print{.next-go{display:none!important}}
   .alertbox .btn{margin-left:6px;padding:4px 10px;font-size:12px}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -917,7 +920,7 @@ function openViewer(o) {
     ${d.table && d.table.columns ? `<div class="v-table"><table><thead><tr>${d.table.columns.map(c => `<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>${(d.table.rows || []).map(r => `<tr>${(r.cells || r).map(c => `<td class="${isReq(c) ? 'req' : ''}">${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>` : ''}
     ${(d.sections || []).map(s => `<section><h4>${esc(s.heading)}</h4><p>${esc(s.body).replace(/\n/g, '<br>')}</p></section>`).join('')}
     ${(d.unverified || []).length ? `<section class="v-warn"><h4>確認が必要なこと</h4><ul>${d.unverified.map(x => `<li>${esc(x)}</li>`).join('')}</ul></section>` : ''}
-    ${(d.next || []).length ? `<section><h4>次にやること</h4><ul>${d.next.map(x => `<li>${esc(x)}</li>`).join('')}</ul></section>` : ''}
+    ${(d.next || []).length ? `<section><h4>次にやること</h4><ul class="next-list">${d.next.map((x, i) => `<li><span>${esc(x)}</span><button type="button" class="btn next-go" data-next="${i}">指示する</button></li>`).join('')}</ul></section>` : ''}
     ${(d.sources || []).length ? `<section><h4>出典</h4><ul>${d.sources.map(u => safeUrl(u) ? `<li><a href="${esc(u)}" target="_blank" rel="noopener">${esc(u)}</a></li>` : `<li>${esc(u)}</li>`).join('')}</ul></section>` : ''}
     <section class="v-src"><h4>この成果物のもとになった指示</h4><p>${esc(o.text)}</p><p class="pk">${(o.events || []).map(e => `${esc(hm(toDate(e.at)))} ${esc(e.from)} → ${esc(e.to)}: ${esc(e.what)}`).join('<br>')}</p></section>`;
   $('#viewer').hidden = false; $('#v-close').focus();
@@ -958,7 +961,7 @@ async function sendDraft() {
   clearTimeout(draftTimer);
   const d = draft; if (!d || d.loading) return;
   draft = null; renderRoute();
-  const payload = { text: d.text, target: d.target, instruction: d.instruction, due: d.due, steps: d.steps, needsDecision: d.needsDecision, needsResearch: d.needsResearch, costYen: d.costYen, related: d.related, question: d.question, output: d.output, by: d.by };
+  const payload = { text: d.text, target: d.target, instruction: d.instruction, due: d.due, steps: d.steps, needsDecision: d.needsDecision, needsResearch: d.needsResearch, needsData: d.needsData, costYen: d.costYen, related: d.related, question: d.question, output: d.output, by: d.by };
   try { const r = await call('aiSubmitOrder')({ draft: payload }); toast(`指示#${r.data.no}を伝達しました`); }
   catch (e) { toast('送信できませんでした: ' + e.message); }
 }
@@ -1035,6 +1038,14 @@ document.addEventListener('click', async e => {
   }
 });
 $('#v-close').addEventListener('click', closeViewer);
+// 成果物の「次にやること」を、そのまま業務命令の入力欄へ(AI秘書が係の名前から宛先を判断する)
+$('#v-body').addEventListener('click', e => {
+  const b = e.target.closest('[data-next]'); if (!b || !viewing) return;
+  const o = viewing, item = (o.deliverable.next || [])[Number(b.dataset.next)] || '';
+  closeViewer();
+  cmdText.value = `${item}(指示#${o.no}「${o.deliverable.title}」を受けて)`; autosize(); cmdText.focus();
+  toast('内容を確かめて「指示する」を押してください');
+});
 $('#viewer').addEventListener('click', e => { if (e.target.id === 'viewer') closeViewer(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#viewer').hidden) closeViewer(); });
 $('#v-pdf').addEventListener('click', () => {
