@@ -298,7 +298,21 @@
   .row.cxo .lb{color:var(--navy);font-weight:700}
   :root[data-theme="dark"] .row.cxo .lb{color:var(--accent-ink)}
   .row.cxo .law{color:var(--bad);font-weight:700}
-  @media (max-width:719px){.mode button{padding:6px 9px;font-size:12px}}
+  /* 入力欄が画面の幅からはみ出さないようにする(入力欄の最小幅が、狭いスマホで行を押し広げていた) */
+  .cmdwrap{grid-template-columns:minmax(0,1fr)}
+  .cmd{min-width:0}
+  .cmd textarea{width:100%}
+  .send .ic{display:none}
+  .mini .v .cap{display:block;font-size:10.5px;margin-top:2px}
+  @media (max-width:719px){
+    .mode button{padding:6px 8px;font-size:12px}
+    .cmd{gap:6px}
+    .send{width:40px;padding:0;display:grid;place-items:center}
+    .send .lb{display:none}
+    .send .ic{display:block}
+    .mini .v{white-space:normal;font-size:17px}
+    .mini .v small{display:inline-block}
+  }
   /* 成果物の全文(決裁カードの中と窓)。幅が狭いと表を「項目名: 値」の縦並びにする */
   .dv-wrap{margin-top:8px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2)}
   .dv-wrap>summary{cursor:pointer;padding:8px 12px;font-size:12.5px;font-weight:700;color:var(--ok);list-style:none;display:flex;align-items:center;gap:6px}
@@ -431,7 +445,7 @@
       <label for="cmd-text" class="sr">業務命令</label>
       <textarea id="cmd-text" rows="1" placeholder="業務命令を入力(例: 岩国の12月の会場を今週中に押さえて)"></textarea>
       <button type="button" class="mic" data-mic="cmd-text" aria-label="音声で入力"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
-      <button type="submit" class="send">指示する</button>
+      <button type="submit" class="send" aria-label="指示する"><span class="lb">指示する</span><svg class="ic" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
     </form>
   </div>
   <div class="ticker"><span class="lb">最近の動き</span><div class="track"><div class="run" id="ticker"></div></div></div>
@@ -926,7 +940,7 @@ function renderPanelInner() {
       <div class="mini">
         <div><div class="k">決裁・確認待ち</div><div class="v">${decisions.length + pendingB().length}<small>件</small></div></div>
         <div><div class="k">進行中の指示</div><div class="v">${orders.filter(o => ACTIVE.includes(o.stage)).length}<small>件</small></div></div>
-        <div><div class="k">今日のAI費用</div><div class="v">${costYen().toLocaleString('ja-JP')}<small>円 / 上限300円</small></div></div>
+        <div><div class="k">今日のAI費用</div><div class="v">${costYen().toLocaleString('ja-JP')}<small>円</small><small class="cap">上限300円</small></div></div>
       </div>
       <table class="sum"><thead><tr><th>部署</th><th>状態</th><th class="r">進行中</th><th class="r">係</th></tr></thead><tbody>${rows}</tbody></table>
       <div class="sec-h">次に統括がやること</div>
@@ -1160,7 +1174,8 @@ document.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click'
   inputMode = b.dataset.mode;
   document.querySelectorAll('[data-mode]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
   $('#cmd').classList.toggle('consult', inputMode === 'consult');
-  document.querySelector('.send').textContent = inputMode === 'consult' ? '相談する' : '指示する';
+  document.querySelector('.send .lb').textContent = inputMode === 'consult' ? '相談する' : '指示する';
+  document.querySelector('.send').setAttribute('aria-label', inputMode === 'consult' ? '相談する' : '指示する');
   setPlaceholder(); cmdText.focus();
 }));
 /** CXO秘書への相談: 部署に回さず直接答える(答えは成果物の窓で開く。記録は指示の一覧に「相談」として残る) */
