@@ -621,14 +621,14 @@
 
 <div id="hq-add-student-modal" style="display:none;position:fixed;inset:0;background:rgba(18,24,26,0.45);z-index:100;align-items:center;justify-content:center;padding:20px;">
   <div class="card" style="max-width:420px;width:100%;margin:0;">
-    <h2 style="margin:0 0 4px;">名簿に追加</h2>
+    <h2 style="margin:0 0 4px;">名簿への追加(スプレッドシートで行う)</h2>
     <p class="status" style="margin-top:0;" id="hq-as-school-label"></p>
     <div class="field"><label for="hq-as-name">氏名</label><input type="text" id="hq-as-name"></div>
     <div class="field"><label for="hq-as-grade">学年</label><select id="hq-as-grade"></select></div>
     <p class="status" id="hq-as-status" style="min-height:16px;"></p>
     <div class="btn-row">
       <button class="ghost" id="hq-as-btn-cancel">キャンセル</button>
-      <button class="primary" id="hq-as-btn-submit">名簿に追加する</button>
+      <button class="primary" id="hq-as-btn-submit">確認した</button>
     </div>
   </div>
 </div>
@@ -2122,8 +2122,8 @@ function renderParentViewers(snap){
           let rosterAction = '';
           if (v.approvedManually){
             rosterAction = v.rosterAdded
-              ? '<span class="badge muted">名簿追加済み</span> '
-              : '<button class="ghost-small" data-add-roster="' + escAttr(d.id) + '" data-school="' + escAttr(v.schoolId || '') + '" data-name="' + escAttr(v.studentName || '') + '">名簿に追加</button> ';
+              ? '<span class="badge muted">名簿の確認済み</span> '
+              : '<button class="ghost-small" data-add-roster="' + escAttr(d.id) + '" data-school="' + escAttr(v.schoolId || '') + '" data-name="' + escAttr(v.studentName || '') + '">名簿を確認</button> ';
           }
           return '<tr>'
             + '<td>' + escAttr(v.studentName || '-') + '</td>'
@@ -2218,10 +2218,12 @@ async function confirmAddStudent(){
       setTimeout(closeAddStudentModal, 2200);
       return;
     }
-    await db.collection('academies').doc(addStudentCtx.schoolId).collection('students').doc(id)
-      .set({ id, name, trial:false, gradeRef:grade, gradeRefFY:fy, months:{}, growth:{} });
+    // 名簿の元はスプレッドシート「タクマ塾CRM」の「塾生リスト」。システムに直接は追加せず、シートへの追加を案内する
+    // (直接追加すると、シートと名簿が食い違い、次の同期で名簿から外れるため)
     await db.collection('parentViewers').doc(addStudentCtx.viewerId).update({ rosterAdded: true });
-    closeAddStudentModal();
+    statusEl.style.color = 'var(--text-secondary)';
+    statusEl.textContent = '名簿への追加は、スプレッドシート「タクマ塾CRM」の「塾生リスト」に「' + name + '」さんの行を追加してください。最大10分でシステムに反映されます。';
+    return;
   } catch(err){
     statusEl.style.color = 'var(--danger)';
     statusEl.textContent = '追加に失敗しました: ' + err.message;
