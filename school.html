@@ -96,7 +96,10 @@
   .metric-picker input{width:auto;margin:0;}
   .metric-swatch{width:9px;height:9px;border-radius:3px;display:inline-block;}
 
-  .grid-scroll{overflow:auto;max-height:520px;border:1px solid var(--border);border-radius:12px;}
+  .grid-scroll{overflow:auto;max-height:520px;border:1px solid var(--border);border-radius:12px;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y;overscroll-behavior-x:contain;}
+  .grid-table .ro{display:block;padding:2px;text-align:left;white-space:nowrap;}
+  .grid-table .badge-nosheet{display:inline-block;margin-left:4px;padding:0 6px;border-radius:6px;font-size:10px;font-weight:700;background:#FFF2D6;color:#A86A00;vertical-align:middle;}
+  .grid-table .unlist{margin-left:4px;font-size:11px;}
   table.grid-table{font-size:13px;}
   table.grid-table th,table.grid-table td{padding:7px 4px;text-align:center;white-space:nowrap;}
   table.grid-table thead th{position:sticky;top:0;background:var(--surface-2);z-index:2;}
@@ -2326,14 +2329,17 @@ function renderGrid(){
         return `<td class="${cls} locked" data-id="${s.id}" data-key="${mo.key}" title="在籍の◼はスプレッドシートで変更してください">${cellMark(st)}</td>`;
       }).join('');
       const ro = isAdmin ? '' : 'disabled';
-      const sheetRo = 'disabled title="スプレッドシートで変更してください"'; // シートと同期する項目(名前・チーム・サイズ)
+      // シートと同期する項目(名前・チーム・サイズ)は文字で表示する。シートに無い塾生には印と「名簿から外す」を出す
+      const fromSheet = s.sheetSync === true || Object.prototype.hasOwnProperty.call(s, 'socksSize');
+      const roText = v => `<span class="ro" title="スプレッドシートで変更してください">${escAttr(v || '-')}</span>`;
+      const nameCell = escAttr(s.name) + (fromSheet ? '' : '<span class="badge-nosheet" title="スプレッドシートの塾生リストにいない塾生です">シートに無い</span>' + (isAdmin ? `<button class="link-danger unlist" data-unlist="${s.id}">名簿から外す</button>` : ''));
       return `<tr data-row="${s.id}">
-        <td class="col-name"><input type="text" class="in-name" data-id="${s.id}" value="${escAttr(s.name)}" ${sheetRo}></td>
-        <td class="col-team"><input type="text" class="in-team" data-id="${s.id}" value="${escAttr(s.team||'')}" placeholder="-" ${sheetRo}></td>
+        <td class="col-name"><span class="ro">${nameCell}</span></td>
+        <td class="col-team">${roText(s.team)}</td>
         <td class="col-grade"><select class="in-grade" data-id="${s.id}" ${ro}>${gradeOptions(grade)}</select></td>
         <td class="col-trial"><input type="checkbox" class="in-trial" data-id="${s.id}" ${s.trial ? 'checked' : ''} ${ro}></td>
-        <td class="col-size"><input type="text" class="in-shirt" data-id="${s.id}" value="${escAttr(s.shirtSize||'')}" placeholder="-" ${sheetRo}></td>
-        <td class="col-size"><input type="text" class="in-pants" data-id="${s.id}" value="${escAttr(s.pantsSize||'')}" placeholder="-" ${sheetRo}></td>
+        <td class="col-size">${roText(s.shirtSize)}</td>
+        <td class="col-size">${roText(s.pantsSize)}</td>
         <td class="col-memo"><input type="text" class="in-memo" data-id="${s.id}" value="${escAttr(s.memo||'')}" placeholder="-" ${ro}></td>
         ${cells}<td></td></tr>`;
     }).join('');
@@ -2392,6 +2398,13 @@ async function handleBulkMonth(key){
 async function handleGridClick(e){
   // 在籍の◼と塾生の削除は、スプレッドシートが元のためこの画面では変更しない
   if (e.target.classList.contains('cell-month')) { showSheetMasterHint(); return; }
+  // ただし、シートに無い塾生(誤って二重に登録された塾生など)は、名簿から外せる
+  const unlist = e.target.dataset && e.target.dataset.unlist;
+  if (unlist && isAdmin){
+    const s = students.find(x => x.id === unlist); if (!s) return;
+    if (!confirm('「' + s.name + '」を名簿から外しますか?(シートに無い塾生です。成長記録は残ります)')) return;
+    await saveStudent(Object.assign({}, s, { archived: true, archivedReason: '画面で外す', archivedAt: new Date().toISOString(), months: {} }));
+  }
   return;
   const del = e.target.dataset.del;
   if (del){
