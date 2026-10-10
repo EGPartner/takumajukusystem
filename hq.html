@@ -2207,6 +2207,17 @@ async function confirmAddStudent(){
   const fy = (now.getMonth() + 1) >= 4 ? now.getFullYear() : now.getFullYear() - 1;
   const id = 'id_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,7);
   try {
+    // 同じ校舎に同じ名前の塾生がすでにいれば、追加しない(重複を作らない)
+    const key = s => String(s || '').replace(/[\s　・･]/g, '');
+    const existing = await db.collection('academies').doc(addStudentCtx.schoolId).collection('students').get();
+    const same = existing.docs.find(d => !d.data().archived && key(d.data().name) === key(name));
+    if (same){
+      await db.collection('parentViewers').doc(addStudentCtx.viewerId).update({ rosterAdded: true });
+      statusEl.style.color = 'var(--text-secondary)';
+      statusEl.textContent = '「' + (same.data().name || name) + '」さんはすでにこの校舎の名簿にいるため、追加しませんでした。';
+      setTimeout(closeAddStudentModal, 2200);
+      return;
+    }
     await db.collection('academies').doc(addStudentCtx.schoolId).collection('students').doc(id)
       .set({ id, name, trial:false, gradeRef:grade, gradeRefFY:fy, months:{}, growth:{} });
     await db.collection('parentViewers').doc(addStudentCtx.viewerId).update({ rosterAdded: true });
