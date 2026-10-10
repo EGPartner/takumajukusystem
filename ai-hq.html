@@ -290,6 +290,15 @@
   .next-list .next-go{flex:none;padding:3px 10px;font-size:12px}
   @media print{.next-go{display:none!important}}
   .alertbox .btn{margin-left:6px;padding:4px 10px;font-size:12px}
+  .mode{align-self:center;display:inline-flex;background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:2px;flex:none}
+  .mode button{border:0;background:none;border-radius:999px;padding:6px 11px;font-size:12.5px;font-weight:700;color:var(--ink-3);cursor:pointer;white-space:nowrap}
+  .mode button[aria-pressed="true"]{background:var(--accent);color:#fff}
+  .cmd.consult{border-color:var(--navy)}
+  .cmd.consult .mode button[aria-pressed="true"]{background:var(--navy)}
+  .row.cxo .lb{color:var(--navy);font-weight:700}
+  :root[data-theme="dark"] .row.cxo .lb{color:var(--accent-ink)}
+  .row.cxo .law{color:var(--bad);font-weight:700}
+  @media (max-width:719px){.mode button{padding:6px 9px;font-size:12px}}
   /* 成果物の全文(決裁カードの中と窓)。幅が狭いと表を「項目名: 値」の縦並びにする */
   .dv-wrap{margin-top:8px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2)}
   .dv-wrap>summary{cursor:pointer;padding:8px 12px;font-size:12.5px;font-weight:700;color:var(--ok);list-style:none;display:flex;align-items:center;gap:6px}
@@ -418,7 +427,7 @@
   <div class="cmdwrap">
     <div class="route" id="route" hidden></div>
     <form class="cmd" id="cmd" autocomplete="off">
-      <span class="sec-badge"><i></i>AI秘書</span>
+      <div class="mode" role="group" aria-label="指示か相談か"><button type="button" data-mode="order" aria-pressed="true">指示</button><button type="button" data-mode="consult" aria-pressed="false">相談</button></div>
       <label for="cmd-text" class="sr">業務命令</label>
       <textarea id="cmd-text" rows="1" placeholder="業務命令を入力(例: 岩国の12月の会場を今週中に押さえて)"></textarea>
       <button type="button" class="mic" data-mic="cmd-text" aria-label="音声で入力"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
@@ -566,7 +575,7 @@ function buildActors(org) {
     const p = s.unit === 'AI基盤室' ? (infraSeats[ii++] || [26.4, 8.6]) : (secSeats[si++] || [34.5, 8.6]);
     staffActors[s.id] = mkActor({ kind: 'staff', staff: s, name: s.name, desk: p, home: p, task: s.duty });
   });
-  secretary = mkActor({ kind: 'secretary', name: 'AI秘書(業務指示出し)', home: [29.2, 6.2], task: '統括の業務命令を、宛先を判断して業務指示として届ける' });
+  secretary = mkActor({ kind: 'secretary', name: 'CXO秘書(統括直属の経営参謀)', home: [29.2, 6.2], task: '業務命令を磨いて部署に届け、相談に直接答え、決裁に戦略と法務の見解を付ける' });
   messenger = staffActors['sec-minutes'] || secretary;
 }
 function targets() {
@@ -580,7 +589,7 @@ function targets() {
   return list;
 }
 const targetOf = id => targets().find(t => t.id === id) || null;
-const targetName = id => { const t = targetOf(id); return !t ? id : t.kind === 'meeting' ? '部長会議' : t.unit + ' ' + t.name; };
+const targetName = id => { if (id === 'cxo') return '統括直属 CXO秘書'; const t = targetOf(id); return !t ? id : t.kind === 'meeting' ? '部長会議' : t.unit + ' ' + t.name; };
 const deptName = id => { const d = ORG.depts.find(x => x.id === id); return d ? d.p + '部' : ''; };
 function actorOfTarget(t) { if (!t) return null; if (t.kind === 'team') return t.team.actor; if (t.kind === 'head') return heads[t.dept]; if (t.kind === 'staff') return staffActors[t.id]; return chair; }
 
@@ -931,6 +940,7 @@ function renderPanelInner() {
         <div class="row"><span class="lb">選択肢</span><span class="bd">${(d.options || []).map((x, i) => `${'ABC'[i] || '・'}. ${esc(x)}`).join('<br>')}</span></div>
         <div class="row dis"><span class="lb">反対意見</span><span class="bd">${esc(d.dissent)}</span></div>
         <div class="row"><span class="lb">根拠</span><div class="ev">${(d.evidence || []).map(e => `<span>${esc(e)}</span>`).join('')}</div></div>
+        ${cxoRow(d.cxo)}
         ${(d.views || []).length ? `<div class="row"><span class="lb">横串</span><span class="bd">${d.views.map(v => `${esc(deptName(v.dept))}: ${esc(v.view)}`).join('<br>')}</span></div>` : ''}
         ${d.runAfterApproval ? `<div class="row"><span class="lb">承認後</span><span class="bd">${esc(d.runAfterApproval)}</span></div>` : ''}
         <div class="cmd-mini"><label for="ins-${d.id}" class="sr">この案件への指示</label><textarea id="ins-${d.id}" placeholder="指示(任意)。差し戻すときは直してほしい点を書く"></textarea>
@@ -945,6 +955,8 @@ function renderPanelInner() {
     P.innerHTML = logs.length ? `<ul class="log">${logs.map(l => `<li><span class="tm">${esc(hm(toDate(l.at)))}</span><div><div class="who">${esc(l.who)}</div>${esc(l.what)}</div></li>`).join('')}</ul>` : `<div class="empty"><b>まだ記録はありません</b></div>`;
   }
 }
+/** CXO秘書の見解(戦略・法務・推奨) */
+const cxoRow = c => !c ? '' : `<div class="row cxo"><span class="lb">CXO</span><span class="bd">戦略: ${esc(c.strategy)}<br>法務: ${esc(c.legal)}<br>推奨: ${esc(c.advice)}${c.lawyer ? '<br><span class="law">実行の前に弁護士への確認を勧めます</span>' : ''}</span></div>`;
 const closedDv = new Set(); // 利用者が閉じた成果物の全文(再描画しても閉じたまま)
 function fullDeliverable(o, key) {
   return `<details class="dv-wrap" data-dv="${key}"${closedDv.has(key) ? '' : ' open'}><summary>成果物の全文</summary><div class="dv">${deliverableHTML(o, true)}</div>
@@ -970,6 +982,7 @@ function adoptionCard(d) {
     <h3>${esc(d.title)}</h3>
     <div class="row rec"><span class="lb">要約</span><span class="bd">${esc(d.summary)}</span></div>
     <div class="row dis"><span class="lb">監査役</span><span class="bd">${(d.audit || []).length ? d.audit.map(esc).join('<br>') : '指摘なし'}</span></div>
+    ${cxoRow(d.cxo)}
     ${o && o.deliverable ? fullDeliverable(o, d.id) : ''}
     <div class="cmd-mini"><label for="ins-${d.id}" class="sr">コメント</label><textarea id="ins-${d.id}" placeholder="不採用・修正のときは理由や直してほしい点を書く"></textarea>
       <button type="button" class="mic" data-mic="ins-${d.id}" aria-label="音声で入力"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button></div>
@@ -981,7 +994,8 @@ function adoptionCard(d) {
 const openOrders = new Set();
 function renderOrder(o) {
   let [label, pct, tone] = STAGE[o.stage] || [o.stage, 0, 'idle'];
-  if (o.stage === 'done' && o.adoption) [label, tone] = { adopted: ['採用', 'ok'], rejected: ['不採用', 'idle'], pending: ['完了(未確認)', 'ok'] }[o.adoption.status] || [label, tone];
+  if (o.kind === 'consult') [label, tone] = ['相談', 'ok'];
+  else if (o.stage === 'done' && o.adoption) [label, tone] = { adopted: ['採用', 'ok'], rejected: ['不採用', 'idle'], pending: ['完了(未確認)', 'ok'] }[o.adoption.status] || [label, tone];
   const steps = o.steps || [];
   const doneSteps = o.stage === 'done' ? steps.length : Math.floor(steps.length * pct / 100);
   const open = openOrders.has(o.id);
@@ -1007,7 +1021,8 @@ function renderAll() { renderCounts(); renderTicker(); if (!$('#panel').hidden) 
 const mq = matchMedia('(max-width:719px)');
 const isMobile = () => mq.matches;
 const VIEW_TITLE = { decide: '決裁', orders: '指示', log: '記録' };
-function setPlaceholder() { cmdText.placeholder = isMobile() ? '業務命令を入力' : '業務命令を入力(例: 岩国の12月の会場を今週中に押さえて)'; }
+let inputMode = 'order';
+function setPlaceholder() { cmdText.placeholder = inputMode === 'consult' ? (isMobile() ? 'CXO秘書に相談' : 'CXO秘書に相談(例: 体験会からの入会率を上げるには?)') : isMobile() ? '業務命令を入力' : '業務命令を入力(例: 岩国の12月の会場を今週中に押さえて)'; }
 mq.addEventListener('change', setPlaceholder);
 function setMobileView(tab) {
   panelTab = tab || 'sum';
@@ -1137,9 +1152,31 @@ cmdText.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey 
 $('#cmd').addEventListener('submit', e => {
   e.preventDefault();
   const text = cmdText.value.trim();
-  if (!text) { cmdText.focus(); toast('業務命令を入力するか、マイクで話してください'); return; }
-  cmdText.value = ''; autosize(); submitCommand(text);
+  if (!text) { cmdText.focus(); toast(inputMode === 'consult' ? '相談の内容を入力するか、マイクで話してください' : '業務命令を入力するか、マイクで話してください'); return; }
+  cmdText.value = ''; autosize();
+  if (inputMode === 'consult') consultCommand(text); else submitCommand(text);
 });
+document.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => {
+  inputMode = b.dataset.mode;
+  document.querySelectorAll('[data-mode]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  $('#cmd').classList.toggle('consult', inputMode === 'consult');
+  document.querySelector('.send').textContent = inputMode === 'consult' ? '相談する' : '指示する';
+  setPlaceholder(); cmdText.focus();
+}));
+/** CXO秘書への相談: 部署に回さず直接答える(答えは成果物の窓で開く。記録は指示の一覧に「相談」として残る) */
+async function consultCommand(text) {
+  const el = $('#route');
+  el.hidden = false;
+  el.innerHTML = `<div class="h"><span class="pill">CXO秘書</span><span>考えています…(20秒ほど。最新の情報を調べるときは1分ほど)</span></div><div class="q">「${esc(text)}」</div>`;
+  say(secretary, 'talk', 30);
+  try {
+    const r = await fns.httpsCallable('aiConsult', { timeout: 300000 })({ text });
+    el.hidden = true; el.innerHTML = '';
+    toast(`相談#${r.data.no}にCXO秘書が答えました`);
+    const open = (tries = 0) => { const o = orders.find(x => x.id === r.data.id); if (o) openViewer(o); else if (tries < 20) setTimeout(() => open(tries + 1), 300); };
+    open();
+  } catch (e) { el.hidden = true; el.innerHTML = ''; toast('相談できませんでした: ' + e.message); }
+}
 document.addEventListener('click', async e => {
   const btn = e.target.closest('button');
   const mic = e.target.closest('[data-mic]'); if (mic) return startVoice(mic.dataset.mic, mic);
