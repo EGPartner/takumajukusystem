@@ -307,6 +307,8 @@
   .vcard .sum{font-weight:700}
   .vcard .txt{color:var(--ink-2);white-space:pre-wrap}
   .vcard .urg-高{background:var(--bad-soft);color:var(--bad)}
+  .research-toggle{display:flex;align-items:center;gap:6px;cursor:pointer}
+  .research-toggle input{width:18px;height:18px}
   .mode{align-self:center;display:inline-flex;background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:2px;flex:none}
   .mode button{border:0;background:none;border-radius:999px;padding:6px 11px;font-size:12.5px;font-weight:700;color:var(--ink-3);cursor:pointer;white-space:nowrap}
   .mode button[aria-pressed="true"]{background:var(--accent);color:#fff}
@@ -1178,11 +1180,13 @@ function renderRoute() {
   el.innerHTML = `<div class="h"><span class="pill">AI秘書</span><span class="to">→ ${esc(targetName(draft.target))}</span><span class="tag">${draft.by === 'ai' ? 'AIが判断' : draft.by === 'manual' ? '統括が変更' : 'キーワードで判断'}${draft.reason ? ' ・ ' + esc(draft.reason) : ''}</span></div>
     <div>${esc(draft.instruction)}${draft.due ? ` <b>(期限: ${esc(draft.due)})</b>` : ''}</div>
     ${draft.needsDecision ? '<div class="q">統括の判断が必要になりそうなため、途中で部長・部長会議を経て決裁に上がります</div>' : ''}
+    <label class="q research-toggle"><input type="checkbox" id="route-research" ${draft.needsResearch ? 'checked' : ''}> Web検索で調べる <span class="tag">${draft.needsResearch ? '1件 約10〜25円ふえます' : '外の情報が要るときだけ'}</span></label>
     <div class="h"><label class="tag" for="route-sel">宛先</label><select id="route-sel">${opts}</select><span class="spacer"></span><button type="button" class="btn ghost" id="route-cancel">取り消す</button><button type="button" class="btn primary" id="route-now">すぐ送る</button></div>
     <div class="bar2"><i id="route-bar"></i></div>`;
   const bar = $('#route-bar'); bar.style.width = '0%';
   requestAnimationFrame(() => requestAnimationFrame(() => { bar.style.transition = `width ${Math.max(0, draft.deadline - performance.now())}ms linear`; bar.style.width = '100%'; }));
   $('#route-sel').addEventListener('change', e => { draft.target = e.target.value; draft.by = 'manual'; draft.reason = ''; startCountdown(); });
+  $('#route-research').addEventListener('change', e => { draft.needsResearch = e.target.checked; startCountdown(); });
   $('#route-cancel').addEventListener('click', () => { clearTimeout(draftTimer); draft = null; renderRoute(); toast('業務命令を取り消しました'); });
   $('#route-now').addEventListener('click', sendDraft);
 }
