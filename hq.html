@@ -785,7 +785,7 @@ function renderHQStudents(){
   let total = 0;
   const base = window.location.origin + window.location.pathname.replace(/hq\.html$/, '');
   summaryEl.innerHTML = schoolsArr.map(s => {
-    const list = hqStudentsBySchool[s.id] || [];
+    const list = (hqStudentsBySchool[s.id] || []).filter(st => !st.archived); // 退塾済み・重複は名簿に出さない
     const active = list.filter(isActiveThisMonth).length;
     total += active;
     const url = base + 'school.html?school=' + encodeURIComponent(s.id);
@@ -816,7 +816,7 @@ function renderHQStudentsAll(){
   const filter = ((document.getElementById('hq-students-filter') || {}).value || '').trim().toLowerCase();
   let rows = [];
   schoolsArr.forEach(s => {
-    (hqStudentsBySchool[s.id] || []).forEach(st => rows.push({ st, academyId: s.id, schoolName: s.name }));
+    (hqStudentsBySchool[s.id] || []).filter(st => !st.archived).forEach(st => rows.push({ st, academyId: s.id, schoolName: s.name }));
   });
   if (filter) rows = rows.filter(r => String(r.st.name || '').toLowerCase().includes(filter));
   rows.sort((a,b) => (isActiveThisMonth(b.st) ? 1 : 0) - (isActiveThisMonth(a.st) ? 1 : 0)
@@ -862,7 +862,7 @@ function renderHQRoster(){
   }
   card.style.display = 'block';
   document.getElementById('hq-roster-title').textContent = schoolNameFor(hqRosterSchool) + ' の名簿';
-  const list = [...hqStudentsBySchool[hqRosterSchool]];
+  const list = hqStudentsBySchool[hqRosterSchool].filter(st => !st.archived);
   list.sort((a,b) => (isActiveThisMonth(b) ? 1 : 0) - (isActiveThisMonth(a) ? 1 : 0)
     || String(a.name || '').localeCompare(String(b.name || ''), 'ja'));
   if (list.length === 0){ rosterEl.innerHTML = '<div class="empty">塾生が登録されていません。</div>'; return; }
