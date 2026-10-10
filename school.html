@@ -113,6 +113,10 @@
   table.grid-table .col-grade select{width:100%;border:1px solid var(--border-strong);border-radius:6px;padding:3px;font-size:12.5px;font-family:inherit;background:var(--surface);color:var(--text-primary);}
   .bulk-month{margin-top:3px;padding:1px 6px;font-size:10px;font-weight:700;border:1px solid var(--border-strong);border-radius:5px;background:var(--surface);color:var(--accent-dark);cursor:pointer;font-family:inherit;}
   .bulk-month:hover{background:var(--accent-bg);}
+  .cell-month.locked{cursor:default}
+  .sheet-master{background:var(--accent-bg,#e8f7f8);border-radius:8px;padding:8px 10px}
+  .sheet-master.flash{animation:sheetflash 1.2s ease}
+  @keyframes sheetflash{0%,40%{box-shadow:0 0 0 3px rgba(15,184,196,.55)}100%{box-shadow:none}}
   table.grid-table .cell-month{width:34px;height:34px;cursor:pointer;font-size:14px;color:var(--accent-dark);user-select:none;border-radius:8px;}
   table.grid-table .cell-month:not(:empty){background:var(--accent-bg);}
   table.grid-table .cell-month:hover{filter:brightness(0.96);}
@@ -303,7 +307,7 @@
   <div class="tab-panel" id="tab-grid">
     <div class="card">
       <h2>階段図</h2>
-      <p class="note" style="margin-top:0;">マスをクリックすると 空欄 → ★(在籍) → −(休会) → 空欄 の順で切り替わります。★の数がその月の月謝収入人数になります。</p>
+      <p class="note sheet-master" style="margin-top:0;">塾生の追加・退塾・名前・チーム・サイズ・在籍の◼は、スプレッドシート「タクマ塾CRM」の「塾生リスト」が元です。変更はシートで行ってください(最大10分でここに反映されます)。 ◼の数がその月の月謝収入人数です。学年・体験・メモはこの画面で変更できます。</p>
       <div class="grid-scroll">
         <table class="grid-table">
           <thead><tr id="grid-head-row"><th class="col-name">氏名</th><th class="col-grade">学年</th><th class="col-trial">体験</th></tr></thead>
@@ -314,8 +318,8 @@
           </tfoot>
         </table>
       </div>
-      <div id="grid-empty" class="empty" style="display:none;">まだ塾生が登録されていません。下のボタンから追加してください。</div>
-      <div class="btn-row edit-only" style="margin-top:14px;">
+      <div id="grid-empty" class="empty" style="display:none;">まだ塾生がいません。スプレッドシートの「塾生リスト」に行を追加すると、最大10分でここに表示されます。</div>
+      <div class="btn-row edit-only" style="margin-top:14px;display:none;" aria-hidden="true">
         <button class="primary" id="btn-add-student">+ 塾生を追加</button>
         <button class="ghost" id="btn-sample">サンプルデータを追加</button>
         <button class="ghost" id="btn-reset-students">塾生データを全削除</button>
@@ -867,7 +871,7 @@ function gradeOptions(current){
   return html;
 }
 function firstActiveKey(s){ const keys = Object.keys(s.months).filter(k => s.months[k] === 'active').sort(); return keys.length ? keys[0] : null; }
-function cellMark(status){ return status === 'active' ? '★' : (status === 'pause' ? '−' : ''); }
+function cellMark(status){ return status === 'active' ? '◼' : (status === 'pause' ? '−' : ''); } // シートの「◼️」と同じ印
 function cycleStatus(cur){ if (cur === 'active') return 'pause'; if (cur === 'pause') return null; return 'active'; }
 function currentMonthStr(){ const d = new Date(); return d.getFullYear() + '-' + pad(d.getMonth()+1); }
 function prevMonthStr(ym){ let [y,m] = ym.split('-').map(Number); m--; if(m<1){m=12;y--;} return y + '-' + pad(m); }
@@ -2295,7 +2299,7 @@ const GRID_LEAD_BLANK = '<td class="col-team"></td><td class="col-grade"></td><t
 function renderGridHead(){
   // 各月の見出しに「前月と同じにする」ボタンを置き、月ごとの一括入力をできるようにする
   const monthCells = fiscalMonths(currentFY).map(mo => {
-    const btn = isAdmin ? `<div><button type="button" class="bulk-month" data-key="${mo.key}" title="前の月と同じ在籍状況をこの月にコピーします">一括</button></div>` : '';
+    const btn = ''; // 在籍の◼はシートで変更する(シートが元のため、この画面からはコピーしない)
     return `<th class="cell-month">${mo.label}${btn}</th>`;
   }).join('');
   document.getElementById('grid-head-row').innerHTML = GRID_LEAD_HEAD + monthCells + '<th></th>';
@@ -2319,25 +2323,26 @@ function renderGrid(){
       const cells = months.map(mo => {
         const st = s.months[mo.key] || null;
         const cls = st === 'pause' ? 'cell-month pause' : 'cell-month';
-        return `<td class="${cls}" data-id="${s.id}" data-key="${mo.key}">${cellMark(st)}</td>`;
+        return `<td class="${cls} locked" data-id="${s.id}" data-key="${mo.key}" title="在籍の◼はスプレッドシートで変更してください">${cellMark(st)}</td>`;
       }).join('');
       const ro = isAdmin ? '' : 'disabled';
+      const sheetRo = 'disabled title="スプレッドシートで変更してください"'; // シートと同期する項目(名前・チーム・サイズ)
       return `<tr data-row="${s.id}">
-        <td class="col-name"><input type="text" class="in-name" data-id="${s.id}" value="${escAttr(s.name)}" ${ro}></td>
-        <td class="col-team"><input type="text" class="in-team" data-id="${s.id}" value="${escAttr(s.team||'')}" placeholder="-" ${ro}></td>
+        <td class="col-name"><input type="text" class="in-name" data-id="${s.id}" value="${escAttr(s.name)}" ${sheetRo}></td>
+        <td class="col-team"><input type="text" class="in-team" data-id="${s.id}" value="${escAttr(s.team||'')}" placeholder="-" ${sheetRo}></td>
         <td class="col-grade"><select class="in-grade" data-id="${s.id}" ${ro}>${gradeOptions(grade)}</select></td>
         <td class="col-trial"><input type="checkbox" class="in-trial" data-id="${s.id}" ${s.trial ? 'checked' : ''} ${ro}></td>
-        <td class="col-size"><input type="text" class="in-shirt" data-id="${s.id}" value="${escAttr(s.shirtSize||'')}" placeholder="-" list="size-options" ${ro}></td>
-        <td class="col-size"><input type="text" class="in-pants" data-id="${s.id}" value="${escAttr(s.pantsSize||'')}" placeholder="-" list="size-options" ${ro}></td>
+        <td class="col-size"><input type="text" class="in-shirt" data-id="${s.id}" value="${escAttr(s.shirtSize||'')}" placeholder="-" ${sheetRo}></td>
+        <td class="col-size"><input type="text" class="in-pants" data-id="${s.id}" value="${escAttr(s.pantsSize||'')}" placeholder="-" ${sheetRo}></td>
         <td class="col-memo"><input type="text" class="in-memo" data-id="${s.id}" value="${escAttr(s.memo||'')}" placeholder="-" ${ro}></td>
-        ${cells}<td>${isAdmin ? `<button class="link-danger" data-del="${s.id}">削除</button>` : ''}</td></tr>`;
+        ${cells}<td></td></tr>`;
     }).join('');
   }
   renderGridFooter(months);
 }
 function renderGridFooter(months){
   const countCells = months.map(mo => `<td>${activeCountAtKey(mo.key)}</td>`).join('');
-  document.getElementById('grid-foot-count').innerHTML = '<td class="col-name">在籍数(★)</td>' + GRID_LEAD_BLANK + countCells + '<td></td>';
+  document.getElementById('grid-foot-count').innerHTML = '<td class="col-name">在籍数(◼)</td>' + GRID_LEAD_BLANK + countCells + '<td></td>';
   // 月謝収入はスタッフに見せない(在籍状況の把握には不要なため)
   const revRow = document.getElementById('grid-foot-revenue');
   revRow.style.display = isAdmin ? '' : 'none';
@@ -2385,7 +2390,9 @@ async function handleBulkMonth(key){
 }
 
 async function handleGridClick(e){
-  if (!isAdmin) return;
+  // 在籍の◼と塾生の削除は、スプレッドシートが元のためこの画面では変更しない
+  if (e.target.classList.contains('cell-month')) { showSheetMasterHint(); return; }
+  return;
   const del = e.target.dataset.del;
   if (del){
     if (!confirm('この塾生を削除しますか？(成長記録も削除されます)')) return;
@@ -2403,8 +2410,14 @@ async function handleGridClick(e){
     await saveStudent(updated);
   }
 }
+function showSheetMasterHint(){
+  const n = document.querySelector('.sheet-master'); if (!n) return;
+  n.classList.remove('flash'); void n.offsetWidth; n.classList.add('flash');
+}
 async function handleGridInput(e){
   if (!isAdmin) return;
+  // シートと同期する項目(名前・チーム・サイズ)は保存しない(次の同期でシートの内容に戻るため)
+  if (['in-name', 'in-team', 'in-shirt', 'in-pants'].some(c => e.target.classList.contains(c))) return;
   const id = e.target.dataset.id;
   const s = students.find(x => x.id === id); if (!s) return;
   if (e.target.classList.contains('in-name')){ await saveStudent(Object.assign({}, s, { name: e.target.value })); }
