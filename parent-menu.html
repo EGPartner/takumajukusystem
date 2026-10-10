@@ -505,6 +505,12 @@ function showPending(uid){
     if (!doc.exists) return;
     const data = doc.data();
     if (data.status === 'approved'){ showMenu(); return; }
+    if (data.status === 'rejected'){
+      // 本部が不明者リストで「塾生ではない」と判断した申請
+      const box = document.getElementById('gate-pending');
+      if (box && !document.getElementById('gate-rejected')) box.insertAdjacentHTML('afterbegin', '<p id="gate-rejected" style="color:var(--danger);font-weight:700;margin:0 0 10px;">塾生名簿でお名前を確認できませんでした。お手数ですが、塾までお問い合わせください。</p>');
+      return;
+    }
     if (data.notifyEmail){
       document.getElementById('notify-email').value = data.notifyEmail;
       const btn = document.getElementById('btn-notify-email');
