@@ -508,7 +508,7 @@ function showPending(uid){
     if (data.status === 'rejected'){
       // 本部が不明者リストで「塾生ではない」と判断した申請
       const box = document.getElementById('gate-pending');
-      if (box && !document.getElementById('gate-rejected')) box.insertAdjacentHTML('afterbegin', '<div id="gate-rejected" style="margin:0 0 12px;padding:10px 12px;border-radius:10px;background:#FCE7E4;"><p style="color:var(--danger);font-weight:700;margin:0 0 4px;">塾生名簿でお名前を確認できませんでした。</p><p style="margin:0;font-size:13px;">お名前の漢字やひらがなが名簿と違うと確認できません。下の「名前を入力し直す」から、もう一度お試しください。解決しないときは、練習のときに担当コーチへお声がけください。</p></div>');
+      if (box && !document.getElementById('gate-rejected')) box.insertAdjacentHTML('afterbegin', '<div id="gate-rejected" style="margin:0 0 12px;padding:10px 12px;border-radius:10px;background:#FCE7E4;"><p style="color:var(--danger);font-weight:700;margin:0 0 4px;">塾生名簿でお名前を確認できませんでした。</p><p style="margin:0;font-size:13px;">お名前の漢字やひらがなが名簿と違うと確認できません。下の「名前を入力し直す」から、もう一度お試しください。解決しないときは、タクマ塾の公式LINEのトークからお問い合わせください。</p></div>');
       return;
     }
     if (data.notifyEmail){
