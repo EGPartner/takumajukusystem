@@ -123,7 +123,7 @@
   }
   @media (min-width:1281px){ .stage-wrap.with-panel .scroller{margin-right:360px} .stage-wrap.with-panel .panel{top:0;right:0;bottom:0;border-radius:0;border:0;border-left:1px solid var(--line);box-shadow:none} }
   .tabs{display:flex;gap:4px;padding:10px 10px 0;border-bottom:1px solid var(--line)}
-  .tabs button{border:0;background:none;padding:8px 10px;font-size:13px;font-weight:700;color:var(--ink-3);border-bottom:2px solid transparent;cursor:pointer;display:inline-flex;gap:6px;align-items:center}
+  .tabs button{white-space:nowrap;border:0;background:none;padding:8px 8px;font-size:13px;font-weight:700;color:var(--ink-3);border-bottom:2px solid transparent;cursor:pointer;display:inline-flex;gap:6px;align-items:center}
   .tabs button[aria-selected="true"]{color:var(--ink);border-color:var(--accent)}
   .tabs .n{font-family:var(--f-num);font-size:11px;background:var(--bad);color:#fff;border-radius:8px;padding:0 6px;min-width:18px;text-align:center}
   .tabs .close{margin-left:auto;font-size:18px;color:var(--ink-3)}
@@ -290,6 +290,23 @@
   .next-list .next-go{flex:none;padding:3px 10px;font-size:12px}
   @media print{.next-go{display:none!important}}
   .alertbox .btn{margin-left:6px;padding:4px 10px;font-size:12px}
+  .decided-h{font-size:12px;font-weight:700;color:var(--ink-2);margin:6px 0 0}
+  .dcard{border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:12.5px;display:grid;gap:4px}
+  .dcard .top{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+  .dcard .res{font-size:11px;font-weight:700;padding:1px 8px;border-radius:999px;background:var(--surface-2);color:var(--ink-2)}
+  .reopen{display:grid;gap:6px;margin-top:4px}
+  .reopen[hidden]{display:none}
+  .vform{border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;gap:8px}
+  .vform .meta{display:flex;gap:6px;flex-wrap:wrap}
+  .vform input[type=date],.vform select,.vcard select{font:inherit;font-size:13px;border:1px solid var(--line-strong);border-radius:8px;padding:5px 6px;background:var(--surface-2);color:var(--ink)}
+  .vfilter{display:flex;gap:6px;flex-wrap:wrap}
+  .vfilter button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 10px;font-size:12px;cursor:pointer;color:var(--ink-2)}
+  .vfilter button[aria-pressed="true"]{background:var(--navy);border-color:var(--navy);color:#fff}
+  .vcard{border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:grid;gap:6px;font-size:13px}
+  .vcard .top{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:11.5px;color:var(--ink-3)}
+  .vcard .sum{font-weight:700}
+  .vcard .txt{color:var(--ink-2);white-space:pre-wrap}
+  .vcard .urg-高{background:var(--bad-soft);color:var(--bad)}
   .mode{align-self:center;display:inline-flex;background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:2px;flex:none}
   .mode button{border:0;background:none;border-radius:999px;padding:6px 11px;font-size:12.5px;font-weight:700;color:var(--ink-3);cursor:pointer;white-space:nowrap}
   .mode button[aria-pressed="true"]{background:var(--accent);color:#fff}
@@ -379,7 +396,7 @@
     .mic,.send{height:40px}
     .mic{width:40px}
     .route{max-height:42dvh;overflow:auto;box-shadow:none}
-    .mnav{display:grid!important;grid-template-columns:repeat(4,1fr);height:calc(58px + env(safe-area-inset-bottom,0px));padding:4px 4px env(safe-area-inset-bottom,0px);z-index:25;box-shadow:0 -6px 18px -14px rgba(0,0,0,.35)}
+    .mnav{display:grid!important;grid-template-columns:repeat(5,1fr);height:calc(58px + env(safe-area-inset-bottom,0px));padding:4px 4px env(safe-area-inset-bottom,0px);z-index:25;box-shadow:0 -6px 18px -14px rgba(0,0,0,.35)}
     .mnav button{padding:4px 0;font-size:11px;min-height:48px}
     .mnav button.on{color:var(--accent-ink);font-weight:700}
     .mnav button.on svg{stroke-width:2.3}
@@ -428,9 +445,10 @@
 
     <aside class="panel" id="panel" aria-label="サマリ・決裁・記録">
       <div class="tabs" role="tablist">
-        <button type="button" role="tab" data-ptab="sum" aria-selected="true">今日のサマリ</button>
+        <button type="button" role="tab" data-ptab="sum" aria-selected="true">サマリ</button>
         <button type="button" role="tab" data-ptab="decide" aria-selected="false">決裁 <span class="n" id="tab-n">0</span></button>
         <button type="button" role="tab" data-ptab="orders" aria-selected="false">指示</button>
+        <button type="button" role="tab" data-ptab="voices" aria-selected="false">代表 <span class="n" id="tab-v" hidden>0</span></button>
         <button type="button" role="tab" data-ptab="log" aria-selected="false">記録</button>
         <button type="button" class="close" id="panel-close" aria-label="パネルを閉じる">×</button>
       </div>
@@ -455,6 +473,7 @@
   <button type="button" data-m="sum"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-6 8 6v8a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/></svg>ホーム<span class="badge" id="m-alarm" hidden>!</span></button>
   <button type="button" data-m="decide"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4 10-10"/></svg>決裁<span class="badge" id="m-badge" hidden>0</span></button>
   <button type="button" data-m="orders"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M4 12h10M4 18h7"/></svg>指示</button>
+  <button type="button" data-m="voices"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4l-5.2 2.7 1-5.8L3.5 9.2l5.9-.9z"/></svg>代表<span class="badge" id="m-voice" hidden>0</span></button>
   <button type="button" data-m="log"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>記録</button>
 </nav>
 <div class="viewer" id="viewer" hidden role="dialog" aria-modal="true" aria-labelledby="v-title">
@@ -609,6 +628,8 @@ function actorOfTarget(t) { if (!t) return null; if (t.kind === 'team') return t
 
 /* ---------- 本番のデータ ---------- */
 let orders = [], decisions = [], logs = [], usage = null, apiKeyMeta = null;
+let decided = [], voices = [], voiceFilter = '対応が必要', voiceLink = null;
+const VOICE_STATUS = ['未対応', '検討中', '対応中', '反映済み', '見送り'], VOICE_OPEN = ['未対応', '検討中', '対応中'];
 const ACTIVE = ['executing', 'consult_head', 'cross_consult', 'meeting', 'awaiting_decision', 'producing', 'reviewing', 'awaiting_adoption'];
 const STAGE = {
   executing: ['実行中', 20, 'ok'], consult_head: ['部長に相談中', 35, 'warn'], cross_consult: ['横串で相談中', 50, 'warn'],
@@ -896,6 +917,8 @@ function renderCounts() {
   const nd = decisions.length + pendingB().length; // 統括が見るもの: 決裁 + 区分Bの確認待ち
   $('#n-decide').textContent = nd; $('#m-badge').textContent = nd; $('#m-badge').hidden = !nd;
   $('#tab-n').textContent = nd; $('#tab-n').hidden = !nd;
+  const nv = voices.filter(v => (v.status || '未対応') === '未対応').length;
+  $('#tab-v').textContent = nv; $('#tab-v').hidden = !nv; $('#m-voice').textContent = nv; $('#m-voice').hidden = !nv;
   $('#n-today').textContent = todayCount();
   $('#n-ok').textContent = all.filter(t => teamState(t.id) !== 'idle').length;
   $('#n-idle').textContent = all.filter(t => teamState(t.id) === 'idle').length;
@@ -944,6 +967,7 @@ function renderPanelInner() {
       </div>
       <table class="sum"><thead><tr><th>部署</th><th>状態</th><th class="r">進行中</th><th class="r">係</th></tr></thead><tbody>${rows}</tbody></table>
       <div class="sec-h">次に統括がやること</div>
+      ${voices.some(v => (v.status || '未対応') === '未対応') ? `<p class="pk" style="color:var(--ink)">代表の意見(未対応) <b>${voices.filter(v => (v.status || '未対応') === '未対応').length}件</b> — 「代表」タブで確認</p>` : ''}
       <ul class="todo">${decisions.length + pendingB().length ? [...decisions.map(d => `<li>${d.type === 'adoption' ? '採用の決裁: ' : ''}${esc(d.title)}</li>`), ...pendingB().map(o => `<li>確認待ち: ${esc(o.deliverable.title)}</li>`)].join('') : '<li>決裁待ちはありません</li>'}</ul>
       <p class="pk">売上と在籍数は、本部画面の「売上」タブで確認できます。<a href="hq.html?goto=revenue">本部画面を開く</a></p>`;
   } else if (panelTab === 'decide') {
@@ -963,11 +987,51 @@ function renderPanelInner() {
           <button type="button" class="btn ghost" data-act="back" data-id="${d.id}">差し戻す</button>
           <button type="button" class="btn ghost" data-act="drop" data-id="${d.id}">取り下げ</button></div>
       </article>`).join('') : `<div class="empty"><b>決裁待ちはありません</b>部長会議の結論が届くと、ここに並びます。</div>`;
+    P.insertAdjacentHTML('beforeend', decidedHTML());
+  } else if (panelTab === 'voices') {
+    P.innerHTML = voicesHTML();
   } else if (panelTab === 'orders') {
     P.innerHTML = orders.length ? `<ul class="orders">${orders.map(renderOrder).join('')}</ul>` : `<div class="empty"><b>まだ指示はありません</b>下の入力欄に業務命令を書くか話すと、AI秘書が宛先を判断して届けます。</div>`;
   } else {
     P.innerHTML = logs.length ? `<ul class="log">${logs.map(l => `<li><span class="tm">${esc(hm(toDate(l.at)))}</span><div><div class="who">${esc(l.who)}</div>${esc(l.what)}</div></li>`).join('')}</ul>` : `<div class="empty"><b>まだ記録はありません</b></div>`;
   }
+}
+/** 決裁済み(直近20件)。各案件から再審査を求められる */
+const RESULT_LABEL = { approve: '承認', cond: '条件付き承認', back: '差し戻し', drop: '取り下げ', adopt: '採用', reject: '不採用', revise: '修正' };
+function reopenForm(orderId) {
+  return `<button type="button" class="btn ghost" data-reopen-open="${orderId}" style="justify-self:start">再審査を求める</button>
+    <div class="reopen" id="ro-${orderId}" hidden><div class="cmd-mini"><label for="rr-${orderId}" class="sr">再審査の理由</label><textarea id="rr-${orderId}" placeholder="見直してほしい点や、再審査の理由を書く(必須)"></textarea>%MIC%</div>
+    <div class="actions"><button type="button" class="btn primary" data-reopen="${orderId}">再審査に回す</button></div></div>`.replace('%MIC%', `<button type="button" class="mic" data-mic="rr-${orderId}" aria-label="音声で入力"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>`);
+}
+const canReopen = o => !o || (o.kind !== 'consult' && ['done', 'dropped', 'returned'].includes(o.stage));
+function decidedHTML() {
+  const list = decided.filter(d => d.status && d.status !== 'pending');
+  if (!list.length) return '';
+  return `<div class="decided-h">決裁済み(直近${list.length}件)</div>` + list.map(d => {
+    const o = orders.find(x => x.id === d.orderId);
+    return `<div class="dcard"><div class="top"><span class="res">${esc(RESULT_LABEL[d.status] || d.status)}</span><span class="pk">指示#${esc(d.orderNo || '')} ・ ${esc(hm(toDate(d.decidedAt)))}</span>${o ? `<span class="pk">今: ${esc(stageLabel(o.stage))}</span>` : ''}</div>
+      <b>${esc(d.type === 'adoption' ? '採用の決裁: ' : '')}${esc(d.title || '')}</b>${d.note ? `<span class="pk">統括のコメント: ${esc(d.note)}</span>` : ''}
+      ${canReopen(o) ? reopenForm(d.orderId) : '<span class="pk">進行中のため、終わってから再審査に回せます</span>'}</div>`;
+  }).join('');
+}
+/** 代表タクマの意見の一覧と登録 */
+function voicesHTML() {
+  const today = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
+  const filters = ['対応が必要', ...VOICE_STATUS, 'すべて'];
+  const list = voices.filter(v => voiceFilter === 'すべて' || (voiceFilter === '対応が必要' ? VOICE_OPEN.includes(v.status || '未対応') : (v.status || '未対応') === voiceFilter));
+  return `<div class="vform"><b>代表タクマの意見を登録</b>
+      <div class="cmd-mini" style="margin-top:0"><label for="voice-text" class="sr">意見の内容</label><textarea id="voice-text" placeholder="代表が言っていたこと(できるだけそのままの言葉で)"></textarea>${'%MIC%'}</div>
+      <div class="meta"><label class="pk">言われた日 <input type="date" id="voice-date" value="${today}"></label>
+        <label class="pk">伝わり方 <select id="voice-channel">${['口頭', 'LINE', '電話', 'メール', '会議', 'その他'].map(c => `<option>${c}</option>`).join('')}</select></label></div>
+      <div class="actions" style="margin-top:0"><button type="button" class="btn primary" id="voice-save">登録する</button></div></div>
+    <div class="vfilter">${filters.map(f => `<button type="button" data-vf="${f}" aria-pressed="${f === voiceFilter}">${f}${f === '対応が必要' ? ' ' + voices.filter(v => VOICE_OPEN.includes(v.status || '未対応')).length : ''}</button>`).join('')}</div>
+    ${list.length ? list.map(v => `<div class="vcard"><div class="top"><b>#${esc(v.no)}</b><span>${esc(v.saidAt || '')}</span><span>${esc(v.channel || '')}</span>${v.area ? `<span class="pill">${esc(v.area)}</span>` : ''}${v.urgency ? `<span class="pill urg-${esc(v.urgency)}">急ぎ: ${esc(v.urgency)}</span>` : ''}</div>
+        <div class="sum">${esc(v.summary || '')}</div><div class="txt">${esc(v.text || '')}</div>
+        <label class="pk">状態 <select data-vs="${v.id}">${VOICE_STATUS.map(st => `<option${(v.status || '未対応') === st ? ' selected' : ''}>${st}</option>`).join('')}</select></label>
+        ${(v.linkedOrderNos || []).length ? `<span class="pk">関係する指示: ${v.linkedOrderNos.map(n => '#' + n).join('、')}</span>` : ''}
+        <div class="cmd-mini" style="margin-top:0"><label for="vn-${v.id}" class="sr">対応のメモ</label><textarea id="vn-${v.id}" placeholder="対応のメモ(どう反映したか、見送った理由など)">${esc(v.note || '')}</textarea></div>
+        <div class="actions" style="margin-top:0"><button type="button" class="btn" data-vsave="${v.id}">メモを保存</button><button type="button" class="btn" data-vorder="${v.id}">指示にする</button><button type="button" class="btn" data-vconsult="${v.id}">CXOに相談</button></div></div>`).join('')
+      : `<div class="empty"><b>${voices.length ? 'この状態の意見はありません' : 'まだ登録はありません'}</b>代表が言っていたことを、上の欄から登録してください。</div>`}`.replace('%MIC%', `<button type="button" class="mic" data-mic="voice-text" aria-label="音声で入力"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>`);
 }
 /** CXO秘書の見解(戦略・法務・推奨) */
 const cxoRow = c => !c ? '' : `<div class="row cxo"><span class="lb">CXO</span><span class="bd">戦略: ${esc(c.strategy)}<br>法務: ${esc(c.legal)}<br>推奨: ${esc(c.advice)}${c.lawyer ? '<br><span class="law">実行の前に弁護士への確認を勧めます</span>' : ''}</span></div>`;
@@ -1025,6 +1089,7 @@ function renderOrder(o) {
       ${o.adoption && o.adoption.status !== 'pending' ? `<div class="pk">${o.adoption.status === 'adopted' ? '採用済み' : '不採用'}${o.adoption.note ? ': ' + esc(o.adoption.note) : ''}</div>` : ''}
       ${o.stage === 'done' && o.adoption && o.adoption.status === 'pending' ? `<div class="cmd-mini"><label for="ad-${o.id}" class="sr">採用の判断へのコメント</label><textarea id="ad-${o.id}" placeholder="不採用・修正のときは理由や直してほしい点を書く"></textarea></div>
         <div class="actions"><button type="button" class="btn primary" data-adopt="adopt" data-id="${o.id}">採用</button><button type="button" class="btn ghost" data-adopt="revise" data-id="${o.id}">修正</button><button type="button" class="btn ghost" data-adopt="reject" data-id="${o.id}">不採用</button></div>` : ''}
+      ${canReopen(o) && o.kind !== 'consult' ? reopenForm(o.id) : ''}
     </div>` : '';
   return `<li class="oi"><div class="oh"><span class="tm">${esc(hm(toDate(o.createdAt)))}</span><span class="who">#${esc(o.no)} ${esc(targetName(o.target))}</span><span class="st ${tone === 'bad' ? 'warn' : tone}">${esc(label)}</span>${o.costYen ? `<span class="tm">${Math.round(o.costYen)}円</span>` : ''}
     <button type="button" class="btn chk" data-order="${o.id}" aria-expanded="${open}">${open ? '閉じる' : '進捗を確認'}</button></div>
@@ -1034,7 +1099,7 @@ function renderAll() { renderCounts(); renderTicker(); if (!$('#panel').hidden) 
 /* ---------- スマホ: アプリの画面の作り ---------- */
 const mq = matchMedia('(max-width:719px)');
 const isMobile = () => mq.matches;
-const VIEW_TITLE = { decide: '決裁', orders: '指示', log: '記録' };
+const VIEW_TITLE = { decide: '決裁', orders: '指示', voices: '代表の意見', log: '記録' };
 let inputMode = 'order';
 function setPlaceholder() { cmdText.placeholder = inputMode === 'consult' ? (isMobile() ? 'CXO秘書に相談' : 'CXO秘書に相談(例: 体験会からの入会率を上げるには?)') : isMobile() ? '業務命令を入力' : '業務命令を入力(例: 岩国の12月の会場を今週中に押さえて)'; }
 mq.addEventListener('change', setPlaceholder);
@@ -1127,7 +1192,10 @@ async function sendDraft() {
   const d = draft; if (!d || d.loading) return;
   draft = null; renderRoute();
   const payload = { text: d.text, target: d.target, instruction: d.instruction, due: d.due, steps: d.steps, needsDecision: d.needsDecision, needsResearch: d.needsResearch, needsData: d.needsData, costYen: d.costYen, related: d.related, question: d.question, output: d.output, by: d.by };
-  try { const r = await call('aiSubmitOrder')({ draft: payload }); toast(`指示#${r.data.no}を伝達しました`); }
+  try {
+    const r = await call('aiSubmitOrder')({ draft: payload }); toast(`指示#${r.data.no}を伝達しました`);
+    if (voiceLink) { const v = voices.find(x => x.id === voiceLink); call('aiVoiceSave')({ id: voiceLink, linkedOrderNo: r.data.no, ...(v && (v.status || '未対応') === '未対応' ? { status: '対応中' } : {}) }).catch(() => {}); voiceLink = null; }
+  }
   catch (e) { toast('送信できませんでした: ' + e.message); }
 }
 async function submitCommand(text) {
@@ -1170,6 +1238,7 @@ $('#cmd').addEventListener('submit', e => {
   cmdText.value = ''; autosize();
   if (inputMode === 'consult') consultCommand(text); else submitCommand(text);
 });
+function setMode(mode) { const b = document.querySelector(`[data-mode="${mode}"]`); if (b) b.click(); }
 document.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => {
   inputMode = b.dataset.mode;
   document.querySelectorAll('[data-mode]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
@@ -1200,6 +1269,40 @@ document.addEventListener('click', async e => {
   const tr = e.target.closest('tr[data-focus]');
   if (tr) { const z = ZONES[tr.dataset.focus]; if (z) { const sc = document.querySelector('.scroller'); sc.scrollTo({ left: Math.max(0, z.x * T / W * sc.scrollWidth - 40), behavior: 'smooth' }); } return; }
   if (!btn) return;
+  if (btn.dataset.reopenOpen) { const f = document.getElementById('ro-' + btn.dataset.reopenOpen); if (f) { f.hidden = !f.hidden; if (!f.hidden) f.querySelector('textarea').focus(); } return; }
+  if (btn.dataset.reopen) {
+    const id = btn.dataset.reopen, ta = document.getElementById('rr-' + id), note = ta ? ta.value.trim() : '';
+    if (!note) { ta.focus(); toast('再審査の理由や、見直してほしい点を書いてください'); return; }
+    btn.disabled = true;
+    try { const r = await call('aiReopenOrder')({ orderId: id, note }); toast(`指示#${r.data.no}を再審査に回しました。もう一度、決裁に上がります`); const t2 = document.getElementById('rr-' + id); if (t2) t2.value = ''; }
+    catch (err) { btn.disabled = false; toast('再審査に回せませんでした: ' + err.message); }
+    return;
+  }
+  if (btn.id === 'voice-save') {
+    const ta = $('#voice-text'), text = ta.value.trim();
+    if (!text) { ta.focus(); toast('代表の意見を入力するか、マイクで話してください'); return; }
+    btn.disabled = true;
+    try { const r = await call('aiVoiceSave')({ text, saidAt: $('#voice-date').value, channel: $('#voice-channel').value }); const t2 = document.getElementById('voice-text'); if (t2) t2.value = ''; toast(`代表の意見#${r.data.no}を登録しました`); }
+    catch (err) { toast('登録できませんでした: ' + err.message); }
+    btn.disabled = false;
+    return;
+  }
+  if (btn.dataset.vf) { voiceFilter = btn.dataset.vf; renderPanel(); return; }
+  if (btn.dataset.vsave) {
+    const id = btn.dataset.vsave; btn.disabled = true;
+    try { await call('aiVoiceSave')({ id, note: (document.getElementById('vn-' + id) || {}).value || '' }); toast('メモを保存しました'); }
+    catch (err) { toast('保存できませんでした: ' + err.message); }
+    btn.disabled = false; return;
+  }
+  if (btn.dataset.vorder || btn.dataset.vconsult) {
+    const v = voices.find(x => x.id === (btn.dataset.vorder || btn.dataset.vconsult)); if (!v) return;
+    setMode(btn.dataset.vconsult ? 'consult' : 'order');
+    cmdText.value = btn.dataset.vconsult ? `代表タクマの意見#${v.no}「${v.text}」について、どう対応すべきか` : `代表タクマの意見#${v.no}「${v.text}」を受けて: `;
+    voiceLink = btn.dataset.vorder ? v.id : null;
+    autosize(); cmdText.focus();
+    toast(btn.dataset.vconsult ? 'CXO秘書への相談として入力しました。内容を確かめて送ってください' : '業務命令として入力しました。続きを書いて送ると、この意見と結びつきます');
+    return;
+  }
   if (btn.dataset.adopt) {
     const id = btn.dataset.id, kind = btn.dataset.adopt, ta = document.getElementById('ad-' + id), note = ta ? ta.value.trim() : '';
     if (kind !== 'adopt' && !note) { ta.focus(); toast(kind === 'reject' ? '不採用の理由を書いてください' : '直してほしい点を書いてください'); return; }
@@ -1227,6 +1330,11 @@ document.addEventListener('click', async e => {
   }
 });
 $('#v-close').addEventListener('click', closeViewer);
+document.addEventListener('change', async e => {
+  const sel = e.target.closest && e.target.closest('select[data-vs]'); if (!sel) return;
+  try { await call('aiVoiceSave')({ id: sel.dataset.vs, status: sel.value }); toast(`状態を「${sel.value}」にしました`); }
+  catch (err) { toast('変更できませんでした: ' + err.message); }
+});
 // 成果物の「次にやること」を、そのまま業務命令の入力欄へ(AI秘書が係の名前から宛先を判断する)
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-next]'); if (!b) return;
@@ -1309,6 +1417,8 @@ auth.onAuthStateChanged(async user => {
   }, e => toast('指示を読み込めませんでした: ' + e.message));
   db.collection('aiDecisions').where('status', '==', 'pending').onSnapshot(snap => { decisions = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderAll(); });
   db.collection('aiLogs').orderBy('at', 'desc').limit(50).onSnapshot(snap => { logs = snap.docs.map(d => d.data()); renderAll(); });
+  db.collection('aiDecisions').orderBy('decidedAt', 'desc').limit(20).onSnapshot(snap => { decided = snap.docs.map(d => ({ id: d.id, ...d.data() })); if (panelTab === 'decide') renderPanel(); });
+  db.collection('aiRepVoices').orderBy('createdAt', 'desc').limit(200).onSnapshot(snap => { voices = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderAll(); }, e => console.error(e));
   const day = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
   db.doc('aiUsage/' + day).onSnapshot(s => { usage = s.exists ? s.data() : null; renderCounts(); });
   db.doc('aiMeta/apiKey').onSnapshot(s => { apiKeyMeta = s.exists ? s.data() : null; if (panelTab === 'sum') renderAll(); });
