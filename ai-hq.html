@@ -2,7 +2,12 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
+<meta name="theme-color" content="#14284A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="AI本部">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="robots" content="noindex">
 <title>タクマ塾 AI本部</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -285,6 +290,84 @@
   .next-list .next-go{flex:none;padding:3px 10px;font-size:12px}
   @media print{.next-go{display:none!important}}
   .alertbox .btn{margin-left:6px;padding:4px 10px;font-size:12px}
+  /* 成果物の全文(決裁カードの中と窓)。幅が狭いと表を「項目名: 値」の縦並びにする */
+  .dv-wrap{margin-top:8px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2)}
+  .dv-wrap>summary{cursor:pointer;padding:8px 12px;font-size:12.5px;font-weight:700;color:var(--ok);list-style:none;display:flex;align-items:center;gap:6px}
+  .dv-wrap>summary::-webkit-details-marker{display:none}
+  .dv-wrap>summary::before{content:'▸';transition:transform .2s}
+  .dv-wrap[open]>summary::before{transform:rotate(90deg)}
+  .dv{padding:0 12px 4px;display:grid;gap:10px;font-size:13px;container-type:inline-size}
+  .dv .v-sum{font-size:13.5px}
+  .dv h4{margin:0 0 4px;font-family:var(--f-display);font-size:13.5px}
+  .dv p{margin:0}
+  .dv ul{margin:0;padding-left:18px;display:grid;gap:3px}
+  .dv-tools{padding:6px 12px 10px;display:flex;justify-content:flex-end}
+  .vbody{container-type:inline-size}
+  .src-list a{word-break:break-all}
+  .v-table td{word-break:break-word}
+  @container (max-width:560px){
+    .v-table{border:0;overflow:visible}
+    .v-table table{min-width:0}
+    .v-table thead{display:none}
+    .v-table tr{display:block;border:1px solid var(--line);border-radius:10px;margin-bottom:8px;background:var(--surface);overflow:hidden}
+    .v-table td{display:grid;grid-template-columns:6.5em minmax(0,1fr);gap:8px;border-bottom:1px dashed var(--line);padding:7px 10px}
+    .v-table td:last-child{border-bottom:0}
+    .v-table td::before{content:attr(data-label);color:var(--ink-3);font-size:11.5px;font-weight:700}
+    .v-table td:first-child{font-weight:700}
+  }
+  /* 成果物の窓: 中身が長くても窓の中でスクロールする(以前は窓が画面より伸びて切れていた) */
+  .viewer{align-items:center}
+  .vbox{max-height:calc(100dvh - 48px)}
+  .vbody{flex:1;min-height:0;-webkit-overflow-scrolling:touch}
+  .zoom-btn{display:none}
+
+  /* ===== スマホ: アプリの画面の作り(上=ヘッダー、真ん中=画面、下=入力欄+タブ) ===== */
+  @media (max-width:719px){
+    html{-webkit-text-size-adjust:100%}
+    body{overscroll-behavior-y:none}
+    .wrap{padding:0 0 calc(var(--composer-h,68px) + 58px + env(safe-area-inset-bottom,0px) + 12px)}
+    .bar{position:sticky;top:0;z-index:20;margin:0;padding:calc(8px + env(safe-area-inset-top,0px)) 14px 8px;background:var(--surface);border-bottom:1px solid var(--line);flex-wrap:nowrap;overflow:visible;gap:8px}
+    .bar>*:not(.brand):not(#clock):not(a.chip){display:none!important}
+    .brand{background:none;color:var(--ink);padding:0;gap:8px}
+    .brand b{font-size:17px}
+    .live{color:var(--ok)} .live i{background:var(--ok)}
+    .bar a.chip{margin-left:auto;padding:5px 10px;font-size:12px}
+    #clock{display:inline-flex!important;padding:5px 9px;font-size:12px}
+    .ticker,.foot,.hint{display:none!important}
+    .stage-wrap{border-radius:0;border:0;box-shadow:none;background:transparent;overflow:visible}
+    .scroller{margin:12px 12px 0;border-radius:14px;border:1px solid var(--line);background:var(--surface);overflow:hidden}
+    .zoom .scroller{overflow-x:auto}
+    .zl .c{display:none}
+    .zoom-btn{display:inline-flex;position:absolute;top:calc(12px + (100vw - 24px) * 352 / 640 - 38px);right:20px;z-index:4;border:0;border-radius:999px;background:rgba(15,28,30,.62);color:#fff;font-size:12px;font-weight:700;padding:5px 12px;cursor:pointer}
+    body[data-mview]:not([data-mview="sum"]) .scroller,body[data-mview]:not([data-mview="sum"]) .zoom-btn{display:none!important}
+    .panel{position:static!important;display:flex!important;width:auto;max-width:none;max-height:none;border:0;border-radius:0;box-shadow:none;background:transparent;margin:0;padding:0;z-index:auto}
+    .panel .tabs{display:none}
+    .pbody{padding:12px;overflow:visible;gap:12px}
+    .m-title{display:block!important;font-family:var(--f-display);font-weight:900;font-size:20px;margin:2px 0 0}
+    .card,.oi{background:var(--surface);border-radius:14px}
+    .mini div{background:var(--surface)}
+    .btn{min-height:40px;padding:9px 14px;font-size:13.5px}
+    .btn.chk{min-height:34px;padding:6px 12px}
+    .next-list .next-go,.alertbox .btn{min-height:32px}
+    .cmd-mini textarea,.cmd textarea,.route select{font-size:16px} /* 16px未満だとiPhoneが画面を勝手に拡大する */
+    .cmdwrap{position:fixed;left:0;right:0;bottom:calc(58px + env(safe-area-inset-bottom,0px));z-index:24;margin:0;padding:8px 10px;background:var(--bg);border-top:1px solid var(--line);gap:6px}
+    .cmd{padding:6px;border-radius:14px;box-shadow:none}
+    .cmd textarea{padding:8px 4px;max-height:96px}
+    .mic,.send{height:40px}
+    .mic{width:40px}
+    .route{max-height:42dvh;overflow:auto;box-shadow:none}
+    .mnav{display:grid!important;grid-template-columns:repeat(4,1fr);height:calc(58px + env(safe-area-inset-bottom,0px));padding:4px 4px env(safe-area-inset-bottom,0px);z-index:25;box-shadow:0 -6px 18px -14px rgba(0,0,0,.35)}
+    .mnav button{padding:4px 0;font-size:11px;min-height:48px}
+    .mnav button.on{color:var(--accent-ink);font-weight:700}
+    .mnav button.on svg{stroke-width:2.3}
+    body.kb .mnav{display:none!important}
+    body.kb .cmdwrap{bottom:var(--kb,0px)}
+    body.kb .wrap{padding-bottom:calc(var(--composer-h,68px) + var(--kb,0px) + 12px)}
+    .toast{bottom:calc(var(--composer-h,68px) + 58px + env(safe-area-inset-bottom,0px) + 12px)}
+    body.kb .toast{bottom:calc(var(--composer-h,68px) + var(--kb,0px) + 12px)}
+    .pop{position:fixed;left:12px!important;right:12px;top:auto!important;bottom:calc(var(--composer-h,68px) + 70px + env(safe-area-inset-bottom,0px));width:auto}
+  }
+  .m-title{display:none}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -311,6 +394,7 @@
   </div>
 
   <div class="stage-wrap">
+    <button type="button" class="zoom-btn" id="m-zoom" aria-label="オフィスを拡大"><span id="m-zoom-l">拡大</span></button>
     <div class="scroller">
       <div class="stage" id="stage">
         <canvas id="scene" width="640" height="352" aria-label="AI本部のオフィス。係・部長・統括のキャラクターが業務を運ぶ様子"></canvas>
@@ -344,10 +428,9 @@
   <div class="ticker"><span class="lb">最近の動き</span><div class="track"><div class="run" id="ticker"></div></div></div>
   <div class="foot"><span>異常があれば赤で知らせ、直れば消えます。何もなければ表示しません。</span><span>表示はすべて実際の指示・決裁・記録です(管理システムのデータ)。</span></div>
 </div>
-<nav class="mnav" aria-label="スマホの操作">
-  <button type="button" id="m-zoom"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5M11 8v6M8 11h6"/></svg><span id="m-zoom-l">拡大</span></button>
-  <button type="button" data-m="sum"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 15v-3M12 15V9M16 15v-5"/></svg>サマリ</button>
-  <button type="button" data-m="decide"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4 10-10"/></svg>決裁<span class="badge" id="m-badge">0</span></button>
+<nav class="mnav" aria-label="画面の切り替え">
+  <button type="button" data-m="sum"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-6 8 6v8a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/></svg>ホーム<span class="badge" id="m-alarm" hidden>!</span></button>
+  <button type="button" data-m="decide"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4 10-10"/></svg>決裁<span class="badge" id="m-badge" hidden>0</span></button>
   <button type="button" data-m="orders"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M4 12h10M4 18h7"/></svg>指示</button>
   <button type="button" data-m="log"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>記録</button>
 </nav>
@@ -786,7 +869,7 @@ const retryBtn = o => o.stage === 'error' ? `<button type="button" class="btn" d
 function renderCounts() {
   const all = ORG.depts.flatMap(d => d.teams);
   const bad = orders.filter(o => o.stage === 'error' || o.stage === 'paused_quota').length;
-  $('#n-alarm').textContent = bad; $('#chip-alarm').hidden = !bad;
+  $('#n-alarm').textContent = bad; $('#chip-alarm').hidden = !bad; $('#m-alarm').hidden = !bad;
   const nd = decisions.length + pendingB().length; // 統括が見るもの: 決裁 + 区分Bの確認待ち
   $('#n-decide').textContent = nd; $('#m-badge').textContent = nd; $('#m-badge').hidden = !nd;
   $('#tab-n').textContent = nd; $('#tab-n').hidden = !nd;
@@ -807,6 +890,17 @@ function renderTicker() {
 }
 let panelTab = 'sum';
 function renderPanel() {
+  const keep = {}, act = document.activeElement, actId = act && act.closest && act.closest('#pbody') ? act.id : '';
+  const pos = actId && act.selectionStart != null ? [act.selectionStart, act.selectionEnd] : null;
+  document.querySelectorAll('#pbody textarea').forEach(t => { if (t.value) keep[t.id] = t.value; });
+  const y = $('#pbody').scrollTop;
+  renderPanelInner();
+  Object.entries(keep).forEach(([id, v]) => { const t = document.getElementById(id); if (t) t.value = v; });
+  $('#pbody').scrollTop = y;
+  if (isMobile() && VIEW_TITLE[panelTab]) $('#pbody').insertAdjacentHTML('afterbegin', `<h2 class="m-title">${VIEW_TITLE[panelTab]}</h2>`);
+  if (actId) { const t = document.getElementById(actId); if (t) { t.focus({ preventScroll: true }); if (pos && t.setSelectionRange) t.setSelectionRange(pos[0], pos[1]); } }
+}
+function renderPanelInner() {
   document.querySelectorAll('[data-ptab]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.ptab === panelTab)));
   const P = $('#pbody');
   if (panelTab === 'sum') {
@@ -851,6 +945,12 @@ function renderPanel() {
     P.innerHTML = logs.length ? `<ul class="log">${logs.map(l => `<li><span class="tm">${esc(hm(toDate(l.at)))}</span><div><div class="who">${esc(l.who)}</div>${esc(l.what)}</div></li>`).join('')}</ul>` : `<div class="empty"><b>まだ記録はありません</b></div>`;
   }
 }
+const closedDv = new Set(); // 利用者が閉じた成果物の全文(再描画しても閉じたまま)
+function fullDeliverable(o, key) {
+  return `<details class="dv-wrap" data-dv="${key}"${closedDv.has(key) ? '' : ' open'}><summary>成果物の全文</summary><div class="dv">${deliverableHTML(o, true)}</div>
+    <div class="dv-tools"><button type="button" class="btn" data-view-output="${o.id}">大きく表示・PDF</button></div></details>`;
+}
+document.addEventListener('toggle', e => { const el = e.target; if (el.matches && el.matches('details.dv-wrap')) { el.open ? closedDv.delete(el.dataset.dv) : closedDv.add(el.dataset.dv); } }, true);
 /** 区分Bの確認待ち(完了した社内の資料・調査。押さなくても業務は止まらない) */
 const pendingB = () => orders.filter(o => o.stage === 'done' && o.adoption && o.adoption.status === 'pending' && o.deliverable);
 function reviewCard(o) {
@@ -858,7 +958,7 @@ function reviewCard(o) {
     <div class="card-h"><span class="pill">確認待ち</span><span class="pill due">指示#${esc(o.no)} ・ ${esc(targetName(o.target))}</span></div>
     <h3>${esc(o.deliverable.title)}</h3>
     <div class="row rec"><span class="lb">要約</span><span class="bd">${esc(o.deliverable.summary)}</span></div>
-    <button type="button" class="outbox" data-view-output="${o.id}"><b>成果物を開く</b><span class="more">中身を確かめてから判断 →</span></button>
+    ${fullDeliverable(o, 'b-' + o.id)}
     <div class="cmd-mini"><label for="ad-${o.id}" class="sr">コメント</label><textarea id="ad-${o.id}" placeholder="不採用・修正のときは理由や直してほしい点を書く"></textarea></div>
     <div class="actions"><button type="button" class="btn primary" data-adopt="adopt" data-id="${o.id}">採用</button><button type="button" class="btn ghost" data-adopt="revise" data-id="${o.id}">修正</button><button type="button" class="btn ghost" data-adopt="reject" data-id="${o.id}">不採用</button></div>
   </article>`;
@@ -870,7 +970,7 @@ function adoptionCard(d) {
     <h3>${esc(d.title)}</h3>
     <div class="row rec"><span class="lb">要約</span><span class="bd">${esc(d.summary)}</span></div>
     <div class="row dis"><span class="lb">監査役</span><span class="bd">${(d.audit || []).length ? d.audit.map(esc).join('<br>') : '指摘なし'}</span></div>
-    ${o && o.deliverable ? `<button type="button" class="outbox" data-view-output="${o.id}"><b>成果物を開く</b><span class="more">中身を確かめてから判断 →</span></button>` : ''}
+    ${o && o.deliverable ? fullDeliverable(o, d.id) : ''}
     <div class="cmd-mini"><label for="ins-${d.id}" class="sr">コメント</label><textarea id="ins-${d.id}" placeholder="不採用・修正のときは理由や直してほしい点を書く"></textarea>
       <button type="button" class="mic" data-mic="ins-${d.id}" aria-label="音声で入力"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button></div>
     <div class="actions"><button type="button" class="btn primary" data-act="adopt" data-id="${d.id}">採用</button>
@@ -903,26 +1003,62 @@ function renderOrder(o) {
     <div class="ot">${esc(o.text)}</div>${o.stage !== 'done' ? `<div class="mini-bar"><i style="width:${pct}%"></i></div>` : ''}${detail}</li>`;
 }
 function renderAll() { renderCounts(); renderTicker(); if (!$('#panel').hidden) renderPanel(); }
-function openPanel(tab) { $('#panel').hidden = false; $('.stage-wrap').classList.add('with-panel'); panelTab = tab || panelTab; renderPanel(); try { localStorage.setItem('aihq-panel', '1'); } catch (e) {} }
-function closePanel() { $('#panel').hidden = true; $('.stage-wrap').classList.remove('with-panel'); try { localStorage.setItem('aihq-panel', '0'); } catch (e) {} }
+/* ---------- スマホ: アプリの画面の作り ---------- */
+const mq = matchMedia('(max-width:719px)');
+const isMobile = () => mq.matches;
+const VIEW_TITLE = { decide: '決裁', orders: '指示', log: '記録' };
+function setPlaceholder() { cmdText.placeholder = isMobile() ? '業務命令を入力' : '業務命令を入力(例: 岩国の12月の会場を今週中に押さえて)'; }
+mq.addEventListener('change', setPlaceholder);
+function setMobileView(tab) {
+  panelTab = tab || 'sum';
+  $('#panel').hidden = false;
+  document.body.dataset.mview = panelTab;
+  document.querySelectorAll('.mnav [data-m]').forEach(b => { b.classList.toggle('on', b.dataset.m === panelTab); b.setAttribute('aria-current', b.dataset.m === panelTab ? 'page' : 'false'); });
+  renderPanel();
+  window.scrollTo({ top: 0 });
+}
+mq.addEventListener('change', () => { if (isMobile()) setMobileView(panelTab); else { delete document.body.dataset.mview; renderPanel(); } });
+// 入力欄の高さに合わせて、画面の下の余白を変える
+new ResizeObserver(([e]) => document.documentElement.style.setProperty('--composer-h', Math.ceil(e.target.getBoundingClientRect().height) + 'px')).observe(document.querySelector('.cmdwrap'));
+// キーボードが出たら、入力欄をキーボードのすぐ上に出す(下のタブは隠す)
+if (window.visualViewport) {
+  const vv = window.visualViewport;
+  const onVV = () => {
+    const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+    const on = isMobile() && kb > 80;
+    document.body.classList.toggle('kb', on);
+    document.documentElement.style.setProperty('--kb', (on ? kb : 0) + 'px');
+  };
+  vv.addEventListener('resize', onVV); vv.addEventListener('scroll', onVV);
+}
+function openPanel(tab) {
+  if (isMobile()) return setMobileView(tab || panelTab); $('#panel').hidden = false; $('.stage-wrap').classList.add('with-panel'); panelTab = tab || panelTab; renderPanel(); try { localStorage.setItem('aihq-panel', '1'); } catch (e) {} }
+function closePanel() {
+  if (isMobile()) return setMobileView('sum'); $('#panel').hidden = true; $('.stage-wrap').classList.remove('with-panel'); try { localStorage.setItem('aihq-panel', '0'); } catch (e) {} }
 
 /* ---------- 成果物ビューア ---------- */
 let viewing = null;
 const safeUrl = u => /^https?:\/\//.test(String(u)) ? String(u) : null;
+/** 成果物の中身(窓と決裁カードの両方で使う)。表は幅が狭いと「項目名: 値」の縦並びになる */
+function deliverableHTML(o, inline) {
+  const d = o.deliverable; if (!d) return '';
+  const isReq = c => /要確認/.test(String(c));
+  const cols = (d.table && d.table.columns) || [];
+  return `
+    <p class="v-sum">${esc(d.summary)}</p>
+    ${cols.length ? `<div class="v-table"><table><thead><tr>${cols.map(c => `<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>${(d.table.rows || []).map(r => `<tr>${(r.cells || r).map((c, k) => `<td data-label="${esc(cols[k] || '')}" class="${isReq(c) ? 'req' : ''}">${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>` : ''}
+    ${(d.sections || []).map(s => `<section><h4>${esc(s.heading)}</h4><p>${esc(s.body).replace(/\n/g, '<br>')}</p></section>`).join('')}
+    ${(d.unverified || []).length ? `<section class="v-warn"><h4>確認が必要なこと</h4><ul>${d.unverified.map(x => `<li>${esc(x)}</li>`).join('')}</ul></section>` : ''}
+    ${(d.next || []).length ? `<section><h4>次にやること</h4><ul class="next-list">${d.next.map((x, i) => `<li><span>${esc(x)}</span><button type="button" class="btn next-go" data-next="${i}" data-oid="${o.id}">指示する</button></li>`).join('')}</ul></section>` : ''}
+    ${(d.sources || []).length ? `<section><h4>出典</h4><ul class="src-list">${d.sources.map(u => safeUrl(u) ? `<li><a href="${esc(u)}" target="_blank" rel="noopener">${esc(u)}</a></li>` : `<li>${esc(u)}</li>`).join('')}</ul></section>` : ''}
+    ${inline ? '' : `<section class="v-src"><h4>この成果物のもとになった指示</h4><p>${esc(o.text)}</p><p class="pk">${(o.events || []).map(e => `${esc(hm(toDate(e.at)))} ${esc(e.from)} → ${esc(e.to)}: ${esc(e.what)}`).join('<br>')}</p></section>`}`;
+}
 function openViewer(o) {
   const d = o.deliverable; if (!d) return;
   viewing = o;
-  const isReq = c => /要確認/.test(String(c));
   $('#v-title').textContent = d.title;
   $('#v-meta').textContent = `指示#${o.no} ・ ${targetName(o.target)} ・ ${hm(toDate(o.doneAt))} ・ ${o.adoption && o.adoption.status === 'adopted' ? '採用済み' : o.adoption && o.adoption.status === 'rejected' ? '不採用' : o.stage === 'awaiting_adoption' ? '採用の決裁待ち' : '未確認'} ・ AIが作成`;
-  $('#v-body').innerHTML = `
-    <p class="v-sum">${esc(d.summary)}</p>
-    ${d.table && d.table.columns ? `<div class="v-table"><table><thead><tr>${d.table.columns.map(c => `<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>${(d.table.rows || []).map(r => `<tr>${(r.cells || r).map(c => `<td class="${isReq(c) ? 'req' : ''}">${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>` : ''}
-    ${(d.sections || []).map(s => `<section><h4>${esc(s.heading)}</h4><p>${esc(s.body).replace(/\n/g, '<br>')}</p></section>`).join('')}
-    ${(d.unverified || []).length ? `<section class="v-warn"><h4>確認が必要なこと</h4><ul>${d.unverified.map(x => `<li>${esc(x)}</li>`).join('')}</ul></section>` : ''}
-    ${(d.next || []).length ? `<section><h4>次にやること</h4><ul class="next-list">${d.next.map((x, i) => `<li><span>${esc(x)}</span><button type="button" class="btn next-go" data-next="${i}">指示する</button></li>`).join('')}</ul></section>` : ''}
-    ${(d.sources || []).length ? `<section><h4>出典</h4><ul>${d.sources.map(u => safeUrl(u) ? `<li><a href="${esc(u)}" target="_blank" rel="noopener">${esc(u)}</a></li>` : `<li>${esc(u)}</li>`).join('')}</ul></section>` : ''}
-    <section class="v-src"><h4>この成果物のもとになった指示</h4><p>${esc(o.text)}</p><p class="pk">${(o.events || []).map(e => `${esc(hm(toDate(e.at)))} ${esc(e.from)} → ${esc(e.to)}: ${esc(e.what)}`).join('<br>')}</p></section>`;
+  $('#v-body').innerHTML = deliverableHTML(o, false);
   $('#viewer').hidden = false; $('#v-close').focus();
 }
 function deliverableText(o) {
@@ -994,6 +1130,7 @@ function startVoice(id, btn) {
 
 /* ---------- 操作 ---------- */
 const cmdText = $('#cmd-text');
+setPlaceholder();
 function autosize() { cmdText.style.height = 'auto'; cmdText.style.height = Math.min(cmdText.scrollHeight, 120) + 'px'; }
 cmdText.addEventListener('input', autosize);
 cmdText.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); $('#cmd').requestSubmit(); } });
@@ -1039,10 +1176,11 @@ document.addEventListener('click', async e => {
 });
 $('#v-close').addEventListener('click', closeViewer);
 // 成果物の「次にやること」を、そのまま業務命令の入力欄へ(AI秘書が係の名前から宛先を判断する)
-$('#v-body').addEventListener('click', e => {
-  const b = e.target.closest('[data-next]'); if (!b || !viewing) return;
-  const o = viewing, item = (o.deliverable.next || [])[Number(b.dataset.next)] || '';
-  closeViewer();
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-next]'); if (!b) return;
+  const o = orders.find(x => x.id === b.dataset.oid) || viewing; if (!o || !o.deliverable) return;
+  const item = (o.deliverable.next || [])[Number(b.dataset.next)] || '';
+  if (!$('#viewer').hidden) closeViewer();
   cmdText.value = `${item}(指示#${o.no}「${o.deliverable.title}」を受けて)`; autosize(); cmdText.focus();
   toast('内容を確かめて「指示する」を押してください');
 });
@@ -1085,7 +1223,7 @@ function showPop(a, cx, cy) {
 function hidePop() { const p = document.getElementById('pop'); if (p) p.remove(); }
 function setZoom(on) { document.querySelector('.stage-wrap').classList.toggle('zoom', on); $('#m-zoom-l').textContent = on ? '全体' : '拡大'; try { localStorage.setItem('aihq-zoom', on ? '1' : '0'); } catch (e) {} }
 $('#m-zoom').addEventListener('click', () => setZoom(!document.querySelector('.stage-wrap').classList.contains('zoom')));
-document.querySelectorAll('[data-m]').forEach(b => b.addEventListener('click', () => { const t = b.dataset.m; if (!$('#panel').hidden && panelTab === t) closePanel(); else openPanel(t); }));
+document.querySelectorAll('[data-m]').forEach(b => b.addEventListener('click', () => { const t = b.dataset.m; if (isMobile()) return setMobileView(t); if (!$('#panel').hidden && panelTab === t) closePanel(); else openPanel(t); }));
 const THEMES = [['', '自動'], ['light', 'ライト'], ['dark', 'ダーク']];
 let themeIdx = 0;
 try { themeIdx = Math.max(0, THEMES.findIndex(x => x[0] === (localStorage.getItem('aihq-theme') || ''))); } catch (e) {}
@@ -1122,9 +1260,11 @@ auth.onAuthStateChanged(async user => {
   const day = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
   db.doc('aiUsage/' + day).onSnapshot(s => { usage = s.exists ? s.data() : null; renderCounts(); });
   db.doc('aiMeta/apiKey').onSnapshot(s => { apiKeyMeta = s.exists ? s.data() : null; if (panelTab === 'sum') renderAll(); });
-  let panelOpen = window.innerWidth > 1100;
+  if (isMobile()) setMobileView('sum');
+  let panelOpen = !isMobile() && window.innerWidth > 1100;
   try { const v = localStorage.getItem('aihq-panel'); if (v !== null) panelOpen = v === '1' && window.innerWidth > 1100; } catch (e) {}
   if (panelOpen) openPanel('sum');
+  else if (isMobile()) setMobileView('sum');
   try { if (localStorage.getItem('aihq-zoom') === '1') setZoom(true); } catch (e) {}
   renderAll();
 });
