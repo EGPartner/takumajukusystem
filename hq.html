@@ -537,7 +537,7 @@
 
       <div class="card" id="hq-parent-access-card">
         <h2 style="font-size:15px;margin:0 0 4px;">保護者の閲覧管理</h2>
-        <p class="status" style="margin-top:0;color:var(--text-muted);">保護者ページは、初回に入力された<b>塾生名が名簿と一致すると自動で利用開始</b>になります。一致しなかった申請だけが下の「承認待ち」に入るので、内容を確認して承認または却下してください。</p>
+        <p class="status" style="margin-top:0;color:var(--text-muted);">保護者ページは、初回に入力された<b>塾生名がスプレッドシートの「塾生リスト」と一致すると自動で利用開始</b>になります。一致しなかった申請は、スプレッドシート「タクマ塾CRM」の<b>「不明者リスト」</b>タブに自動で追加されます(最大10分)。誰かを判断して、新しい塾生なら塾生リストに行を追加、名前の書き方が違う在籍生なら「判定」で「別の名前で在籍」を選んで正しい名前を入れてください。塾生リストと一致した時点で、自動でログインが許可されます。</p>
         <div style="margin-top:8px;">
           <div class="btn-row" style="justify-content:space-between;align-items:center;">
             <strong style="font-size:13px;">承認待ち <span id="hq-pending-count" style="color:var(--danger);font-weight:700;"></span></strong>
@@ -2112,7 +2112,7 @@ function renderParentViewers(snap){
             + '<td>' + escAttr(v.studentName || '-') + '</td>'
             + '<td>' + escAttr(schoolsMap[v.schoolId] || v.schoolId || '-') + '</td>'
             + '<td>' + escAttr(viewerDateLabel(v)) + '</td>'
-            + '<td style="white-space:nowrap;"><button class="ghost-small" data-approve-viewer="' + escAttr(d.id) + '">承認</button> <button class="link-danger" data-del-viewer="' + escAttr(d.id) + '">却下</button></td>'
+            + '<td style="white-space:nowrap;" class="status">不明者リストで判断</td>'
             + '</tr>';
         }).join('');
     viewersTbody.innerHTML = approved.length === 0
@@ -2120,7 +2120,7 @@ function renderParentViewers(snap){
       : approved.map(d => {
           const v = d.data();
           let rosterAction = '';
-          if (v.approvedManually){
+          if (false && v.approvedManually){ // 名簿への追加は塾生リストで行う(この画面からは追加しない)
             rosterAction = v.rosterAdded
               ? '<span class="badge muted">名簿の確認済み</span> '
               : '<button class="ghost-small" data-add-roster="' + escAttr(d.id) + '" data-school="' + escAttr(v.schoolId || '') + '" data-name="' + escAttr(v.studentName || '') + '">名簿を確認</button> ';
