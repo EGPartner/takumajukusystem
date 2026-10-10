@@ -793,7 +793,9 @@ const ABILITY_DEFS = [
   ]}
 ];
 
-let students = [];
+let students = [];        // 名簿に出す塾生(退塾済み・重複を除く)
+let archivedStudents = []; // 退塾済み・重複(名簿には出さない。過去の月の集計にだけ使う)
+const historyStudents = () => students.concat(archivedStudents);
 let absenceReports = [];
 let settings = {
   tuition:8000, enroll:5000,
@@ -1073,8 +1075,10 @@ function setPreviewAsStaff(on){
 function attachListeners(){
   detachListeners();
   unsubStudents = studentsRef.onSnapshot(snap => {
-    students = snap.docs.map(d => Object.assign({ id:d.id }, d.data()));
-    students.forEach(s => { if (!s.growth) s.growth = {}; if (!s.months) s.months = {}; });
+    const all = snap.docs.map(d => Object.assign({ id:d.id }, d.data()));
+    all.forEach(s => { if (!s.growth) s.growth = {}; if (!s.months) s.months = {}; });
+    students = all.filter(s => !s.archived);
+    archivedStudents = all.filter(s => s.archived);
     renderAll();
     syncRosterNames();
   }, err => { console.error(err); markSaved(false); });
@@ -2177,7 +2181,7 @@ function renderAbsenceHistoryDetail(name, ym){
   </div>`;
 }
 
-function activeCountAtKey(key){ return students.filter(s => s.months[key] === 'active').length; }
+function activeCountAtKey(key){ return historyStudents().filter(s => s.months[key] === 'active').length; }
 
 function computeMonthly(fy){
   const months = fiscalMonths(fy);
@@ -2187,9 +2191,9 @@ function computeMonthly(fy){
     const prevKey = i === 0 ? (fy + '-03') : months[i-1].key;
     const begin = activeCountAtKey(prevKey);
     const end = activeCountAtKey(key);
-    const newOrResume = students.filter(s => s.months[key] === 'active' && s.months[prevKey] !== 'active').length;
-    const leftOrPaused = students.filter(s => s.months[prevKey] === 'active' && s.months[key] !== 'active').length;
-    const newJoinStudents = students.filter(s => firstActiveKey(s) === key);
+    const newOrResume = historyStudents().filter(s => s.months[key] === 'active' && s.months[prevKey] !== 'active').length;
+    const leftOrPaused = historyStudents().filter(s => s.months[prevKey] === 'active' && s.months[key] !== 'active').length;
+    const newJoinStudents = historyStudents().filter(s => firstActiveKey(s) === key);
     const tuitionRev = end * Number(settings.tuition);
     const enrollRev = newJoinStudents.reduce((sum,s) => sum + (s.trial ? 0 : Number(settings.enroll)), 0);
     const sponsorRev = settings.sponsors.filter(sp => Number(sp.month) === mo.month).reduce((a,sp) => a + Number(sp.amount), 0);
