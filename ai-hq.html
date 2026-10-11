@@ -423,6 +423,9 @@
   .vform input[type=date],.vform select,.vcard select{max-width:100%}
   .card h3,.row .bd,.ot,.vcard .sum,.vcard .txt,.dcard,.log li,.cl li,.todo li,.steps li,.outbox,.alertbox,.pk,.ev span,.oh .who,.pill{overflow-wrap:anywhere}
   .ev span,.pill{max-width:100%;white-space:normal}
+  .auto-tag{background:var(--accent-soft);color:var(--accent-ink);font-weight:700;flex:none}
+  .auto-note{margin:8px 0 0}
+  .btn.main-copy{margin-top:8px;width:100%;background:var(--accent);border-color:var(--accent);color:#fff}
   .vcard .acts-v .btn.main{background:var(--accent);border-color:var(--accent);color:#fff}
 
   @media (max-width:719px){
@@ -1058,7 +1061,7 @@ function reopenForm(orderId) {
     <div class="reopen" id="ro-${orderId}" hidden><div class="cmd-mini"><label for="rr-${orderId}" class="sr">再審査の理由</label><textarea id="rr-${orderId}" placeholder="見直してほしい点や、再審査の理由を書く(必須)"></textarea>%MIC%</div>
     <div class="actions"><button type="button" class="btn primary" data-reopen="${orderId}">再審査に回す</button></div></div>`.replace('%MIC%', `<button type="button" class="mic" data-mic="rr-${orderId}" aria-label="音声で入力"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>`);
 }
-const canReopen = o => !o || (o.kind !== 'consult' && ['done', 'dropped', 'returned'].includes(o.stage));
+const canReopen = o => !o || (o.kind !== 'consult' && o.kind !== 'dev' && ['done', 'dropped', 'returned'].includes(o.stage));
 function decidedHTML() {
   const list = decided.filter(d => d.status && d.status !== 'pending');
   if (!list.length) return '';
@@ -1105,6 +1108,7 @@ function reviewCard(o) {
     <div class="row rec"><span class="lb">要約</span><span class="bd">${esc(o.deliverable.summary)}</span></div>
     ${fullDeliverable(o, 'b-' + o.id)}
     <div class="cmd-mini"><label for="ad-${o.id}" class="sr">コメント</label><textarea id="ad-${o.id}" placeholder="不採用・修正のときは理由や直してほしい点を書く"></textarea></div>
+    ${(o && o.deliverable && (o.deliverable.next || []).length && !o.auto && !o.followedUp) ? `<p class="pk auto-note">採用すると、「次にやること」のうち係の名前があるものを、その係へ自動で指示します(システムの改修は依頼文を作ります)。</p>` : ''}
     <div class="actions"><button type="button" class="btn primary" data-adopt="adopt" data-id="${o.id}">採用</button><button type="button" class="btn ghost" data-adopt="revise" data-id="${o.id}">修正</button><button type="button" class="btn ghost" data-adopt="reject" data-id="${o.id}">不採用</button></div>
   </article>`;
 }
@@ -1119,6 +1123,7 @@ function adoptionCard(d) {
     ${o && o.deliverable ? fullDeliverable(o, d.id) : ''}
     <div class="cmd-mini"><label for="ins-${d.id}" class="sr">コメント</label><textarea id="ins-${d.id}" placeholder="不採用・修正のときは理由や直してほしい点を書く"></textarea>
       <button type="button" class="mic" data-mic="ins-${d.id}" aria-label="音声で入力"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button></div>
+    ${(o && o.deliverable && (o.deliverable.next || []).length && !o.auto && !o.followedUp) ? `<p class="pk auto-note">採用すると、「次にやること」のうち係の名前があるものを、その係へ自動で指示します(システムの改修は依頼文を作ります)。</p>` : ''}
     <div class="actions"><button type="button" class="btn primary" data-act="adopt" data-id="${d.id}">採用</button>
       <button type="button" class="btn ghost" data-act="revise" data-id="${d.id}">修正</button>
       <button type="button" class="btn ghost" data-act="reject" data-id="${d.id}">不採用</button></div>
@@ -1128,6 +1133,7 @@ const openOrders = new Set();
 function renderOrder(o) {
   let [label, pct, tone] = STAGE[o.stage] || [o.stage, 0, 'idle'];
   if (o.kind === 'consult') [label, tone] = ['相談', 'ok'];
+  else if (o.kind === 'dev') [label, tone] = ['改修依頼', 'warn'];
   else if (o.stage === 'done' && o.adoption) [label, tone] = { adopted: ['採用', 'ok'], rejected: ['不採用', 'idle'], pending: ['完了(未確認)', 'ok'] }[o.adoption.status] || [label, tone];
   const steps = o.steps || [];
   const doneSteps = o.stage === 'done' ? steps.length : Math.floor(steps.length * pct / 100);
@@ -1148,7 +1154,7 @@ function renderOrder(o) {
     </div>` : '';
   return `<li class="oi"><div class="oh"><span class="tm">${esc(hm(toDate(o.createdAt)))}</span><span class="who">#${esc(o.no)} ${esc(targetName(o.target))}</span><span class="st ${tone === 'bad' ? 'warn' : tone}">${esc(label)}</span>${o.costYen ? `<span class="tm">${Math.round(o.costYen)}円</span>` : ''}
     <button type="button" class="btn chk" data-order="${o.id}" aria-expanded="${open}">${open ? '閉じる' : '進捗を確認'}</button></div>
-    <div class="ot">${esc(o.text)}</div>${o.stage !== 'done' ? `<div class="mini-bar"><i style="width:${pct}%"></i></div>` : ''}${detail}</li>`;
+    <div class="ot">${o.auto && o.parentNo ? `<span class="tag auto-tag">指示#${esc(o.parentNo)}の採用から自動</span> ` : ''}${esc(o.text)}</div>${o.kind === 'dev' ? `<button type="button" class="btn main-copy" data-copy-dev="${o.id}">依頼文をコピー(VSコードに貼る)</button>` : ''}${o.stage !== 'done' ? `<div class="mini-bar"><i style="width:${pct}%"></i></div>` : ''}${detail}</li>`;
 }
 function renderAll() { renderCounts(); renderTicker(); if (!$('#panel').hidden) renderPanel(); }
 /* ---------- スマホ: アプリの画面の作り ---------- */
@@ -1198,7 +1204,7 @@ function deliverableHTML(o, inline) {
     ${cols.length ? `<div class="v-table"><table><thead><tr>${cols.map(c => `<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>${(d.table.rows || []).map(r => `<tr>${(r.cells || r).map((c, k) => `<td data-label="${esc(cols[k] || '')}" class="${isReq(c) ? 'req' : ''}">${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>` : ''}
     ${(d.sections || []).map(s => `<section><h4>${esc(s.heading)}</h4><p>${esc(s.body).replace(/\n/g, '<br>')}</p></section>`).join('')}
     ${(d.unverified || []).length ? `<section class="v-warn"><h4>確認が必要なこと</h4><ul>${d.unverified.map(x => `<li>${esc(x)}</li>`).join('')}</ul></section>` : ''}
-    ${(d.next || []).length ? `<section><h4>次にやること</h4><ul class="next-list">${d.next.map((x, i) => `<li><span>${esc(x)}</span><button type="button" class="btn next-go" data-next="${i}" data-oid="${o.id}">指示する</button></li>`).join('')}</ul></section>` : ''}
+    ${(d.next || []).length ? `<section><h4>次にやること</h4><ul class="next-list">${d.next.map((x, i) => { const fu = (o.followUps || []).find(f => f.index === i); return `<li><span>${esc(x)}</span>${fu ? `<span class="tag auto-tag">${fu.kind === 'dev' ? '改修依頼' : '自動で指示'}#${esc(fu.no)}</span>` : `<button type="button" class="btn next-go" data-next="${i}" data-oid="${o.id}">指示する</button>`}</li>`; }).join('')}</ul></section>` : ''}
     ${(d.sources || []).length ? `<section><h4>出典</h4><ul class="src-list">${d.sources.map(u => safeUrl(u) ? `<li><a href="${esc(u)}" target="_blank" rel="noopener">${esc(u)}</a></li>` : `<li>${esc(u)}</li>`).join('')}</ul></section>` : ''}
     ${inline ? '' : `<section class="v-src"><h4>この成果物のもとになった指示</h4><p>${esc(o.text)}</p><p class="pk">${(o.events || []).map(e => `${esc(hm(toDate(e.at)))} ${esc(e.from)} → ${esc(e.to)}: ${esc(e.what)}`).join('<br>')}</p></section>`}`;
 }
@@ -1409,6 +1415,12 @@ document.addEventListener('click', e => {
   cmdText.value = `${item}(指示#${o.no}「${o.deliverable.title}」を受けて)`; autosize(); cmdText.focus();
   toast('内容を確かめて「指示する」を押してください');
 });
+const devPromptOf = o => ((o.deliverable && o.deliverable.sections || [])[0] || {}).body || '';
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-copy-dev]'); if (!b) return;
+  const o = orders.find(x => x.id === b.dataset.copyDev); if (!o) return;
+  navigator.clipboard.writeText(devPromptOf(o)).then(() => toast('依頼文をコピーしました。VSコードのClaudeに貼り付けてください'), () => toast('コピーできませんでした。「進捗を確認」から開いてコピーしてください'));
+});
 $('#viewer').addEventListener('click', e => { if (e.target.id === 'viewer') closeViewer(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#viewer').hidden) closeViewer(); });
 $('#v-pdf').addEventListener('click', () => {
@@ -1422,7 +1434,7 @@ $('#v-pdf').addEventListener('click', () => {
   window.print();
   toast('印刷の画面で「PDFに保存」を選んでください');
 });
-$('#v-copy').addEventListener('click', () => { navigator.clipboard.writeText(deliverableText(viewing)).then(() => toast('成果物をコピーしました'), () => toast('コピーできませんでした')); });
+$('#v-copy').addEventListener('click', () => { navigator.clipboard.writeText(viewing.kind === 'dev' ? devPromptOf(viewing) : deliverableText(viewing)).then(() => toast('成果物をコピーしました'), () => toast('コピーできませんでした')); });
 $('#v-fix').addEventListener('click', () => { const o = viewing; closeViewer(); cmdText.value = `指示#${o.no}の成果物「${o.deliverable.title}」を修正して: `; autosize(); cmdText.focus(); });
 $('#chip-decide').addEventListener('click', () => openPanel('decide'));
 document.querySelector('.ticker').addEventListener('click', e => e.currentTarget.classList.toggle('hold'));
