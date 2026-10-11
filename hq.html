@@ -1146,6 +1146,7 @@ document.getElementById('btn-add-school').addEventListener('click', async () => 
     if (existing.exists){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = 'この校舎IDはすでに使われています。'; return; }
     await schoolsRef.doc(id).set({ name, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
     await db.collection('academies').doc(id).collection('staff').doc(currentUser.uid).set({ role:'admin', email: currentUser.email, uid: currentUser.uid });
+    db.collection('staffIndex').doc(currentUser.uid).set({ academyId: id }).catch(e => console.error(e));
     statusEl.style.color = 'var(--accent-dark)';
     statusEl.textContent = '✓ 登録しました。ご自身がこの校舎の管理者として設定されています。';
     document.getElementById('new-name').value = '';
@@ -1290,6 +1291,8 @@ document.getElementById('btn-issue-account').addEventListener('click', async () 
           .set(Object.assign({ role: staffRole, email, uid: newUid, name: staffName }, stamp))
       ));
       const okIds = academyIds.filter((id, i) => results[i].status === 'fulfilled');
+      // スタッフの目印(スタッフだけが読める情報の権限確認に使う)
+      if (okIds.length) await db.collection('staffIndex').doc(newUid).set({ academyId: okIds[0] }).catch(e => console.error(e));
       const ngIds = academyIds.filter((id, i) => results[i].status === 'rejected');
       if (okIds.length === 0){
         return fail('アカウントは作成されましたが、校舎への登録に失敗しました。もう一度「発行する」を押すとエラーになるため、システム管理者にご相談ください。');
