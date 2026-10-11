@@ -1031,6 +1031,8 @@ async function resolveRole(uid){
     // ログイン実績の記録(本部のスタッフ一覧で「最終ログイン」を確認できるようにするため)
     if (doc.exists){
       staffRef.doc(uid).set({ lastLoginAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge:true }).catch(e => console.error('lastLoginAt update failed', e));
+      // スタッフの目印。全体のお知らせなど「スタッフだけが読める情報」の権限確認に使う(無ければここで作る)
+      await db.collection('staffIndex').doc(uid).set({ academyId: ACADEMY_ID }).catch(e => console.error('staffIndex update failed', e));
     }
   } catch(e){ isAdmin = isHQUser; }
   realIsAdmin = isAdmin;
@@ -2046,7 +2048,11 @@ async function handleStaffClick(e){
     return;
   }
   if (!confirm('このアカウントのアクセス権を削除しますか？(ログインアカウント自体は残ります)')) return;
-  try { await staffRef.doc(id).delete(); }
+  try {
+    await staffRef.doc(id).delete();
+    // 目印も消す(ほかの校舎にも所属している人は、次のログインで自動で作り直される)
+    db.collection('staffIndex').doc(id).delete().catch(e => console.error(e));
+  }
   catch(err){ console.error(err); alert('削除に失敗しました: ' + err.message); }
 }
 
@@ -2069,6 +2075,7 @@ async function handleAddStaff(){
       createdBy: currentUser ? currentUser.email : '',
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
+    await db.collection('staffIndex').doc(newUid).set({ academyId: ACADEMY_ID }).catch(e => console.error(e));
     statusEl.style.color = 'var(--accent-dark)';
     statusEl.textContent = '✓ ' + email + ' さんのアカウントを発行しました。';
     document.getElementById('new-staff-email').value = '';
