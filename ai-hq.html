@@ -412,6 +412,57 @@
     .pop{position:fixed;left:12px!important;right:12px;top:auto!important;bottom:calc(var(--composer-h,68px) + 70px + env(safe-area-inset-bottom,0px));width:auto}
   }
   .m-title{display:none}
+
+  /* ===== 右側が切れないようにする =====
+     原因: 縦に並べる枠(grid)は、中の入力欄やボタンの「最小の幅」に合わせて画面より広がっていた。
+     どの枠も「画面の幅まで」と決め、入力欄は枠の幅に合わせて縮むようにする */
+  .pbody,.vform,.vcard,.dcard,.od,.reopen,.cond,.dv,.vbody,.route,.orders,.cl{grid-template-columns:minmax(0,1fr)}
+  .pbody>*,.vform>*,.vcard>*,.dcard>*,.od>*,.card>*,.oi>*{min-width:0;max-width:100%}
+  .cmd-mini{min-width:0}
+  .cmd-mini textarea{flex:1 1 0;width:0}
+  .vform input[type=date],.vform select,.vcard select{max-width:100%}
+  .card h3,.row .bd,.ot,.vcard .sum,.vcard .txt,.dcard,.log li,.cl li,.todo li,.steps li,.outbox,.alertbox,.pk,.ev span,.oh .who,.pill{overflow-wrap:anywhere}
+  .ev span,.pill{max-width:100%;white-space:normal}
+  .vcard .acts-v .btn.main{background:var(--accent);border-color:var(--accent);color:#fff}
+
+  @media (max-width:719px){
+    html,body{max-width:100%;overflow-x:clip}
+    .wrap,.stage-wrap,.panel{min-width:0;max-width:100%}
+    .panel{overflow:visible}
+    .pbody{padding:12px 14px;font-size:14px}
+    /* 文字と押す場所を大きくする(16px未満の入力欄はiPhoneが画面を勝手に拡大し、右が切れたままになる) */
+    textarea,select,input[type=date],input[type=text]{font-size:16px!important}
+    .vform input[type=date],.vform select,.vcard select{min-height:42px;padding:6px 10px;border-radius:10px}
+    .vform,.vcard,.dcard{background:var(--surface);border-radius:14px;padding:14px}
+    .vform>b{font-family:var(--f-display);font-size:15px}
+    .vform .cmd-mini textarea{min-height:92px}
+    .cmd-mini textarea{min-height:64px;border-radius:12px;padding:10px;line-height:1.5}
+    .cmd-mini .mic{width:44px;height:44px}
+    .vform .meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .vform .meta label{display:grid;gap:3px;min-width:0}
+    .vform .meta input,.vform .meta select{width:100%;min-width:0}
+    .vcard label.pk{display:flex;align-items:center;gap:8px}
+    .vcard label.pk select{flex:1;min-width:0}
+    .vfilter{gap:8px}
+    .vfilter button{min-height:36px;padding:6px 13px;font-size:13px}
+    .vcard{font-size:14px;gap:8px}
+    .vcard .sum{font-size:15px;line-height:1.5}
+    .card h3{font-size:16px}
+    .row{font-size:13.5px;grid-template-columns:54px minmax(0,1fr)}
+    .ot{font-size:14px}
+    .log li{font-size:13.5px}
+    /* ボタンは同じ幅で並べ、押し間違えにくくする */
+    .actions{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:8px}
+    .actions .btn{min-height:46px;width:100%;margin:0;flex:none;font-size:14px}
+    .actions .btn.ghost{border-color:var(--line-strong)}
+    .vcard .acts-v{grid-auto-flow:row;grid-template-columns:repeat(2,minmax(0,1fr))}
+    .vcard .acts-v .btn.danger{border-color:transparent;min-height:40px;font-size:13px}
+    .oh .btn.chk{min-height:38px}
+    .btn:active,.vfilter button:active,.mnav button:active{transform:scale(.97)}
+    .mnav button{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+    .btn,.vfilter button,.mic,.send{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+  }
+  @media (max-width:359px){ #clock{display:none!important} .brand b{font-size:16px} }
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -1034,7 +1085,7 @@ function voicesHTML() {
         <label class="pk">状態 <select data-vs="${v.id}">${VOICE_STATUS.map(st => `<option${(v.status || '未対応') === st ? ' selected' : ''}>${st}</option>`).join('')}</select></label>
         ${(v.linkedOrderNos || []).length ? `<span class="pk">関係する指示: ${v.linkedOrderNos.map(n => '#' + n).join('、')}</span>` : ''}
         <div class="cmd-mini" style="margin-top:0"><label for="vn-${v.id}" class="sr">対応のメモ</label><textarea id="vn-${v.id}" placeholder="対応のメモ(どう反映したか、見送った理由など)">${esc(v.note || '')}</textarea></div>
-        <div class="actions" style="margin-top:0"><button type="button" class="btn" data-vsave="${v.id}">メモを保存</button><button type="button" class="btn" data-vorder="${v.id}">指示にする</button><button type="button" class="btn" data-vconsult="${v.id}">CXOに相談</button><button type="button" class="btn danger" data-vdel="${v.id}">削除</button></div></div>`).join('')
+        <div class="actions acts-v" style="margin-top:0"><button type="button" class="btn main" data-vorder="${v.id}">指示にする</button><button type="button" class="btn" data-vconsult="${v.id}">CXOに相談</button><button type="button" class="btn" data-vsave="${v.id}">メモを保存</button><button type="button" class="btn danger" data-vdel="${v.id}">削除</button></div></div>`).join('')
       : `<div class="empty"><b>${voices.length ? 'この状態の意見はありません' : 'まだ登録はありません'}</b>代表が言っていたことを、上の欄から登録してください。</div>`}`.replace('%MIC%', `<button type="button" class="mic" data-mic="voice-text" aria-label="音声で入力"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>`);
 }
 /** CXO秘書の見解(戦略・法務・推奨) */
