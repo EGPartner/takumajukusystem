@@ -1108,7 +1108,7 @@ function reviewCard(o) {
     <div class="row rec"><span class="lb">要約</span><span class="bd">${esc(o.deliverable.summary)}</span></div>
     ${fullDeliverable(o, 'b-' + o.id)}
     <div class="cmd-mini"><label for="ad-${o.id}" class="sr">コメント</label><textarea id="ad-${o.id}" placeholder="不採用・修正のときは理由や直してほしい点を書く"></textarea></div>
-    ${(o && o.deliverable && (o.deliverable.next || []).length && !o.auto && !o.followedUp) ? `<p class="pk auto-note">採用すると、「次にやること」のうち係の名前があるものを、その係へ自動で指示します(システムの改修は依頼文を作ります)。</p>` : ''}
+    ${(o && o.deliverable && (o.deliverable.next || []).length && !o.auto && !o.followedUp) ? `<p class="pk auto-note">採用すると、「次にやること」のうちAIが進められるものを、担当の係へ自動で指示します(システムの改修は依頼文を作ります。電話・送信など人が行う作業には出しません)。</p>` : ''}
     <div class="actions"><button type="button" class="btn primary" data-adopt="adopt" data-id="${o.id}">採用</button><button type="button" class="btn ghost" data-adopt="revise" data-id="${o.id}">修正</button><button type="button" class="btn ghost" data-adopt="reject" data-id="${o.id}">不採用</button></div>
   </article>`;
 }
@@ -1123,7 +1123,7 @@ function adoptionCard(d) {
     ${o && o.deliverable ? fullDeliverable(o, d.id) : ''}
     <div class="cmd-mini"><label for="ins-${d.id}" class="sr">コメント</label><textarea id="ins-${d.id}" placeholder="不採用・修正のときは理由や直してほしい点を書く"></textarea>
       <button type="button" class="mic" data-mic="ins-${d.id}" aria-label="音声で入力"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button></div>
-    ${(o && o.deliverable && (o.deliverable.next || []).length && !o.auto && !o.followedUp) ? `<p class="pk auto-note">採用すると、「次にやること」のうち係の名前があるものを、その係へ自動で指示します(システムの改修は依頼文を作ります)。</p>` : ''}
+    ${(o && o.deliverable && (o.deliverable.next || []).length && !o.auto && !o.followedUp) ? `<p class="pk auto-note">採用すると、「次にやること」のうちAIが進められるものを、担当の係へ自動で指示します(システムの改修は依頼文を作ります。電話・送信など人が行う作業には出しません)。</p>` : ''}
     <div class="actions"><button type="button" class="btn primary" data-act="adopt" data-id="${d.id}">採用</button>
       <button type="button" class="btn ghost" data-act="revise" data-id="${d.id}">修正</button>
       <button type="button" class="btn ghost" data-act="reject" data-id="${d.id}">不採用</button></div>
@@ -1204,7 +1204,7 @@ function deliverableHTML(o, inline) {
     ${cols.length ? `<div class="v-table"><table><thead><tr>${cols.map(c => `<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>${(d.table.rows || []).map(r => `<tr>${(r.cells || r).map((c, k) => `<td data-label="${esc(cols[k] || '')}" class="${isReq(c) ? 'req' : ''}">${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>` : ''}
     ${(d.sections || []).map(s => `<section><h4>${esc(s.heading)}</h4><p>${esc(s.body).replace(/\n/g, '<br>')}</p></section>`).join('')}
     ${(d.unverified || []).length ? `<section class="v-warn"><h4>確認が必要なこと</h4><ul>${d.unverified.map(x => `<li>${esc(x)}</li>`).join('')}</ul></section>` : ''}
-    ${(d.next || []).length ? `<section><h4>次にやること</h4><ul class="next-list">${d.next.map((x, i) => { const fu = (o.followUps || []).find(f => f.index === i); return `<li><span>${esc(x)}</span>${fu ? `<span class="tag auto-tag">${fu.kind === 'dev' ? '改修依頼' : '自動で指示'}#${esc(fu.no)}</span>` : `<button type="button" class="btn next-go" data-next="${i}" data-oid="${o.id}">指示する</button>`}</li>`; }).join('')}</ul></section>` : ''}
+    ${(d.next || []).length ? `<section><h4>次にやること</h4><ul class="next-list">${d.next.map((x, i) => { const fu = (o.followUps || []).find(f => f.index === i); const go = `<button type="button" class="btn next-go" data-next="${i}" data-oid="${o.id}">指示する</button>`; return `<li><span>${esc(x)}${fu && !fu.no ? ` <span class="tag">${{ human: '人が行う', ask: '統括の判断', research: 'Web検索が必要' }[fu.kind] || ''}</span>` : ''}</span>${fu && fu.no ? `<span class="tag auto-tag">${fu.kind === 'dev' ? '改修依頼' : '自動で指示'}#${esc(fu.no)}</span>` : go}</li>`; }).join('')}</ul></section>` : ''}
     ${(d.sources || []).length ? `<section><h4>出典</h4><ul class="src-list">${d.sources.map(u => safeUrl(u) ? `<li><a href="${esc(u)}" target="_blank" rel="noopener">${esc(u)}</a></li>` : `<li>${esc(u)}</li>`).join('')}</ul></section>` : ''}
     ${inline ? '' : `<section class="v-src"><h4>この成果物のもとになった指示</h4><p>${esc(o.text)}</p><p class="pk">${(o.events || []).map(e => `${esc(hm(toDate(e.at)))} ${esc(e.from)} → ${esc(e.to)}: ${esc(e.what)}`).join('<br>')}</p></section>`}`;
 }
