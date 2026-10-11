@@ -423,6 +423,24 @@
   .vform input[type=date],.vform select,.vcard select{max-width:100%}
   .card h3,.row .bd,.ot,.vcard .sum,.vcard .txt,.dcard,.log li,.cl li,.todo li,.steps li,.outbox,.alertbox,.pk,.ev span,.oh .who,.pill{overflow-wrap:anywhere}
   .ev span,.pill{max-width:100%;white-space:normal}
+  .se{border:1px solid var(--accent);border-radius:12px;padding:12px;background:var(--surface);display:grid;gap:8px;grid-template-columns:minmax(0,1fr)}
+  .se-list{list-style:none!important;margin:0;padding:0!important;display:grid;gap:8px}
+  .se-list li{border:1px solid var(--line);border-radius:10px;padding:8px 10px;display:grid;gap:4px;overflow-wrap:anywhere}
+  .se-where{font-size:12.5px;font-weight:700}
+  .se-where small{color:var(--ink-3);font-weight:500;font-family:var(--f-num)}
+  .se-diff{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+  .se-old{color:var(--ink-3);text-decoration:line-through}
+  .se-arrow{color:var(--ink-3)}
+  .se-new1{font-weight:700;color:var(--ok);background:var(--ok-soft);border-radius:6px;padding:1px 6px}
+  .se-new{display:flex;gap:6px;flex-wrap:wrap}
+  .se-new span{background:var(--ok-soft);border-radius:6px;padding:2px 7px;font-weight:700}
+  .se-new small{display:block;font-size:10.5px;font-weight:500;color:var(--ink-3)}
+  .se-err{background:var(--warn-soft);border-radius:10px;padding:8px 10px;font-size:12.5px}
+  .se-err b{color:var(--warn)}
+  .se-done{margin:0;font-weight:700;color:var(--ok)}
+  .se-go{width:100%;min-height:44px}
+  .se-flag{color:var(--accent-ink);font-weight:700;margin-top:6px}
+  @media print{.se-go{display:none!important}}
   .auto-tag{background:var(--accent-soft);color:var(--accent-ink);font-weight:700;flex:none}
   .auto-note{margin:8px 0 0}
   .btn.main-copy{margin-top:8px;width:100%;background:var(--accent);border-color:var(--accent);color:#fff}
@@ -1154,7 +1172,7 @@ function renderOrder(o) {
     </div>` : '';
   return `<li class="oi"><div class="oh"><span class="tm">${esc(hm(toDate(o.createdAt)))}</span><span class="who">#${esc(o.no)} ${esc(targetName(o.target))}</span><span class="st ${tone === 'bad' ? 'warn' : tone}">${esc(label)}</span>${o.costYen ? `<span class="tm">${Math.round(o.costYen)}円</span>` : ''}
     <button type="button" class="btn chk" data-order="${o.id}" aria-expanded="${open}">${open ? '閉じる' : '進捗を確認'}</button></div>
-    <div class="ot">${o.auto && o.parentNo ? `<span class="tag auto-tag">指示#${esc(o.parentNo)}の採用から自動</span> ` : ''}${esc(o.text)}</div>${o.kind === 'dev' ? `<button type="button" class="btn main-copy" data-copy-dev="${o.id}">依頼文をコピー(VSコードに貼る)</button>` : ''}${o.stage !== 'done' ? `<div class="mini-bar"><i style="width:${pct}%"></i></div>` : ''}${detail}</li>`;
+    <div class="ot">${o.auto && o.parentNo ? `<span class="tag auto-tag">指示#${esc(o.parentNo)}の採用から自動</span> ` : ''}${esc(o.text)}</div>${o.sheetEdits && o.sheetEdits.status === 'proposed' ? `<div class="pk se-flag">シートの変更案 ${o.sheetEdits.items.length}件が承認待ちです(「進捗を確認」→ 成果物から反映)</div>` : ''}${o.kind === 'dev' ? `<button type="button" class="btn main-copy" data-copy-dev="${o.id}">依頼文をコピー(VSコードに貼る)</button>` : ''}${o.stage !== 'done' ? `<div class="mini-bar"><i style="width:${pct}%"></i></div>` : ''}${detail}</li>`;
 }
 function renderAll() { renderCounts(); renderTicker(); if (!$('#panel').hidden) renderPanel(); }
 /* ---------- スマホ: アプリの画面の作り ---------- */
@@ -1203,11 +1221,38 @@ function deliverableHTML(o, inline) {
     <p class="v-sum">${esc(d.summary)}</p>
     ${cols.length ? `<div class="v-table"><table><thead><tr>${cols.map(c => `<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>${(d.table.rows || []).map(r => `<tr>${(r.cells || r).map((c, k) => `<td data-label="${esc(cols[k] || '')}" class="${isReq(c) ? 'req' : ''}">${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>` : ''}
     ${(d.sections || []).map(s => `<section><h4>${esc(s.heading)}</h4><p>${esc(s.body).replace(/\n/g, '<br>')}</p></section>`).join('')}
+    ${sheetEditsHTML(o)}
     ${(d.unverified || []).length ? `<section class="v-warn"><h4>確認が必要なこと</h4><ul>${d.unverified.map(x => `<li>${esc(x)}</li>`).join('')}</ul></section>` : ''}
     ${(d.next || []).length ? `<section><h4>次にやること</h4><ul class="next-list">${d.next.map((x, i) => { const fu = (o.followUps || []).find(f => f.index === i); const go = `<button type="button" class="btn next-go" data-next="${i}" data-oid="${o.id}">指示する</button>`; return `<li><span>${esc(x)}${fu && !fu.no ? ` <span class="tag">${{ human: '人が行う', ask: '統括の判断', research: 'Web検索が必要' }[fu.kind] || ''}</span>` : ''}</span>${fu && fu.no ? `<span class="tag auto-tag">${fu.kind === 'dev' ? '改修依頼' : '自動で指示'}#${esc(fu.no)}</span>` : go}</li>`; }).join('')}</ul></section>` : ''}
     ${(d.sources || []).length ? `<section><h4>出典</h4><ul class="src-list">${d.sources.map(u => safeUrl(u) ? `<li><a href="${esc(u)}" target="_blank" rel="noopener">${esc(u)}</a></li>` : `<li>${esc(u)}</li>`).join('')}</ul></section>` : ''}
     ${inline ? '' : `<section class="v-src"><h4>この成果物のもとになった指示</h4><p>${esc(o.text)}</p><p class="pk">${(o.events || []).map(e => `${esc(hm(toDate(e.at)))} ${esc(e.from)} → ${esc(e.to)}: ${esc(e.what)}`).join('<br>')}</p></section>`}`;
 }
+/** スプレッドシートの変更案。統括が「変更前 → 変更後」を見て承認すると反映される(塾生リストは対象外) */
+function sheetEditsHTML(o) {
+  const se = o.sheetEdits; if (!se || (!(se.items || []).length && !(se.errors || []).length)) return '';
+  const items = se.items || [];
+  const rows = items.map(it => it.op === 'append'
+    ? `<li><div class="se-where"><span class="tag">${esc(it.tab)}</span> 行を追加${it.appliedRow ? `(${esc(it.appliedRow)}行目)` : ''}</div><div class="se-new">${it.values.map((v, i) => v ? `<span><small>${esc((it.heads || [])[i] || '')}</small>${esc(v)}</span>` : '').join('')}</div></li>`
+    : `<li><div class="se-where"><span class="tag">${esc(it.tab)}</span> ${esc(it.label)} <small>${esc(it.a1)}</small></div><div class="se-diff"><span class="se-old">${esc(it.before) || '(空)'}</span><span class="se-arrow">→</span><span class="se-new1">${esc(it.after) || '(空)'}</span></div></li>`).join('');
+  const state = { proposed: '', working: '<p class="pk">処理しています…</p>', applied: '<p class="se-done">シートに反映済みです</p>', undone: '<p class="pk">元に戻しました(シートは変更前の状態です)</p>' }[se.status] || '';
+  const btn = se.status === 'proposed' ? `<button type="button" class="btn primary se-go" data-sheet="sheet_apply" data-oid="${o.id}">この${items.length}件をシートに反映する</button>`
+    : se.status === 'applied' ? `<button type="button" class="btn se-go" data-sheet="sheet_undo" data-oid="${o.id}">元に戻す</button>` : '';
+  return `<section class="se"><h4>スプレッドシートの変更案${items.length ? `(${items.length}件)` : ''}</h4>
+    ${items.length ? `<ul class="se-list">${rows}</ul>` : ''}
+    ${(se.errors || []).length ? `<div class="se-err"><b>反映しない項目</b><ul>${se.errors.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>` : ''}
+    ${state}${btn}${se.status === 'proposed' ? '<p class="pk">押すまでシートは変わりません。反映したあとも元に戻せます。</p>' : ''}</section>`;
+}
+document.addEventListener('click', async e => {
+  const b = e.target.closest('[data-sheet]'); if (!b) return;
+  const undo = b.dataset.sheet === 'sheet_undo';
+  if (undo && !confirm('シートを変更前の状態に戻しますか?')) return;
+  b.disabled = true; b.textContent = undo ? '戻しています…' : '反映しています…';
+  try {
+    const r = await call('aiAdoptOrder')({ orderId: b.dataset.oid, kind: b.dataset.sheet });
+    toast(undo ? 'シートを元に戻しました' : `シートに${r.data.count}件を反映しました`);
+    if (!$('#viewer').hidden) closeViewer();
+  } catch (err) { toast((undo ? '戻せませんでした: ' : '反映できませんでした: ') + err.message); b.disabled = false; b.textContent = undo ? '元に戻す' : 'シートに反映する'; }
+});
 function openViewer(o) {
   const d = o.deliverable; if (!d) return;
   viewing = o;
