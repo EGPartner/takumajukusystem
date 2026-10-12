@@ -441,6 +441,16 @@
   .se-go{width:100%;min-height:44px}
   .se-flag{color:var(--accent-ink);font-weight:700;margin-top:6px}
   @media print{.se-go{display:none!important}}
+  a.btn{text-decoration:none;display:inline-flex;align-items:center;justify-content:center;color:var(--ink)}
+  a.btn.file-open{border-color:var(--accent);color:var(--accent-ink);background:var(--accent-soft)}
+  a.btn.file-open.primary{background:var(--accent);color:#fff}
+  a.btn.file-open.wait{opacity:.6}
+  .btn.file-wide{width:100%;margin-top:6px;min-height:42px}
+  .dv-tools{gap:8px;flex-wrap:wrap}
+  .dtitle{display:grid;gap:2px;width:100%;text-align:left;border:0;background:none;padding:2px 0;cursor:pointer;font:inherit;color:var(--ink)}
+  .dtitle .more{font-size:11.5px;font-weight:700;color:var(--accent-ink)}
+  .dfiles{display:flex;gap:8px;flex-wrap:wrap}
+  @media print{a.btn,.dfiles{display:none!important}}
   .auto-tag{background:var(--accent-soft);color:var(--accent-ink);font-weight:700;flex:none}
   .auto-note{margin:8px 0 0}
   .btn.main-copy{margin-top:8px;width:100%;background:var(--accent);border-color:var(--accent);color:#fff}
@@ -489,6 +499,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-functions-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
 </head>
 <body>
 
@@ -556,7 +567,7 @@
   <div class="vbox">
     <div class="vhead"><div><h3 id="v-title">成果物</h3><div class="pk" id="v-meta"></div></div><button type="button" class="x" id="v-close" aria-label="閉じる">×</button></div>
     <div class="vbody" id="v-body"></div>
-    <div class="vfoot"><button type="button" class="btn" id="v-copy">コピー</button><button type="button" class="btn" id="v-pdf">PDFで保存</button><button type="button" class="btn primary" id="v-fix" style="flex:none">修正を指示</button></div>
+    <div class="vfoot"><button type="button" class="btn" id="v-copy">コピー</button><button type="button" class="btn" id="v-pdf">印刷</button><span id="v-file"></span><button type="button" class="btn primary" id="v-fix" style="flex:none">修正を指示</button></div>
   </div>
 </div>
 <div class="toast" id="toast" role="status"></div>
@@ -581,6 +592,37 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 const fns = firebase.app().functions('asia-northeast1');
 const call = name => fns.httpsCallable(name, { timeout: 180000 });
+
+/* ---------- 成果物のPDFファイル ----------
+   裏側が作って保存したPDFを、タップでそのまま開く(スマホのホーム画面アプリではブラウザの「印刷」が使えないことがあるため)。
+   開いた先で、印刷・共有・保存ができる。リンクは普通の <a> にする(ボタンから後で開く方法は、iPhoneでは止められることがある)。 */
+const fileUrls = new Map(); // 保存先 → 開くためのURL
+/** 指示(o)のPDFを開くボタン。まだPDFが無い以前の成果物には「PDFを作る」を出す */
+function fileBtn(o, cls = '') {
+  if (!o || !o.deliverable) return '';
+  if (!o.file || !o.file.path) return `<button type="button" class="btn ${cls}" data-file-make="${o.id}">PDFを作る</button>`;
+  const url = fileUrls.get(o.file.path);
+  const label = `PDFを開く${o.file.rows ? `(全${o.file.rows}件)` : ''}`;
+  return url ? `<a class="btn file-open ${cls}" href="${esc(url)}" target="_blank" rel="noopener">${label}</a>`
+    : `<a class="btn file-open wait ${cls}" data-file="${esc(o.file.path)}" data-label="${esc(label)}" target="_blank" rel="noopener" aria-disabled="true">PDFを準備中…</a>`;
+}
+/** 画面に出ている「準備中」のボタンに、開くためのURLを入れる */
+function hydrateFiles() {
+  document.querySelectorAll('a[data-file]').forEach(async a => {
+    const path = a.dataset.file;
+    try {
+      if (!fileUrls.has(path)) fileUrls.set(path, await firebase.storage().ref(path).getDownloadURL());
+      a.href = fileUrls.get(path); a.textContent = a.dataset.label; a.classList.remove('wait'); a.removeAttribute('aria-disabled'); a.removeAttribute('data-file');
+    } catch (e) { console.error(e); a.textContent = 'PDFを開けません'; }
+  });
+}
+document.addEventListener('click', async e => {
+  const w = e.target.closest('a.file-open.wait'); if (w) { e.preventDefault(); toast('PDFを準備しています。数秒後にもう一度押してください'); return; }
+  const b = e.target.closest('[data-file-make]'); if (!b) return;
+  b.disabled = true; b.textContent = 'PDFを作っています…';
+  try { await call('aiAdoptOrder')({ orderId: b.dataset.fileMake, kind: 'file_make' }); toast('PDFを作りました。「PDFを開く」を押してください'); if (!$('#viewer').hidden) closeViewer(); }
+  catch (err) { toast('PDFを作れませんでした: ' + err.message); b.disabled = false; b.textContent = 'PDFを作る'; }
+});
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -1021,6 +1063,7 @@ function renderPanel() {
   $('#pbody').scrollTop = y;
   if (isMobile() && VIEW_TITLE[panelTab]) $('#pbody').insertAdjacentHTML('afterbegin', `<h2 class="m-title">${VIEW_TITLE[panelTab]}</h2>`);
   if (actId) { const t = document.getElementById(actId); if (t) { t.focus({ preventScroll: true }); if (pos && t.setSelectionRange) t.setSelectionRange(pos[0], pos[1]); } }
+  hydrateFiles();
 }
 function renderPanelInner() {
   document.querySelectorAll('[data-ptab]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.ptab === panelTab)));
@@ -1086,7 +1129,8 @@ function decidedHTML() {
   return `<div class="decided-h">決裁済み(直近${list.length}件)</div>` + list.map(d => {
     const o = orders.find(x => x.id === d.orderId);
     return `<div class="dcard"><div class="top"><span class="res">${esc(RESULT_LABEL[d.status] || d.status)}</span><span class="pk">指示#${esc(d.orderNo || '')} ・ ${esc(hm(toDate(d.decidedAt)))}</span>${o ? `<span class="pk">今: ${esc(stageLabel(o.stage))}</span>` : ''}</div>
-      <b>${esc(d.type === 'adoption' ? '採用の決裁: ' : '')}${esc(d.title || '')}</b>${d.note ? `<span class="pk">統括のコメント: ${esc(d.note)}</span>` : ''}
+      ${o && o.deliverable ? `<button type="button" class="dtitle" data-view-output="${o.id}"><b>${esc(d.type === 'adoption' ? '採用の決裁: ' : '')}${esc(d.title || '')}</b><span class="more">内容を見る →</span></button>` : `<b>${esc(d.type === 'adoption' ? '採用の決裁: ' : '')}${esc(d.title || '')}</b>`}${d.note ? `<span class="pk">統括のコメント: ${esc(d.note)}</span>` : ''}
+      ${o && o.deliverable ? `<div class="dfiles">${fileBtn(o)}</div>` : ''}
       ${canReopen(o) ? reopenForm(d.orderId) : '<span class="pk">進行中のため、終わってから再審査に回せます</span>'}</div>`;
   }).join('');
 }
@@ -1114,7 +1158,7 @@ const cxoRow = c => !c ? '' : `<div class="row cxo"><span class="lb">CXO</span><
 const closedDv = new Set(); // 利用者が閉じた成果物の全文(再描画しても閉じたまま)
 function fullDeliverable(o, key) {
   return `<details class="dv-wrap" data-dv="${key}"${closedDv.has(key) ? '' : ' open'}><summary>成果物の全文</summary><div class="dv">${deliverableHTML(o, true)}</div>
-    <div class="dv-tools"><button type="button" class="btn" data-view-output="${o.id}">大きく表示・PDF</button></div></details>`;
+    <div class="dv-tools">${fileBtn(o)}<button type="button" class="btn" data-view-output="${o.id}">大きく表示</button></div></details>`;
 }
 document.addEventListener('toggle', e => { const el = e.target; if (el.matches && el.matches('details.dv-wrap')) { el.open ? closedDv.delete(el.dataset.dv) : closedDv.add(el.dataset.dv); } }, true);
 /** 区分Bの確認待ち(完了した社内の資料・調査。押さなくても業務は止まらない) */
@@ -1164,7 +1208,7 @@ function renderOrder(o) {
       ${o.stage === 'awaiting_decision' || o.stage === 'awaiting_adoption' ? `<button type="button" class="btn primary" data-go-decide="1" style="flex:none">決裁を開く</button>` : ''}
       ${o.stage === 'error' || o.stage === 'paused_quota' ? `<div class="alertbox"><b>止まった理由</b>${esc(pauseText(o))} ${retryBtn(o)}</div>` : ''}
       ${o.stage === 'producing' ? `<div class="outbox wait">成果物を作成しています(Web検索で事実を確かめています)…</div>` : ''}
-      ${o.deliverable ? `<div class="sec-h">成果物(完了報告)</div><button type="button" class="outbox" data-view-output="${o.id}"><b>${esc(o.deliverable.title)}</b><span>${esc(o.deliverable.summary)}</span><span class="more">タップして詳細を見る →</span></button>` : ''}
+      ${o.deliverable ? `<div class="sec-h">成果物(完了報告)</div><button type="button" class="outbox" data-view-output="${o.id}"><b>${esc(o.deliverable.title)}</b><span>${esc(o.deliverable.summary)}</span><span class="more">タップして詳細を見る →</span></button>${fileBtn(o, 'file-wide')}` : ''}
       ${o.adoption && o.adoption.status !== 'pending' ? `<div class="pk">${o.adoption.status === 'adopted' ? '採用済み' : '不採用'}${o.adoption.note ? ': ' + esc(o.adoption.note) : ''}</div>` : ''}
       ${o.stage === 'done' && o.adoption && o.adoption.status === 'pending' ? `<div class="cmd-mini"><label for="ad-${o.id}" class="sr">採用の判断へのコメント</label><textarea id="ad-${o.id}" placeholder="不採用・修正のときは理由や直してほしい点を書く"></textarea></div>
         <div class="actions"><button type="button" class="btn primary" data-adopt="adopt" data-id="${o.id}">採用</button><button type="button" class="btn ghost" data-adopt="revise" data-id="${o.id}">修正</button><button type="button" class="btn ghost" data-adopt="reject" data-id="${o.id}">不採用</button></div>` : ''}
@@ -1253,13 +1297,24 @@ document.addEventListener('click', async e => {
     if (!$('#viewer').hidden) closeViewer();
   } catch (err) { toast((undo ? '戻せませんでした: ' : '反映できませんでした: ') + err.message); b.disabled = false; b.textContent = undo ? '元に戻す' : 'シートに反映する'; }
 });
+/** 成果物に付いた全件の表(名簿など)。画面では先頭だけ見せ、全件はPDFで見る */
+function attachmentsHTML(o) {
+  return (o.attachments || []).map(t => {
+    const rows = t.rows || [], show = rows.slice(0, 30);
+    return `<section><h4>${esc(t.title)}(${rows.length}件)</h4><p class="pk">${esc(t.note || '')}</p>
+      <div class="v-table"><table><thead><tr>${t.columns.map(c => `<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>${show.map(r => `<tr>${(r.cells || r).map((c, k) => `<td data-label="${esc(t.columns[k] || '')}">${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
+      ${rows.length > show.length ? `<p class="pk">画面には先頭の${show.length}件を表示しています。全${rows.length}件は「PDFを開く」で見られます。</p>` : ''}</section>`;
+  }).join('');
+}
 function openViewer(o) {
   const d = o.deliverable; if (!d) return;
   viewing = o;
   $('#v-title').textContent = d.title;
   $('#v-meta').textContent = `指示#${o.no} ・ ${targetName(o.target)} ・ ${hm(toDate(o.doneAt))} ・ ${o.adoption && o.adoption.status === 'adopted' ? '採用済み' : o.adoption && o.adoption.status === 'rejected' ? '不採用' : o.stage === 'awaiting_adoption' ? '採用の決裁待ち' : '未確認'} ・ AIが作成`;
-  $('#v-body').innerHTML = deliverableHTML(o, false);
+  $('#v-body').innerHTML = deliverableHTML(o, false) + attachmentsHTML(o);
+  $('#v-file').innerHTML = fileBtn(o, 'primary');
   $('#viewer').hidden = false; $('#v-close').focus();
+  hydrateFiles();
 }
 function deliverableText(o) {
   const d = o.deliverable; const L = [d.title, `(指示#${o.no} ${targetName(o.target)})`, '', d.summary, ''];
