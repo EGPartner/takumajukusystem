@@ -14,7 +14,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700;900&family=Noto+Sans+JP:wght@400;500;700&family=Outfit:wght@500;600;700&family=DotGothic16&display=swap">
 <style>
-  /* Layout: ドット絵のオフィス(上段=ラウンジ・会議室・統括室・事務局、下段=4P各部)を主役に、右にサマリ/決裁/記録のパネル、下に動きのティッカー */
+  /* Layout: ドット絵のオフィス(上段=ラウンジ・会議室・統括室・事務局、下段=4P各部)を主役に、サマリ/決裁/記録は全画面のパネル(PC)、下に動きのティッカー */
   :root{
     --bg:#E9F0F0; --surface:#FFFFFF; --surface-2:#F4F8F8; --line:#D8E3E3; --line-strong:#BFD0D0;
     --ink:#0F1C1E; --ink-2:#4D6264; --ink-3:#88A0A2;
@@ -115,13 +115,16 @@
   .ticker .run .tm{font-family:var(--f-num);color:var(--ink-3)}
   @keyframes tick{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 
-  /* 右パネル(PC)/下からのシート(スマホ) */
-  .panel{position:absolute;top:12px;right:12px;bottom:12px;width:360px;max-width:calc(100% - 24px);background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);display:flex;flex-direction:column;z-index:6;overflow:hidden}
+  /* サマリ・決裁・記録のパネル。PCは全画面で開き、「閉じる」でオフィスの画面へ戻る(スマホは下の専用の指定で、画面にそのまま並べる) */
+  .panel{position:fixed;inset:0;background:var(--surface);display:flex;flex-direction:column;z-index:40;overflow:hidden}
   .panel[hidden]{display:none}
-  @media (max-width:1100px){
-    .panel{position:fixed;top:auto;left:0;right:0;bottom:0;width:auto;max-width:none;max-height:78%;border-radius:18px 18px 0 0;padding-bottom:env(safe-area-inset-bottom,0px);z-index:30}
+  @media (min-width:720px){
+    .panel .tabs{padding:14px 28px 0;gap:8px}
+    .panel .tabs button{font-size:15px;padding:10px 12px}
+    .panel .tabs .close{font-size:13.5px;color:var(--ink-2);border:1px solid var(--line-strong);border-radius:9px;padding:7px 14px;margin-bottom:8px}
+    .panel .tabs .close:hover{border-color:var(--accent);color:var(--ink)}
+    .panel .pbody{zoom:1.2;padding:20px 24px 32px;grid-template-columns:minmax(0,900px);justify-content:center;overscroll-behavior:contain}
   }
-  @media (min-width:1281px){ .stage-wrap.with-panel .scroller{margin-right:360px} .stage-wrap.with-panel .panel{top:0;right:0;bottom:0;border-radius:0;border:0;border-left:1px solid var(--line);box-shadow:none} }
   .tabs{display:flex;gap:4px;padding:10px 10px 0;border-bottom:1px solid var(--line)}
   .tabs button{white-space:nowrap;border:0;background:none;padding:8px 8px;font-size:13px;font-weight:700;color:var(--ink-3);border-bottom:2px solid transparent;cursor:pointer;display:inline-flex;gap:6px;align-items:center}
   .tabs button[aria-selected="true"]{color:var(--ink);border-color:var(--accent)}
@@ -537,7 +540,7 @@
         <button type="button" role="tab" data-ptab="orders" aria-selected="false">指示</button>
         <button type="button" role="tab" data-ptab="voices" aria-selected="false">代表 <span class="n" id="tab-v" hidden>0</span></button>
         <button type="button" role="tab" data-ptab="log" aria-selected="false">記録</button>
-        <button type="button" class="close" id="panel-close" aria-label="パネルを閉じる">×</button>
+        <button type="button" class="close" id="panel-close">× 閉じる</button>
       </div>
       <div class="pbody" id="pbody"></div>
     </aside>
@@ -1234,7 +1237,7 @@ function setMobileView(tab) {
   renderPanel();
   window.scrollTo({ top: 0 });
 }
-mq.addEventListener('change', () => { if (isMobile()) setMobileView(panelTab); else { delete document.body.dataset.mview; renderPanel(); } });
+mq.addEventListener('change', () => { if (isMobile()) setMobileView(panelTab); else { delete document.body.dataset.mview; $('#panel').hidden = true; } });
 // 入力欄の高さに合わせて、画面の下の余白を変える
 new ResizeObserver(([e]) => document.documentElement.style.setProperty('--composer-h', Math.ceil(e.target.getBoundingClientRect().height) + 'px')).observe(document.querySelector('.cmdwrap'));
 // キーボードが出たら、入力欄をキーボードのすぐ上に出す(下のタブは隠す)
@@ -1249,9 +1252,11 @@ if (window.visualViewport) {
   vv.addEventListener('resize', onVV); vv.addEventListener('scroll', onVV);
 }
 function openPanel(tab) {
-  if (isMobile()) return setMobileView(tab || panelTab); $('#panel').hidden = false; $('.stage-wrap').classList.add('with-panel'); panelTab = tab || panelTab; renderPanel(); try { localStorage.setItem('aihq-panel', '1'); } catch (e) {} }
+  if (isMobile()) return setMobileView(tab || panelTab); $('#panel').hidden = false; panelTab = tab || panelTab; renderPanel(); $('#pbody').scrollTop = 0; $('#panel-close').focus({ preventScroll: true }); }
 function closePanel() {
-  if (isMobile()) return setMobileView('sum'); $('#panel').hidden = true; $('.stage-wrap').classList.remove('with-panel'); try { localStorage.setItem('aihq-panel', '0'); } catch (e) {} }
+  if (isMobile()) return setMobileView('sum'); $('#panel').hidden = true; }
+// PCではパネルが全画面を覆うため、パネルの中から入力欄へ移るときは先に閉じる
+function revealCmd() { if (!isMobile() && !$('#panel').hidden) closePanel(); }
 
 /* ---------- 成果物ビューア ---------- */
 let viewing = null;
@@ -1470,7 +1475,7 @@ document.addEventListener('click', async e => {
     setMode(btn.dataset.vconsult ? 'consult' : 'order');
     cmdText.value = btn.dataset.vconsult ? `代表タクマの意見#${v.no}「${v.text}」について、どう対応すべきか` : `代表タクマの意見#${v.no}「${v.text}」を受けて: `;
     voiceLink = btn.dataset.vorder ? v.id : null;
-    autosize(); cmdText.focus();
+    revealCmd(); autosize(); cmdText.focus();
     toast(btn.dataset.vconsult ? 'CXO秘書への相談として入力しました。内容を確かめて送ってください' : '業務命令として入力しました。続きを書いて送ると、この意見と結びつきます');
     return;
   }
@@ -1512,7 +1517,7 @@ document.addEventListener('click', e => {
   const o = orders.find(x => x.id === b.dataset.oid) || viewing; if (!o || !o.deliverable) return;
   const item = (o.deliverable.next || [])[Number(b.dataset.next)] || '';
   if (!$('#viewer').hidden) closeViewer();
-  cmdText.value = `${item}(指示#${o.no}「${o.deliverable.title}」を受けて)`; autosize(); cmdText.focus();
+  cmdText.value = `${item}(指示#${o.no}「${o.deliverable.title}」を受けて)`; revealCmd(); autosize(); cmdText.focus();
   toast('内容を確かめて「指示する」を押してください');
 });
 const devPromptOf = o => ((o.deliverable && o.deliverable.sections || [])[0] || {}).body || '';
@@ -1522,7 +1527,7 @@ document.addEventListener('click', e => {
   navigator.clipboard.writeText(devPromptOf(o)).then(() => toast('依頼文をコピーしました。VSコードのClaudeに貼り付けてください'), () => toast('コピーできませんでした。「進捗を確認」から開いてコピーしてください'));
 });
 $('#viewer').addEventListener('click', e => { if (e.target.id === 'viewer') closeViewer(); });
-document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#viewer').hidden) closeViewer(); });
+document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; if (!$('#viewer').hidden) closeViewer(); else if (!isMobile() && !$('#panel').hidden) closePanel(); });
 $('#v-pdf').addEventListener('click', () => {
   const o = viewing; if (!o) return;
   const area = $('#print-area'), d = new Date(), title = document.title;
@@ -1535,7 +1540,7 @@ $('#v-pdf').addEventListener('click', () => {
   toast('印刷の画面で「PDFに保存」を選んでください');
 });
 $('#v-copy').addEventListener('click', () => { navigator.clipboard.writeText(viewing.kind === 'dev' ? devPromptOf(viewing) : deliverableText(viewing)).then(() => toast('成果物をコピーしました'), () => toast('コピーできませんでした')); });
-$('#v-fix').addEventListener('click', () => { const o = viewing; closeViewer(); cmdText.value = `指示#${o.no}の成果物「${o.deliverable.title}」を修正して: `; autosize(); cmdText.focus(); });
+$('#v-fix').addEventListener('click', () => { const o = viewing; closeViewer(); cmdText.value = `指示#${o.no}の成果物「${o.deliverable.title}」を修正して: `; revealCmd(); autosize(); cmdText.focus(); });
 $('#chip-decide').addEventListener('click', () => openPanel('decide'));
 document.querySelector('.ticker').addEventListener('click', e => e.currentTarget.classList.toggle('hold'));
 $('#chip-alarm').addEventListener('click', () => openPanel('sum'));
@@ -1599,11 +1604,7 @@ auth.onAuthStateChanged(async user => {
   const day = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
   db.doc('aiUsage/' + day).onSnapshot(s => { usage = s.exists ? s.data() : null; renderCounts(); });
   db.doc('aiMeta/apiKey').onSnapshot(s => { apiKeyMeta = s.exists ? s.data() : null; if (panelTab === 'sum') renderAll(); });
-  if (isMobile()) setMobileView('sum');
-  let panelOpen = !isMobile() && window.innerWidth > 1100;
-  try { const v = localStorage.getItem('aihq-panel'); if (v !== null) panelOpen = v === '1' && window.innerWidth > 1100; } catch (e) {}
-  if (panelOpen) openPanel('sum');
-  else if (isMobile()) setMobileView('sum');
+  if (isMobile()) setMobileView('sum'); // PCは全画面のパネルを自動では開かない(オフィスの画面から始める)
   try { if (localStorage.getItem('aihq-zoom') === '1') setZoom(true); } catch (e) {}
   renderAll();
 });
