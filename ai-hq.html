@@ -180,6 +180,10 @@
   .log .who{font-weight:700;color:var(--accent-ink);font-size:11.5px}
   .log li.new{animation:flash 1.8s ease}
   @keyframes flash{from{background:var(--accent-soft)}to{background:transparent}}
+  .card.focus{outline:2px solid var(--accent);outline-offset:2px;animation:flash 2.4s ease;scroll-margin-top:12px}
+  .pill.when{background:var(--surface-2);color:var(--ink-2)}
+  .pill.old{background:var(--bad-soft);color:var(--bad)}
+  .linkish{border:0;background:none;padding:0;font:inherit;color:var(--accent-ink);text-align:left;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
   .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
   .cmdwrap{margin-top:10px;display:grid;gap:8px}
   .cmd{display:flex;align-items:flex-end;gap:8px;background:var(--surface);border:1px solid var(--line-strong);border-radius:16px;padding:8px;box-shadow:var(--shadow)}
@@ -662,6 +666,9 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const pad = n => String(n).padStart(2, '0');
 const hm = d => d ? pad(d.getHours()) + ':' + pad(d.getMinutes()) : '';
+/** 決裁カードの見出しに付ける「いつ上がってきたか」。2日以上残っているものは目立たせる */
+const decAge = at => { const d = toDate(at); if (!d) return ''; const days = Math.floor((Date.now() - d) / 864e5);
+  return `<span class="pill ${days >= 2 ? 'old' : 'when'}">${d.getMonth() + 1}/${d.getDate()} ${hm(d)} 上申${days >= 2 ? ` ・ ${days}日前から未決裁` : ''}</span>`; };
 const toDate = v => !v ? null : v.toDate ? v.toDate() : new Date(v);
 function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove('on'), 3200); }
 
@@ -1123,11 +1130,11 @@ function renderPanelInner() {
       <table class="sum"><thead><tr><th>部署</th><th>状態</th><th class="r">進行中</th><th class="r">係</th></tr></thead><tbody>${rows}</tbody></table>
       <div class="sec-h">次に統括がやること</div>
       ${voices.some(v => (v.status || '未対応') === '未対応') ? `<p class="pk" style="color:var(--ink)">代表の意見(未対応) <b>${voices.filter(v => (v.status || '未対応') === '未対応').length}件</b> — 「代表」タブで確認</p>` : ''}
-      <ul class="todo">${decisions.length + pendingB().length ? [...decisions.map(d => `<li>${d.type === 'adoption' ? '採用の決裁: ' : ''}${esc(d.title)}</li>`), ...pendingB().map(o => `<li>確認待ち: ${esc(o.deliverable.title)}</li>`)].join('') : '<li>決裁待ちはありません</li>'}</ul>
+      <ul class="todo">${decisions.length + pendingB().length ? [...decisions.map(d => `<li><button type="button" class="linkish" data-go-decide="${esc(d.orderId)}">指示#${esc(d.orderNo || '')} ${d.type === 'adoption' ? '採用の決裁: ' : ''}${esc(d.title)}</button></li>`), ...pendingB().map(o => `<li><button type="button" class="linkish" data-go-decide="${esc(o.id)}">指示#${esc(o.no)} 確認待ち: ${esc(o.deliverable.title)}</button></li>`)].join('') : '<li>決裁待ちはありません</li>'}</ul>
       <p class="pk">売上と在籍数は、本部画面の「売上」タブで確認できます。<a href="hq.html?goto=revenue">本部画面を開く</a></p>`;
   } else if (panelTab === 'decide') {
-    P.innerHTML = decisions.length + pendingB().length ? pendingB().map(reviewCard).join('') + decisions.map(d => d.type === 'adoption' ? adoptionCard(d) : `<article class="card" id="card-${d.id}">
-        <div class="card-h"><span class="pill">${esc(deptName(d.dept) || '部長会議')}</span><span class="pill due">指示#${esc(d.orderNo || '')}${d.round > 1 ? ' ・ 第' + d.round + '案' : ''}</span></div>
+    P.innerHTML = decisions.length + pendingB().length ? pendingB().map(reviewCard).join('') + decisions.map(d => d.type === 'adoption' ? adoptionCard(d) : `<article class="card" id="card-${d.id}" data-order="${esc(d.orderId)}">
+        <div class="card-h"><span class="pill">${esc(deptName(d.dept) || '部長会議')}</span><span class="pill due">指示#${esc(d.orderNo || '')}${d.round > 1 ? ' ・ 第' + d.round + '案' : ''}</span>${decAge(d.createdAt)}</div>
         <h3>${esc(d.title)}</h3>
         <div class="row rec"><span class="lb">推奨</span><span class="bd">${esc(d.recommendation)}</span></div>
         <div class="row"><span class="lb">選択肢</span><span class="bd">${(d.options || []).map((x, i) => `${'ABC'[i] || '・'}. ${esc(x)}`).join('<br>')}</span></div>
@@ -1232,7 +1239,7 @@ document.addEventListener('toggle', e => { const el = e.target; if (el.matches &
 /** 区分Bの確認待ち(完了した社内の資料・調査。押さなくても業務は止まらない) */
 const pendingB = () => orders.filter(o => o.stage === 'done' && o.adoption && o.adoption.status === 'pending' && o.deliverable);
 function reviewCard(o) {
-  return `<article class="card" id="card-b-${o.id}">
+  return `<article class="card" id="card-b-${o.id}" data-order="${esc(o.id)}">
     <div class="card-h"><span class="pill">確認待ち</span><span class="pill due">指示#${esc(o.no)} ・ ${esc(targetName(o.target))}</span></div>
     <h3>${esc(o.deliverable.title)}</h3>
     <div class="row rec"><span class="lb">要約</span><span class="bd">${esc(o.deliverable.summary)}</span></div>
@@ -1244,8 +1251,8 @@ function reviewCard(o) {
 }
 function adoptionCard(d) {
   const o = orders.find(x => x.id === d.orderId);
-  return `<article class="card" id="card-${d.id}">
-    <div class="card-h"><span class="pill">採用の決裁</span><span class="pill due">指示#${esc(d.orderNo || '')}${d.round > 1 ? ' ・ 修正' + (d.round - 1) + '回目' : ''}</span>${d.risk ? `<span class="pill">危うさ: ${esc(d.risk)}</span>` : ''}</div>
+  return `<article class="card" id="card-${d.id}" data-order="${esc(d.orderId)}">
+    <div class="card-h"><span class="pill">採用の決裁</span><span class="pill due">指示#${esc(d.orderNo || '')}${d.round > 1 ? ' ・ 修正' + (d.round - 1) + '回目' : ''}</span>${decAge(d.createdAt)}${d.risk ? `<span class="pill">危うさ: ${esc(d.risk)}</span>` : ''}</div>
     <h3>${esc(d.title)}</h3>
     <div class="row rec"><span class="lb">要約</span><span class="bd">${esc(d.summary)}</span></div>
     <div class="row dis"><span class="lb">監査役</span><span class="bd">${(d.audit || []).length ? d.audit.map(esc).join('<br>') : '指摘なし'}</span></div>
@@ -1273,7 +1280,7 @@ function renderOrder(o) {
       <div class="sec-h">業務指示</div><div class="pk" style="color:var(--ink)">${esc(o.instruction)}${o.due ? '(期限: ' + esc(o.due) + ')' : ''}</div>
       <div class="sec-h">手順</div><ol class="steps">${steps.map((s, i) => `<li class="${i < doneSteps ? 'done' : i === doneSteps && o.stage !== 'done' ? 'now' : ''}">${esc(s)}</li>`).join('')}</ol>
       <div class="sec-h">相談・判断の記録</div>${(o.events || []).length ? `<ul class="cl">${o.events.map(e => `<li><span class="tm">${esc(hm(toDate(e.at)))}</span><b>${esc(e.from)}</b> → ${esc(e.to)}<br>${esc(e.what)}</li>`).join('')}</ul>` : '<div class="pk">まだ相談はありません</div>'}
-      ${o.stage === 'awaiting_decision' || o.stage === 'awaiting_adoption' ? `<button type="button" class="btn primary" data-go-decide="1" style="flex:none">決裁を開く</button>` : ''}
+      ${o.stage === 'awaiting_decision' || o.stage === 'awaiting_adoption' ? `<button type="button" class="btn primary" data-go-decide="${esc(o.id)}" style="flex:none">この指示の決裁を開く</button>` : ''}
       ${o.stage === 'error' || o.stage === 'paused_quota' ? `<div class="alertbox"><b>止まった理由</b>${esc(pauseText(o))} ${retryBtn(o)}</div>` : ''}
       ${o.stage === 'producing' ? `<div class="outbox wait">成果物を作成しています(Web検索で事実を確かめています)…</div>` : ''}
       ${o.deliverable ? `<div class="sec-h">成果物(完了報告)</div><button type="button" class="outbox" data-view-output="${o.id}"><b>${esc(o.deliverable.title)}</b><span>${esc(o.deliverable.summary)}</span><span class="more">タップして詳細を見る →</span></button>${fileBtn(o, 'file-wide')}` : ''}
@@ -1322,6 +1329,15 @@ function closePanel() {
   if (isMobile()) return setMobileView('sum'); $('#panel').hidden = true; }
 // PCではパネルが全画面を覆うため、パネルの中から入力欄へ移るときは先に閉じる
 function revealCmd() { if (!isMobile() && !$('#panel').hidden) closePanel(); }
+
+/** 決裁タブを開き、指定の指示の決裁カードまで移動して光らせる(指示IDが無ければタブを開くだけ) */
+function goDecide(orderId) {
+  openPanel('decide');
+  const card = orderId && orderId !== '1' && document.querySelector(`#pbody article[data-order="${CSS.escape(orderId)}"]`);
+  if (!card) return;
+  card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  card.classList.remove('focus'); void card.offsetWidth; card.classList.add('focus');
+}
 
 /* ---------- 成果物ビューア ---------- */
 let viewing = null;
@@ -1498,7 +1514,7 @@ document.addEventListener('click', async e => {
   const btn = e.target.closest('button');
   const mic = e.target.closest('[data-mic]'); if (mic) return startVoice(mic.dataset.mic, mic);
   const ov = e.target.closest('[data-view-output]'); if (ov) { const o = orders.find(x => x.id === ov.dataset.viewOutput); if (o) openViewer(o); return; }
-  if (e.target.closest('[data-go-decide]')) { panelTab = 'decide'; renderPanel(); return; }
+  const go = e.target.closest('[data-go-decide]'); if (go) { goDecide(go.dataset.goDecide); return; }
   const tr = e.target.closest('tr[data-focus]');
   if (tr) { const z = ZONES[tr.dataset.focus]; if (z) { const sc = document.querySelector('.scroller'); sc.scrollTo({ left: Math.max(0, z.x * T / W * sc.scrollWidth - 40), behavior: 'smooth' }); } return; }
   if (!btn) return;
@@ -1712,7 +1728,7 @@ auth.onAuthStateChanged(async user => {
     list.forEach(o => { seen[o.id] = o.stage; });
     firstSnapshot = false; orders = list; renderAll();
   }, e => toast('指示を読み込めませんでした: ' + e.message));
-  db.collection('aiDecisions').where('status', '==', 'pending').onSnapshot(snap => { decisions = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderAll(); });
+  db.collection('aiDecisions').where('status', '==', 'pending').onSnapshot(snap => { decisions = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || ''))); renderAll(); }); // 新しい上申から
   db.collection('aiLogs').orderBy('at', 'desc').limit(50).onSnapshot(snap => { logs = snap.docs.map(d => d.data()); renderAll(); });
   db.collection('aiDecisions').orderBy('decidedAt', 'desc').limit(20).onSnapshot(snap => { decided = snap.docs.map(d => ({ id: d.id, ...d.data() })); if (panelTab === 'decide') renderPanel(); });
   db.collection('aiRepVoices').orderBy('createdAt', 'desc').limit(200).onSnapshot(snap => { voices = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderAll(); }, e => console.error(e));
