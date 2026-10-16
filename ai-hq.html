@@ -350,6 +350,9 @@
   .log.kn li{grid-template-columns:52px minmax(0,1fr)}
   .log.kn .pill{justify-self:start;align-self:start}
   .kn-予定{background:var(--accent-soft);color:var(--accent-ink)} .kn-宿題{background:var(--warn-soft);color:var(--warn)} .kn-決定{background:var(--ok-soft);color:var(--ok)} .kn-課題{background:var(--bad-soft);color:var(--bad)} .kn-数字{background:var(--surface-2);color:var(--ink-2)}
+  .sec-h.big{font-size:13.5px;color:var(--ink);margin-top:6px}
+  .blrec{border-top:0;border-radius:8px;padding:6px 8px;margin:4px 0 2px}
+  .bl-approve,.bl-adopt{background:var(--ok-soft)} .bl-drop,.bl-reject{background:var(--surface-2)} .bl-keep{background:var(--warn-soft)}
   .research-toggle{display:flex;align-items:center;gap:6px;cursor:pointer}
   .research-toggle input{width:18px;height:18px}
   .mode{align-self:center;display:inline-flex;background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:2px;flex:none}
@@ -1079,7 +1082,7 @@ function renderCounts() {
   const all = ORG.depts.flatMap(d => d.teams);
   const bad = orders.filter(o => o.stage === 'error' || o.stage === 'paused_quota').length;
   $('#n-alarm').textContent = bad; $('#chip-alarm').hidden = !bad; $('#m-alarm').hidden = !bad;
-  const nd = decisions.length + pendingB().length; // 統括が見るもの: 決裁 + 区分Bの確認待ち
+  const nd = decisions.length; // 決裁待ちの数字は「決めること」だけ(完了報告は見るだけなので数えない)
   $('#n-decide').textContent = nd; $('#m-badge').textContent = nd; $('#m-badge').hidden = !nd;
   $('#tab-n').textContent = nd; $('#tab-n').hidden = !nd;
   const nv = voices.filter(v => (v.status || '未対応') === '未対応').length;
@@ -1127,7 +1130,7 @@ function renderPanelInner() {
       ${bad.length ? `<div class="alertbox"><b>要対応 ${bad.length}件</b>${bad.map(o => `<div class="bad-row">指示#${o.no}: ${esc(pauseText(o))} ${retryBtn(o)}</div>`).join('')}</div>` : ''}
       ${days != null && days <= 7 ? `<div class="alertbox"><b>APIキーの更新時期です</b>期限まであと${days}日(${esc(apiKeyMeta.expiresAt)})。ai-company フォルダで ./キー更新.sh を実行してください。</div>` : ''}
       <div class="mini">
-        <div><div class="k">決裁・確認待ち</div><div class="v">${decisions.length + pendingB().length}<small>件</small></div></div>
+        <div><div class="k">決裁待ち</div><div class="v">${decisions.length}<small>件</small></div><div class="real">完了報告 ${pendingB().length}件</div></div>
         <div><div class="k">進行中の指示</div><div class="v">${orders.filter(o => ACTIVE.includes(o.stage)).length}<small>件</small></div></div>
         <div><div class="k">今日のAI費用</div><div class="v">${costYen().toLocaleString('ja-JP')}<small>円</small><small class="cap">上限300円</small></div></div>
       </div>
@@ -1137,8 +1140,8 @@ function renderPanelInner() {
       <ul class="todo">${decisions.length + pendingB().length ? [...decisions.map(d => `<li><button type="button" class="linkish" data-go-decide="${esc(d.orderId)}">指示#${esc(d.orderNo || '')} ${d.type === 'adoption' ? '採用の決裁: ' : ''}${esc(d.title)}</button></li>`), ...pendingB().map(o => `<li><button type="button" class="linkish" data-go-decide="${esc(o.id)}">指示#${esc(o.no)} 確認待ち: ${esc(o.deliverable.title)}</button></li>`)].join('') : '<li>決裁待ちはありません</li>'}</ul>
       <p class="pk">売上と在籍数は、本部画面の「売上」タブで確認できます。<a href="hq.html?goto=revenue">本部画面を開く</a></p>`;
   } else if (panelTab === 'decide') {
-    P.innerHTML = decisions.length + pendingB().length ? pendingB().map(reviewCard).join('') + decisions.map(d => d.type === 'adoption' ? adoptionCard(d) : `<article class="card" id="card-${d.id}" data-order="${esc(d.orderId)}">
-        <div class="card-h"><span class="pill">${esc(deptName(d.dept) || '部長会議')}</span><span class="pill due">指示#${esc(d.orderNo || '')}${d.round > 1 ? ' ・ 第' + d.round + '案' : ''}</span>${decAge(d.createdAt)}</div>
+    P.innerHTML = backlogBar() + `<div class="sec-h big">決めること(${decisions.length}件)</div>` + (decisions.length ? decisions.map(d => d.type === 'adoption' ? adoptionCard(d) : `<article class="card" id="card-${d.id}" data-order="${esc(d.orderId)}">
+        <div class="card-h"><span class="pill">${esc(deptName(d.dept) || '部長会議')}</span><span class="pill due">指示#${esc(d.orderNo || '')}${d.round > 1 ? ' ・ 第' + d.round + '案' : ''}</span>${decAge(d.createdAt)}</div>${recRow('d:' + d.id)}
         <h3>${esc(d.title)}</h3>
         <div class="row rec"><span class="lb">推奨</span><span class="bd">${esc(d.recommendation)}</span></div>
         <div class="row"><span class="lb">選択肢</span><span class="bd">${(d.options || []).map((x, i) => `${'ABC'[i] || '・'}. ${esc(x)}`).join('<br>')}</span></div>
@@ -1152,7 +1155,8 @@ function renderPanelInner() {
         <div class="actions"><button type="button" class="btn primary" data-act="approve" data-id="${d.id}">承認する</button>
           <button type="button" class="btn ghost" data-act="back" data-id="${d.id}">差し戻す</button>
           <button type="button" class="btn ghost" data-act="drop" data-id="${d.id}">取り下げ</button></div>
-      </article>`).join('') : `<div class="empty"><b>決裁待ちはありません</b>部長会議の結論が届くと、ここに並びます。</div>`;
+      </article>`).join('') : `<div class="empty"><b>決めることはありません</b>統括の判断が要る案件が届くと、ここに並びます。</div>`)
+      + (pendingB().length ? `<div class="sec-h big">目を通すもの ・ 完了報告(${pendingB().length}件)</div><p class="pk">押さなくても業務は止まりません。${7}日たつと自動で「確認なしで完了」になり、記録は残ります(後からでも採用・不採用にできます)。</p>` + pendingB().map(reviewCard).join('') : '');
     P.insertAdjacentHTML('beforeend', decidedHTML());
   } else if (panelTab === 'voices') {
     P.innerHTML = voicesHTML();
@@ -1163,7 +1167,29 @@ function renderPanelInner() {
   }
 }
 /** 決裁済み(直近20件)。各案件から再審査を求められる */
-const RESULT_LABEL = { approve: '承認', cond: '条件付き承認', back: '差し戻し', drop: '取り下げ', adopt: '採用', reject: '不採用', revise: '修正' };
+const RESULT_LABEL = { approve: '承認', cond: '条件付き承認', back: '差し戻し', drop: '取り下げ', adopt: '採用', reject: '不採用', revise: '修正', expired: '期限切れ' };
+/* ---------- 決裁・確認待ちの棚卸し(日曜20時と「今すぐ棚卸し」。AIが1件ずつ勧めを付け、統括は「勧めどおりにまとめて処理」) ---------- */
+let backlog = null;
+const BL_LABEL = { approve: '承認', drop: '取り下げ', adopt: '採用', reject: '不採用', keep: '統括が見て判断' };
+/** その案件がまだ残っているか(決めること・完了報告のどちらか) */
+const blPending = ref => ref.startsWith('d:') ? decisions.some(d => d.id === ref.slice(2)) : pendingB().some(o => o.id === ref.slice(2));
+const blItem = ref => backlog && (backlog.items || []).find(i => i.ref === ref && !i.applied);
+const blTodo = () => (backlog && backlog.items || []).filter(i => !i.applied && i.rec !== 'keep' && blPending(i.ref));
+function recRow(ref) {
+  const it = blItem(ref); if (!it) return '';
+  return `<div class="row rec blrec bl-${esc(it.rec)}"><span class="lb">AIの勧め</span><span class="bd"><b>${esc(BL_LABEL[it.rec] || it.rec)}</b>${it.reason ? ' — ' + esc(it.reason) : ''}</span></div>`;
+}
+/** 完了報告が自動で「確認なしで完了」になるまでの日数 */
+function reportLeft(o) {
+  const d = toDate(o.doneAt || o.createdAt); if (!d) return '';
+  const left = 7 - Math.floor((Date.now() - d) / 864e5);
+  return `<span class="pill when">${left > 0 ? `あと${left}日で自動完了` : 'まもなく自動完了'}</span>`;
+}
+function backlogBar() {
+  const todo = blTodo(), when = backlog && backlog.at ? new Date(backlog.at).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) + `(${esc(backlog.trigger || '')})` : 'まだありません';
+  return `<div class="vboard"><div class="vb-h"><b>棚卸し</b><span class="pk">前回: ${when} ・ 毎週日曜20時に自動</span><span class="sp"></span><button type="button" class="btn" id="bl-review">今すぐ棚卸し</button>${todo.length ? `<button type="button" class="btn primary" id="bl-apply" style="flex:none">勧めどおりにまとめて処理(${todo.length}件)</button>` : ''}</div>
+    <p>AIが1件ずつ「承認・取り下げ・採用・不採用・統括が見て判断」を勧めます。まとめて処理しても「統括が見て判断」のものには触れません。期限を過ぎた案件と、後の指示に引き継がれた完了報告は、毎日自動で外れます。</p></div>`;
+}
 function reopenForm(orderId) {
   return `<button type="button" class="btn ghost" data-reopen-open="${orderId}" style="justify-self:start">再審査を求める</button>
     <div class="reopen" id="ro-${orderId}" hidden><div class="cmd-mini"><label for="rr-${orderId}" class="sr">再審査の理由</label><textarea id="rr-${orderId}" placeholder="見直してほしい点や、再審査の理由を書く(必須)"></textarea>%MIC%</div>
@@ -1255,7 +1281,7 @@ document.addEventListener('toggle', e => { const el = e.target; if (el.matches &
 const pendingB = () => orders.filter(o => o.stage === 'done' && o.adoption && o.adoption.status === 'pending' && o.deliverable);
 function reviewCard(o) {
   return `<article class="card" id="card-b-${o.id}" data-order="${esc(o.id)}">
-    <div class="card-h"><span class="pill">確認待ち</span><span class="pill due">指示#${esc(o.no)} ・ ${esc(targetName(o.target))}</span></div>
+    <div class="card-h"><span class="pill">完了報告</span><span class="pill due">指示#${esc(o.no)} ・ ${esc(targetName(o.target))}</span>${reportLeft(o)}</div>${recRow('o:' + o.id)}
     <h3>${esc(o.deliverable.title)}</h3>
     <div class="row rec"><span class="lb">要約</span><span class="bd">${esc(o.deliverable.summary)}</span></div>
     ${fullDeliverable(o, 'b-' + o.id)}
@@ -1267,7 +1293,7 @@ function reviewCard(o) {
 function adoptionCard(d) {
   const o = orders.find(x => x.id === d.orderId);
   return `<article class="card" id="card-${d.id}" data-order="${esc(d.orderId)}">
-    <div class="card-h"><span class="pill">採用の決裁</span><span class="pill due">指示#${esc(d.orderNo || '')}${d.round > 1 ? ' ・ 修正' + (d.round - 1) + '回目' : ''}</span>${decAge(d.createdAt)}${d.risk ? `<span class="pill">危うさ: ${esc(d.risk)}</span>` : ''}</div>
+    <div class="card-h"><span class="pill">採用の決裁</span><span class="pill due">指示#${esc(d.orderNo || '')}${d.round > 1 ? ' ・ 修正' + (d.round - 1) + '回目' : ''}</span>${decAge(d.createdAt)}${d.risk ? `<span class="pill">危うさ: ${esc(d.risk)}</span>` : ''}</div>${recRow('d:' + d.id)}
     <h3>${esc(d.title)}</h3>
     <div class="row rec"><span class="lb">要約</span><span class="bd">${esc(d.summary)}</span></div>
     <div class="row dis"><span class="lb">監査役</span><span class="bd">${(d.audit || []).length ? d.audit.map(esc).join('<br>') : '指摘なし'}</span></div>
@@ -1286,7 +1312,7 @@ function renderOrder(o) {
   let [label, pct, tone] = STAGE[o.stage] || [o.stage, 0, 'idle'];
   if (o.kind === 'consult') [label, tone] = ['相談', 'ok'];
   else if (o.kind === 'dev') [label, tone] = ['改修依頼', 'warn'];
-  else if (o.stage === 'done' && o.adoption) [label, tone] = { adopted: ['採用', 'ok'], rejected: ['不採用', 'idle'], pending: ['完了(未確認)', 'ok'] }[o.adoption.status] || [label, tone];
+  else if (o.stage === 'done' && o.adoption) [label, tone] = { adopted: ['採用', 'ok'], rejected: ['不採用', 'idle'], pending: ['完了(未確認)', 'ok'], expired: ['確認なしで完了', 'idle'], superseded: ['後の指示に引き継ぎ', 'idle'] }[o.adoption.status] || [label, tone];
   const steps = o.steps || [];
   const doneSteps = o.stage === 'done' ? steps.length : Math.floor(steps.length * pct / 100);
   const open = openOrders.has(o.id);
@@ -1554,6 +1580,21 @@ document.addEventListener('click', async e => {
   if (btn.dataset.vf) { voiceFilter = btn.dataset.vf; renderPanel(); return; }
   if (btn.dataset.vview) { voiceView = btn.dataset.vview; renderPanel(); return; }
   if (btn.dataset.knf) { knFilter = btn.dataset.knf; renderPanel(); return; }
+  if (btn.id === 'bl-review') {
+    btn.disabled = true; btn.textContent = '棚卸ししています…(1分ほど)';
+    try { const r = await call('aiBacklog')({ action: 'review' }); toast(`${r.data.items}件に勧めを付けました${r.data.cleaned ? `(自動で片付け ${r.data.cleaned}件)` : ''}`); }
+    catch (err) { toast('棚卸しできませんでした: ' + err.message); }
+    renderPanel(); return;
+  }
+  if (btn.id === 'bl-apply') {
+    const todo = blTodo();
+    if (!todo.length) return;
+    if (!confirm('次のとおりにまとめて処理します。よろしいですか?\n\n' + todo.map(i => `指示#${i.no || ''} ${i.title} → ${BL_LABEL[i.rec]}${i.reason ? '(' + i.reason + ')' : ''}`).join('\n'))) return;
+    btn.disabled = true; btn.textContent = '処理しています…';
+    try { const r = await call('aiBacklog')({ action: 'apply', refs: todo.map(i => i.ref) }); toast(`${r.data.done}件を処理しました${r.data.skipped ? `(処理済みなどで飛ばした ${r.data.skipped}件)` : ''}`); }
+    catch (err) { toast('処理できませんでした: ' + err.message); }
+    renderPanel(); return;
+  }
   if (btn.id === 'kn-run') {
     btn.disabled = true; btn.textContent = '取り込んでいます…(1〜2分)';
     try { const r = await call('aiKnowledge')({}); toast(`社内メモを${r.data.memos}件足しました(LINE ${r.data.lines}件・議事録 ${r.data.docs}件・資料 ${r.data.pdfs}件)`); }
@@ -1764,6 +1805,7 @@ auth.onAuthStateChanged(async user => {
   const ym = off => { const d = new Date(Date.now() + 9 * 3600e3); d.setUTCDate(1); d.setUTCMonth(d.getUTCMonth() - off); return d.toISOString().slice(0, 7); };
   const knParts = {};
   [0, 1].forEach(off => db.doc('aiMeta/kn_' + ym(off)).onSnapshot(sn => { knParts[off] = sn.exists ? sn.data().items || [] : []; knMemos = [...(knParts[1] || []), ...(knParts[0] || [])]; if (panelTab === 'log') renderPanel(); }, e => console.error(e)));
+  db.doc('aiMeta/backlogReview').onSnapshot(sn => { backlog = sn.exists ? sn.data() : null; if (panelTab === 'decide') renderPanel(); }, e => console.error(e));
   db.doc('aiMeta/knowledgeState').onSnapshot(sn => { knState = sn.exists ? sn.data() : null; if (panelTab === 'log') renderPanel(); }, e => console.error(e));
   db.doc('aiMeta/apiKey').onSnapshot(s => { apiKeyMeta = s.exists ? s.data() : null; if (panelTab === 'sum') renderAll(); });
   if (isMobile()) setMobileView('sum'); // PCは全画面のパネルを自動では開かない(オフィスの画面から始める)
