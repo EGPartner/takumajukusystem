@@ -366,6 +366,8 @@
   .prep p{margin:4px 0 0;white-space:normal;overflow-wrap:anywhere;color:var(--ink-2)}
   .vform .meta input:not([type]){font:inherit;font-size:13px;border:1px solid var(--line-strong);border-radius:8px;padding:5px 6px;background:var(--surface-2);color:var(--ink)}
   .tag.plan-human,.tag.plan-ask{background:var(--warn-soft);color:var(--warn)} .tag.plan-send_staff{background:var(--accent-soft);color:var(--accent-ink)} .tag.plan-ai,.tag.plan-research{background:var(--ok-soft);color:var(--ok)}
+  .share-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:2px 0 4px}
+  .share-row .btn{padding:4px 10px;font-size:12px;border-color:var(--line-strong)}
   .research-toggle{display:flex;align-items:center;gap:6px;cursor:pointer}
   .research-toggle input{width:18px;height:18px}
   .mode{align-self:center;display:inline-flex;background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:2px;flex:none}
@@ -1159,7 +1161,7 @@ function renderPanelInner() {
       <p class="pk">売上と在籍数は、本部画面の「売上」タブで確認できます。<a href="hq.html?goto=revenue">本部画面を開く</a></p>`;
   } else if (panelTab === 'decide') {
     P.innerHTML = backlogBar() + `<div class="sec-h big">決めること(${decisions.length}件)</div>` + (decisions.length ? decisions.map(d => d.type === 'adoption' ? adoptionCard(d) : `<article class="card" id="card-${d.id}" data-order="${esc(d.orderId)}">
-        <div class="card-h"><span class="pill">${esc(deptName(d.dept) || '部長会議')}</span><span class="pill due">指示#${esc(d.orderNo || '')}${d.round > 1 ? ' ・ 第' + d.round + '案' : ''}</span>${decAge(d.createdAt)}</div>${recRow('d:' + d.id)}
+        <div class="card-h"><span class="pill">${esc(deptName(d.dept) || '部長会議')}</span><span class="pill due">指示#${esc(d.orderNo || '')}${d.round > 1 ? ' ・ 第' + d.round + '案' : ''}</span>${decAge(d.createdAt)}</div>${recRow('d:' + d.id)}${shareRow(d)}
         <h3>${esc(d.title)}</h3>
         <div class="row rec"><span class="lb">推奨</span><span class="bd">${esc(d.recommendation)}</span></div>
         <div class="row"><span class="lb">選択肢</span><span class="bd">${(d.options || []).map((x, i) => `${'ABC'[i] || '・'}. ${esc(x)}`).join('<br>')}</span></div>
@@ -1195,6 +1197,11 @@ const BL_LABEL = { approve: '承認', drop: '取り下げ', adopt: '採用', rej
 const blPending = ref => ref.startsWith('d:') ? decisions.some(d => d.id === ref.slice(2)) : pendingB().some(o => o.id === ref.slice(2));
 const blItem = ref => backlog && (backlog.items || []).find(i => i.ref === ref && !i.applied);
 const blTodo = () => (backlog && backlog.items || []).filter(i => !i.applied && i.rec !== 'keep' && blPending(i.ref));
+/** 決裁を社長用LINEグループに共有するボタン(共有済みなら日時も出す) */
+function shareRow(d) {
+  const at = d.sharedAt ? new Date(d.sharedAt).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+  return `<div class="share-row"><button type="button" class="btn ghost" data-share="${esc(d.id)}">${at ? 'もう一度' : ''}社長用LINEに共有</button>${at ? `<span class="pk">共有済み(${esc(at)})</span>` : ''}</div>`;
+}
 function recRow(ref) {
   const it = blItem(ref); if (!it) return '';
   return `<div class="row rec blrec bl-${esc(it.rec)}"><span class="lb">AIの勧め</span><span class="bd"><b>${esc(BL_LABEL[it.rec] || it.rec)}</b>${it.reason ? ' — ' + esc(it.reason) : ''}</span></div>`;
@@ -1353,7 +1360,7 @@ function reviewCard(o) {
 function adoptionCard(d) {
   const o = orders.find(x => x.id === d.orderId);
   return `<article class="card" id="card-${d.id}" data-order="${esc(d.orderId)}">
-    <div class="card-h"><span class="pill">採用の決裁</span><span class="pill due">指示#${esc(d.orderNo || '')}${d.round > 1 ? ' ・ 修正' + (d.round - 1) + '回目' : ''}</span>${decAge(d.createdAt)}${d.risk ? `<span class="pill">危うさ: ${esc(d.risk)}</span>` : ''}</div>${recRow('d:' + d.id)}
+    <div class="card-h"><span class="pill">採用の決裁</span><span class="pill due">指示#${esc(d.orderNo || '')}${d.round > 1 ? ' ・ 修正' + (d.round - 1) + '回目' : ''}</span>${decAge(d.createdAt)}${d.risk ? `<span class="pill">危うさ: ${esc(d.risk)}</span>` : ''}</div>${recRow('d:' + d.id)}${shareRow(d)}
     <h3>${esc(d.title)}</h3>
     <div class="row rec"><span class="lb">要約</span><span class="bd">${esc(d.summary)}</span></div>
     <div class="row dis"><span class="lb">監査役</span><span class="bd">${(d.audit || []).length ? d.audit.map(esc).join('<br>') : '指摘なし'}</span></div>
@@ -1659,6 +1666,14 @@ document.addEventListener('click', async e => {
     btn.disabled = true;
     try { await call('aiTasks')({ action: 'set', id, ...patch }); toast(btn.dataset.tset ? `やること${t.no}を「${btn.dataset.st}」にしました` : '変更しました'); }
     catch (err) { btn.disabled = false; toast('変更できませんでした: ' + err.message); }
+    return;
+  }
+  if (btn.dataset.share) {
+    const d = decisions.find(x => x.id === btn.dataset.share); if (!d) return;
+    if (!confirm(`「${d.title}」を社長用LINEグループに共有しますか?`)) return;
+    btn.disabled = true; btn.textContent = '共有しています…';
+    try { await call('aiBacklog')({ action: 'share', decisionId: d.id }); toast('社長用LINEに共有しました'); }
+    catch (err) { btn.disabled = false; btn.textContent = '社長用LINEに共有'; toast('共有できませんでした: ' + err.message); }
     return;
   }
   if (btn.id === 'bl-review') {
