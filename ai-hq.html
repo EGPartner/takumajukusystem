@@ -297,7 +297,7 @@
   .alertbox .bad-row{margin-top:4px}
   .next-list li{display:flex;gap:8px;align-items:flex-start;justify-content:space-between}
   .next-list .next-go{flex:none;padding:3px 10px;font-size:12px}
-  @media print{.next-go{display:none!important}}
+  @media print{.next-go,.send-staff{display:none!important}}
   .alertbox .btn{margin-left:6px;padding:4px 10px;font-size:12px}
   .decided-h{font-size:12px;font-weight:700;color:var(--ink-2);margin:6px 0 0}
   .dcard{border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:12.5px;display:grid;gap:4px}
@@ -378,6 +378,8 @@
   @keyframes busy-pulse{50%{opacity:.45}}
   @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .busy{background:rgba(8,16,18,.45)} }
   :root[data-theme="dark"] .busy{background:rgba(8,16,18,.45)}
+  .send-staff{margin-top:6px;padding:4px 10px;font-size:12px;border-color:var(--line-strong)}
+  #lc-role{font:inherit;font-size:13px;border:1px solid var(--line-strong);border-radius:8px;padding:5px 6px;background:var(--surface-2);color:var(--ink)}
   .research-toggle{display:flex;align-items:center;gap:6px;cursor:pointer}
   .research-toggle input{width:18px;height:18px}
   .mode{align-self:center;display:inline-flex;background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:2px;flex:none}
@@ -1185,7 +1187,12 @@ function renderPanelInner() {
       <div class="sec-h">次に統括がやること</div>
       ${voices.some(v => (v.status || '未対応') === '未対応') ? `<p class="pk" style="color:var(--ink)">代表の意見(未対応) <b>${voices.filter(v => (v.status || '未対応') === '未対応').length}件</b> — 「代表」タブで確認</p>` : ''}
       <ul class="todo">${decisions.length + pendingB().length ? [...decisions.map(d => `<li><button type="button" class="linkish" data-go-decide="${esc(d.orderId)}">指示#${esc(d.orderNo || '')} ${d.type === 'adoption' ? '採用の決裁: ' : ''}${esc(d.title)}</button></li>`), ...pendingB().map(o => `<li><button type="button" class="linkish" data-go-decide="${esc(o.id)}">指示#${esc(o.no)} 確認待ち: ${esc(o.deliverable.title)}</button></li>`)].join('') : '<li>決裁待ちはありません</li>'}</ul>
-      <p class="pk">売上と在籍数は、本部画面の「売上」タブで確認できます。<a href="hq.html?goto=revenue">本部画面を開く</a></p>`;
+      <p class="pk">売上と在籍数は、本部画面の「売上」タブで確認できます。<a href="hq.html?goto=revenue">本部画面を開く</a></p>
+      <details class="vrules"><summary>LINEで操作する人の登録</summary>
+        <span class="pk">番号を出して、その人のLINEから公式アカウント(1対1)に「登録 番号」と送ってもらいます(番号は10分有効)。登録すると、LINEからスタッフへの連絡などができます。</span>
+        <div class="add"><label class="sr" for="lc-role">役割</label><select id="lc-role"><option value="admin">管理者(統括)</option><option value="rep">代表(タクマ代表)</option><option value="office">事務局</option></select>
+          <label class="sr" for="lc-name">名前</label><input id="lc-name" placeholder="名前(空なら役割の名前)"><button type="button" class="btn" id="lc-make">番号を出す</button></div>
+        <p id="lc-out" class="pk"></p></details>`;
   } else if (panelTab === 'decide') {
     P.innerHTML = backlogBar() + `<div class="sec-h big">決めること(${decisions.length}件)</div>` + (decisions.length ? decisions.map(d => d.type === 'adoption' ? adoptionCard(d) : `<article class="card" id="card-${d.id}" data-order="${esc(d.orderId)}">
         <div class="card-h"><span class="pill">${esc(deptName(d.dept) || '部長会議')}</span><span class="pill due">指示#${esc(d.orderNo || '')}${d.round > 1 ? ' ・ 第' + d.round + '案' : ''}</span>${decAge(d.createdAt)}</div>${recRow('d:' + d.id)}${shareRow(d)}
@@ -1485,7 +1492,7 @@ function deliverableHTML(o, inline) {
   return `
     <p class="v-sum">${esc(d.summary)}</p>
     ${cols.length ? `<div class="v-table"><table><thead><tr>${cols.map(c => `<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>${(d.table.rows || []).map(r => `<tr>${(r.cells || r).map((c, k) => `<td data-label="${esc(cols[k] || '')}" class="${isReq(c) ? 'req' : ''}">${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>` : ''}
-    ${(d.sections || []).map(s => `<section><h4>${esc(s.heading)}</h4><p>${esc(s.body).replace(/\n/g, '<br>')}</p></section>`).join('')}
+    ${(d.sections || []).map((s, i) => `<section><h4>${esc(s.heading)}</h4><p>${esc(s.body).replace(/\n/g, '<br>')}</p>${o.id ? `<button type="button" class="btn ghost send-staff" data-send-staff="${esc(o.id)}" data-si="${i}">スタッフ用LINEに送る</button>` : ''}</section>`).join('')}
     ${sheetEditsHTML(o)}
     ${(d.unverified || []).length ? `<section class="v-warn"><h4>確認が必要なこと</h4><ul>${d.unverified.map(x => `<li>${esc(x)}</li>`).join('')}</ul></section>` : ''}
     ${(d.next || []).length ? `<section><h4>次にやること</h4>${!o.followedUp && (o.plan || []).length ? '<p class="pk">採用すると、右の印のとおりに自動で動きます(人の作業は「やること」に担当・期限つきで入ります)。</p>' : ''}<ul class="next-list">${d.next.map((x, i) => { const fus = (o.followUps || []).filter(f => f.index === i), fu = fus[fus.length - 1]; const go = `<button type="button" class="btn next-go" data-next="${i}" data-oid="${o.id}">指示する</button>`;
@@ -1702,6 +1709,22 @@ document.addEventListener('click', async e => {
     try { await call('aiBacklog')({ action: 'share', decisionId: d.id }); toast('社長用LINEに共有しました'); }
     catch (err) { btn.disabled = false; btn.textContent = '社長用LINEに共有'; toast('共有できませんでした: ' + err.message); }
     return;
+  }
+  if (btn.dataset.sendStaff) {
+    const o = orders.find(x => x.id === btn.dataset.sendStaff), sec = o && o.deliverable && (o.deliverable.sections || [])[Number(btn.dataset.si)];
+    if (!sec) return;
+    if (!confirm('次の文面を、スタッフ用LINEグループに送ります。よろしいですか?\n\n' + sec.body)) return;
+    btn.disabled = true;
+    try { await call('aiBacklog')({ action: 'sendStaff', text: sec.body }); toast('スタッフ用LINEに送りました'); btn.textContent = '送信済み'; }
+    catch (err) { btn.disabled = false; toast('送れませんでした: ' + err.message); }
+    return;
+  }
+  if (btn.id === 'lc-make') {
+    btn.disabled = true;
+    try { const r = await call('aiBacklog')({ action: 'lineCode', role: $('#lc-role').value, name: $('#lc-name').value.trim() });
+      $('#lc-out').innerHTML = `<b style="font-size:18px;letter-spacing:.1em">${esc(r.data.code)}</b><br>${esc(r.data.name)}さん(${esc(r.data.role)})のLINEから、公式アカウントに「登録 ${esc(r.data.code)}」と送ってください。10分以内に。`; }
+    catch (err) { toast('番号を出せませんでした: ' + err.message); }
+    btn.disabled = false; return;
   }
   if (btn.id === 'bl-review') {
     btn.disabled = true; btn.textContent = '棚卸ししています…(1分ほど)';
