@@ -1274,7 +1274,7 @@ const todayJst = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 
 const addDaysYmd = (ymd, n) => new Date(Date.parse(ymd + 'T00:00:00Z') + n * 864e5).toISOString().slice(0, 10);
 const tasksOpen = () => tasks.filter(t => t.status === '未着手');
 const tasksDue = () => tasksOpen().filter(t => !t.old && t.due && t.due <= todayJst());
-const PLAN_LABEL = { ai: 'AIの係が作る', research: 'AIの係が調べる', human: '人の作業', ask: '統括の判断', send_staff: 'スタッフ用LINEに送る', reset_password: 'パスワードの再設定メールを送る' };
+const PLAN_LABEL = { ai: 'AIの係が作る', research: 'AIの係が調べる', human: '人の作業', ask: '統括の判断', send_staff: 'スタッフ用LINEに送る', reset_password: 'パスワードの再設定メールを送る', send_person: '本人にLINEで送る' };
 function taskItem(t) {
   const today = todayJst(), over = t.status === '未着手' && t.due && t.due < today;
   const src = t.source || {}, srcText = src.label || (src.orderNo ? '指示#' + src.orderNo : '');
@@ -1307,7 +1307,7 @@ function tasksHTML() {
 function planTag(o, i) {
   const p = (o.plan || []).find(x => x.index === i); if (!p) return '';
   const meta = [p.owner, p.due && p.due.slice(5).replace('-', '/')].filter(Boolean).join(' ・ ');
-  return ` <span class="tag plan-${esc(p.kind)}">${esc(PLAN_LABEL[p.kind] || p.kind)}${p.team ? ': ' + esc(p.team) : ''}${p.email ? '(' + esc(p.email) + ')' : ''}${meta ? '(' + esc(meta) + ')' : ''}</span>${p.kind === 'send_staff' && p.message ? `<details class="prep"><summary>送る文面</summary><p>${esc(p.message).replace(/\n/g, '<br>')}</p></details>` : ''}${(p.kind === 'human' || p.kind === 'ask') && p.prep ? `<details class="prep"><summary>準備メモ</summary><p>${esc(p.prep).replace(/\n/g, '<br>')}</p></details>` : ''}`;
+  return ` <span class="tag plan-${esc(p.kind)}">${esc(PLAN_LABEL[p.kind] || p.kind)}${p.team ? ': ' + esc(p.team) : ''}${p.email ? '(' + esc(p.email) + ')' : ''}${p.person ? '(' + esc(p.person) + 'さん)' : ''}${meta ? '(' + esc(meta) + ')' : ''}</span>${(p.kind === 'send_staff' || p.kind === 'send_person') && p.message ? `<details class="prep"><summary>送る文面</summary><p>${esc(p.message).replace(/\n/g, '<br>')}</p></details>` : ''}${(p.kind === 'human' || p.kind === 'ask') && p.prep ? `<details class="prep"><summary>準備メモ</summary><p>${esc(p.prep).replace(/\n/g, '<br>')}</p></details>` : ''}`;
 }
 /** 社内メモ: スタッフ用LINEと議事録から、決定・宿題・予定・課題・数字を毎晩整理したもの。指示・相談・部長会議の材料になる */
 function knowledgeHTML() {
@@ -1496,9 +1496,9 @@ function deliverableHTML(o, inline) {
     ${sheetEditsHTML(o)}
     ${(d.unverified || []).length ? `<section class="v-warn"><h4>確認が必要なこと</h4><ul>${d.unverified.map(x => `<li>${esc(x)}</li>`).join('')}</ul></section>` : ''}
     ${(d.next || []).length ? `<section><h4>次にやること</h4>${!o.followedUp && (o.plan || []).length ? '<p class="pk">採用すると、右の印のとおりに自動で動きます(人の作業は「やること」に担当・期限つきで入ります)。</p>' : ''}<ul class="next-list">${d.next.map((x, i) => { const fus = (o.followUps || []).filter(f => f.index === i), fu = fus[fus.length - 1]; const go = `<button type="button" class="btn next-go" data-next="${i}" data-oid="${o.id}">指示する</button>`;
-      const done = fu && (fu.no || fu.task || fu.kind === 'sent' || fu.kind === 'reset_sent');
-      const doneTag = !fu ? '' : fu.task ? `<span class="tag auto-tag">やること#${esc(fu.task)}</span>` : fu.kind === 'sent' ? '<span class="tag auto-tag">LINEに送信済み</span>' : fu.kind === 'reset_sent' ? '<span class="tag auto-tag">再設定メールを送信済み</span>' : fu.no ? `<span class="tag auto-tag">${fu.kind === 'dev' ? '改修依頼' : '自動で指示'}#${esc(fu.no)}</span>` : '';
-      return `<li><span>${esc(x)}${o.followedUp ? (fu && !done ? ` <span class="tag">${{ human: '人が行う', ask: '統括の判断', research: 'Web検索が必要', send_failed: '送信できず', reset_failed: '再設定メールを送れず' }[fu.kind] || ''}</span>` : '') : planTag(o, i)}</span>${done ? doneTag : go}</li>`; }).join('')}</ul></section>` : ''}
+      const done = fu && (fu.no || fu.task || fu.kind === 'sent' || fu.kind === 'reset_sent' || fu.kind === 'person_sent');
+      const doneTag = !fu ? '' : fu.task ? `<span class="tag auto-tag">やること#${esc(fu.task)}</span>` : fu.kind === 'sent' ? '<span class="tag auto-tag">LINEに送信済み</span>' : fu.kind === 'reset_sent' ? '<span class="tag auto-tag">再設定メールを送信済み</span>' : fu.kind === 'person_sent' ? '<span class="tag auto-tag">本人にLINEで送信済み</span>' : fu.no ? `<span class="tag auto-tag">${fu.kind === 'dev' ? '改修依頼' : '自動で指示'}#${esc(fu.no)}</span>` : '';
+      return `<li><span>${esc(x)}${o.followedUp ? (fu && !done ? ` <span class="tag">${{ human: '人が行う', ask: '統括の判断', research: 'Web検索が必要', send_failed: '送信できず', reset_failed: '再設定メールを送れず', person_failed: 'LINEで送れず' }[fu.kind] || ''}</span>` : '') : planTag(o, i)}</span>${done ? doneTag : go}</li>`; }).join('')}</ul></section>` : ''}
     ${(d.sources || []).length ? `<section><h4>出典</h4><ul class="src-list">${d.sources.map(u => safeUrl(u) ? `<li><a href="${esc(u)}" target="_blank" rel="noopener">${esc(u)}</a></li>` : `<li>${esc(u)}</li>`).join('')}</ul></section>` : ''}
     ${inline ? '' : `<section class="v-src"><h4>この成果物のもとになった指示</h4><p>${esc(o.text)}</p><p class="pk">${(o.events || []).map(e => `${esc(hm(toDate(e.at)))} ${esc(e.from)} → ${esc(e.to)}: ${esc(e.what)}`).join('<br>')}</p></section>`}`;
 }
