@@ -471,7 +471,7 @@
     .mic,.send{height:40px}
     .mic{width:40px}
     .route{max-height:42dvh;overflow:auto;box-shadow:none}
-    .mnav{display:grid!important;grid-template-columns:repeat(6,1fr);height:calc(58px + env(safe-area-inset-bottom,0px));padding:4px 4px env(safe-area-inset-bottom,0px);z-index:25;box-shadow:0 -6px 18px -14px rgba(0,0,0,.35)}
+    .mnav{display:grid!important;grid-template-columns:repeat(7,1fr);height:calc(58px + env(safe-area-inset-bottom,0px));padding:4px 4px env(safe-area-inset-bottom,0px);z-index:25;box-shadow:0 -6px 18px -14px rgba(0,0,0,.35)}
     .mnav button{padding:4px 0;font-size:11px;min-height:48px}
     .mnav button.on{color:var(--accent-ink);font-weight:700}
     .mnav button.on svg{stroke-width:2.3}
@@ -607,6 +607,7 @@
         <button type="button" role="tab" data-ptab="decide" aria-selected="false">決裁 <span class="n" id="tab-n">0</span></button>
         <button type="button" role="tab" data-ptab="tasks" aria-selected="false">やること <span class="n" id="tab-t" hidden>0</span></button>
         <button type="button" role="tab" data-ptab="orders" aria-selected="false">指示</button>
+        <button type="button" role="tab" data-ptab="sched" aria-selected="false">予定</button>
         <button type="button" role="tab" data-ptab="voices" aria-selected="false">代表 <span class="n" id="tab-v" hidden>0</span></button>
         <button type="button" role="tab" data-ptab="log" aria-selected="false">記録</button>
         <button type="button" class="close" id="panel-close">× 閉じる</button>
@@ -632,6 +633,7 @@
   <button type="button" data-m="sum"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-6 8 6v8a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/></svg>ホーム<span class="badge" id="m-alarm" hidden>!</span></button>
   <button type="button" data-m="decide"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4 10-10"/></svg>決裁<span class="badge" id="m-badge" hidden>0</span></button>
   <button type="button" data-m="orders"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M4 12h10M4 18h7"/></svg>指示</button>
+  <button type="button" data-m="sched"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>予定</button>
   <button type="button" data-m="voices"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4l-5.2 2.7 1-5.8L3.5 9.2l5.9-.9z"/></svg>代表<span class="badge" id="m-voice" hidden>0</span></button>
   <button type="button" data-m="tasks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 12l3 3 5-6"/></svg>やること<span class="badge" id="m-task" hidden>0</span></button>
   <button type="button" data-m="log"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>記録</button>
@@ -1216,6 +1218,8 @@ function renderPanelInner() {
     P.innerHTML = tasksHTML();
   } else if (panelTab === 'voices') {
     P.innerHTML = voicesHTML();
+  } else if (panelTab === 'sched') {
+    P.innerHTML = schedHTML();
   } else if (panelTab === 'orders') {
     P.innerHTML = orders.length ? `<ul class="orders">${orders.map(renderOrder).join('')}</ul>` : `<div class="empty"><b>まだ指示はありません</b>下の入力欄に業務命令を書くか話すと、AI秘書が宛先を判断して届けます。</div>`;
   } else {
@@ -1439,7 +1443,107 @@ function renderAll() { renderCounts(); renderTicker(); if (!$('#panel').hidden) 
 /* ---------- スマホ: アプリの画面の作り ---------- */
 const mq = matchMedia('(max-width:719px)');
 const isMobile = () => mq.matches;
-const VIEW_TITLE = { decide: '決裁', tasks: 'やること', orders: '指示', voices: '代表の意見', log: '記録' };
+/* ---------- 予定タブ: 文章から練習予定を登録 / 出勤の代理入力(統括だけ。2026-10-25) ----------
+   ・文章(保護者に送った日程など)を貼る → 読み取った「登録案」を表で確認 → チェックしたものだけ登録。登録するまで何も変わらない。
+   ・LINEのグループに入っていないコーチの出勤などを、統括が代わりに記録する(記録はCRMの「出勤記録」にも出る) */
+const sched = { schools: null, schoolId: '', text: '', plan: null, planSchoolId: '', planSchool: '', date: '', day: null, dayLoading: false, who: {} };
+const SC_ACT = { add: '追加', change: '変更', cancel: '休み', same: '変更なし', none: '対象なし', conflict: '要確認', skip: '読めず' };
+const SC_CAN = ['add', 'change', 'cancel'];
+async function schedLoadSchools() {
+  if (sched.schools) return;
+  sched.schools = [];
+  try { sched.schools = (await db.collection('schools').get()).docs.map(d => ({ id: d.id, name: String(d.data().name || d.id).replace(/^タクマ塾\s*/, '') })); } catch (e) { console.error(e); }
+  if (!sched.schoolId && sched.schools.length) sched.schoolId = (sched.schools.find(x => /岩国/.test(x.name)) || sched.schools[0]).id;
+  if (panelTab === 'sched') renderPanel();
+}
+async function schedLoadDay() {
+  if (sched.dayLoading) return;
+  sched.dayLoading = true;
+  try { sched.day = (await call('aiPracticesOn', { quiet: true })({ date: sched.date })).data; }
+  catch (err) { toast('練習の一覧を読めませんでした: ' + err.message); sched.day = { date: sched.date, practices: [], coaches: [] }; }
+  sched.dayLoading = false;
+  if (panelTab === 'sched') renderPanel();
+}
+function schedHTML() {
+  if (!sched.schools) schedLoadSchools();
+  if (!sched.date) sched.date = todayJst();
+  if (!sched.day) schedLoadDay();
+  const schoolOpts = (sched.schools || []).map(x => `<option value="${esc(x.id)}"${x.id === sched.schoolId ? ' selected' : ''}>${esc(x.name)}</option>`).join('');
+  let planHTML = '';
+  if (sched.plan) {
+    const n = sched.plan.filter(it => it.checked && SC_CAN.includes(it.action)).length;
+    const rows = sched.plan.map(it => `<tr><td>${SC_CAN.includes(it.action) ? `<input type="checkbox" data-sc-chk="${it.id}" aria-label="登録する"${it.checked ? ' checked' : ''}>` : ''}</td>
+      <td>${esc(it.dateLabel || '')}</td><td><b>${esc(SC_ACT[it.action] || it.action)}</b></td>
+      <td>${it.before ? esc(it.before) + ' → ' : ''}${esc(it.after || it.line)}${it.note ? `<br><span class="pk">${esc(it.note)}</span>` : ''}</td></tr>`).join('');
+    planHTML = `<div class="sec-h" style="margin-top:10px">登録案(${esc(sched.planSchool)})</div>
+      <table class="sum"><thead><tr><th></th><th>日</th><th>内容</th><th>変更前 → 変更後</th></tr></thead><tbody>${rows}</tbody></table>
+      <div class="actions" style="margin-top:8px"><button type="button" class="btn primary" data-sched="apply"${n ? '' : ' disabled'}>チェックした${n}件を登録する</button>
+        <button type="button" class="btn ghost" data-sched="clear">やめる</button></div>
+      <p class="pk">登録すると、校舎の予定・LINEの「今日の予定」に反映され、シートの表にも約20秒で出ます。担当コーチは、校舎画面で入れてください。</p>`;
+  }
+  const day = sched.day;
+  const dayHTML = !day ? '<p class="pk">読み込み中…</p>' : day.practices.length ? day.practices.map((p, i) => {
+    const who = sched.who[p.key] || '';
+    const opts = '<option value="">コーチを選ぶ</option>' + day.coaches.map(nm => `<option${nm === who ? ' selected' : ''}>${esc(nm)}</option>`).join('');
+    return `<div class="card" style="padding:10px;margin:6px 0"><b>${esc(p.school)} ${esc(p.start)}-${esc(p.end)}</b> <span class="pk">${esc(p.type)}</span>
+      <div class="pk">担当: ${p.staff.length ? esc(p.staff.join('・')) : '未定'}</div>
+      ${p.records.length ? `<div style="margin:4px 0">${p.records.map(r => `<span class="pill">${esc(r.name)}: ${esc(r.label)}</span> <button type="button" class="linkish" data-att-undo="${i}" data-name="${esc(r.name)}">取り消し</button>`).join(' ')}</div>` : ''}
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:6px"><select id="att-who-${i}" aria-label="コーチ">${opts}</select>
+        <button type="button" class="btn" data-att-rec="volunteer" data-i="${i}">参加</button><button type="button" class="btn" data-att-rec="ok" data-i="${i}">出勤</button><button type="button" class="btn ghost" data-att-rec="absent" data-i="${i}">不可</button></div></div>`;
+  }).join('') : '<div class="empty">この日の練習は、システムに登録されていません</div>';
+  return `<div class="sec-h big">文章から練習予定を登録</div>
+    <p class="pk">保護者に送った日程の文章を貼ってください(「11/2(月)19:00-21:00@会場」「11/21(土)--休み--」の形)。読み取った内容を確認してから登録します。</p>
+    <div style="display:grid;gap:6px"><label class="sr" for="sched-school">校舎</label><select id="sched-school">${schoolOpts}</select>
+      <label class="sr" for="sched-text">予定の文章</label><textarea id="sched-text" rows="7" placeholder="【11月のトレーニング日程】&#10;11/2(月)19:00-21:00@会場&#10;11/21(土)--休み--">${esc(sched.text)}</textarea>
+      <div><button type="button" class="btn primary" data-sched="parse">読み取る</button></div></div>
+    ${planHTML}
+    <div class="sec-h big" style="margin-top:16px">出勤の代理入力</div>
+    <p class="pk">LINEのグループに入っていないコーチの出勤を、代わりに記録します。「参加」は担当が未定の練習、「出勤」は担当コーチの出勤、「不可」は欠席です。</p>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px"><label for="att-date" class="pk">日付</label><input type="date" id="att-date" value="${esc(sched.date)}">
+      <button type="button" class="btn ghost" data-sched="reload">更新</button></div>
+    ${dayHTML}`;
+}
+document.addEventListener('input', e => { if (e.target.id === 'sched-text') sched.text = e.target.value; });
+document.addEventListener('change', e => {
+  const t = e.target;
+  if (t.id === 'sched-school') sched.schoolId = t.value;
+  else if (t.dataset && t.dataset.scChk != null && sched.plan) { const it = sched.plan.find(x => String(x.id) === t.dataset.scChk); if (it) { it.checked = t.checked; renderPanel(); } }
+  else if (t.id === 'att-date') { sched.date = t.value || todayJst(); sched.day = null; renderPanel(); }
+  else if (t.id && t.id.startsWith('att-who-') && sched.day) { const p = sched.day.practices[Number(t.id.slice(8))]; if (p) sched.who[p.key] = t.value; }
+});
+document.addEventListener('click', async e => {
+  const b = e.target.closest('[data-sched],[data-att-rec],[data-att-undo]');
+  if (!b) return;
+  const ta = document.getElementById('sched-text'); if (ta) sched.text = ta.value;
+  try {
+    if (b.dataset.sched === 'parse') {
+      if (!sched.schoolId) { toast('校舎を選んでください'); return; }
+      if (!sched.text.trim()) { toast('文章を貼り付けてください'); return; }
+      const r = (await call('aiScheduleParse')({ schoolId: sched.schoolId, text: sched.text })).data;
+      sched.plan = r.items; sched.planSchool = r.school; sched.planSchoolId = sched.schoolId; renderPanel();
+    } else if (b.dataset.sched === 'clear') { sched.plan = null; renderPanel(); }
+    else if (b.dataset.sched === 'reload') { sched.day = null; renderPanel(); }
+    else if (b.dataset.sched === 'apply') {
+      const items = sched.plan.filter(it => it.checked && SC_CAN.includes(it.action));
+      const r = (await call('aiScheduleApply')({ schoolId: sched.planSchoolId, items })).data;
+      toast(`登録しました(追加${r.add}・変更${r.change}・休み${r.cancel})`);
+      sched.plan = null; sched.text = ''; sched.day = null; renderPanel();
+    } else if (b.dataset.attRec) {
+      const p = sched.day && sched.day.practices[Number(b.dataset.i)], name = p && sched.who[p.key];
+      if (!p) return;
+      if (!name) { toast('コーチを選んでください'); return; }
+      await call('aiAttendRecord')({ key: p.key, name, status: b.dataset.attRec });
+      toast(`${name}の記録を入れました`); sched.day = null; renderPanel();
+    } else if (b.dataset.attUndo != null) {
+      const p = sched.day && sched.day.practices[Number(b.dataset.attUndo)];
+      if (!p || !confirm(`${b.dataset.name}の記録を取り消しますか?`)) return;
+      await call('aiAttendUndo')({ key: p.key, name: b.dataset.name });
+      toast('取り消しました'); sched.day = null; renderPanel();
+    }
+  } catch (err) { toast('うまくいきませんでした: ' + (err.message || err)); }
+});
+
+const VIEW_TITLE = { decide: '決裁', tasks: 'やること', orders: '指示', sched: '予定', voices: '代表の意見', log: '記録' };
 let inputMode = 'order';
 function setPlaceholder() { cmdText.placeholder = inputMode === 'consult' ? (isMobile() ? 'CXO秘書に相談' : 'CXO秘書に相談(例: 体験会からの入会率を上げるには?)') : isMobile() ? '業務命令を入力' : '業務命令を入力(例: 岩国の12月の会場を今週中に押さえて)'; }
 mq.addEventListener('change', setPlaceholder);
