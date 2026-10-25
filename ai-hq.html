@@ -1154,6 +1154,7 @@ function renderTicker() {
   run.style.animationDuration = Math.max(60, run.scrollWidth / 2 / 13) + 's';
 }
 let panelTab = 'sum';
+const pcov = { open: false, data: null }; // 保護者のログイン状況(サマリの中)
 function renderPanel() {
   const keep = {}, act = document.activeElement, actId = act && act.closest && act.closest('#pbody') ? act.id : '';
   const pos = actId && act.selectionStart != null ? [act.selectionStart, act.selectionEnd] : null;
@@ -1194,7 +1195,11 @@ function renderPanelInner() {
         <span class="pk">番号を出して、その人のLINEから公式アカウント(1対1)に「登録 番号」と送ってもらいます(番号は10分有効)。登録すると、LINEからスタッフへの連絡などができます。</span>
         <div class="add"><label class="sr" for="lc-role">役割</label><select id="lc-role"><option value="admin">管理者(統括)</option><option value="rep">代表(タクマ代表)</option><option value="office">事務局</option></select>
           <label class="sr" for="lc-name">名前</label><input id="lc-name" placeholder="名前(空なら役割の名前)"><button type="button" class="btn" id="lc-make">番号を出す</button></div>
-        <p id="lc-out" class="pk"></p></details>`;
+        <p id="lc-out" class="pk"></p></details>
+      <details class="vrules" id="pc-box"${pcov.open ? ' open' : ''}><summary>保護者のログイン状況</summary>
+        <span class="pk">今月在籍の塾生ごとに、保護者がログイン登録(承認済み)をしているかを、校舎別に調べます。端末を替えた・ブラウザの記録が消えた人は、登録済みでも今は未ログインの場合があります。</span>
+        <div class="add"><button type="button" class="btn" data-pc="load">${pcov.data ? '調べ直す' : '調べる'}</button></div>
+        ${pcovHTML()}</details>`;
   } else if (panelTab === 'decide') {
     P.innerHTML = backlogBar() + `<div class="sec-h big">決めること(${decisions.length}件)</div>` + (decisions.length ? decisions.map(d => d.type === 'adoption' ? adoptionCard(d) : `<article class="card" id="card-${d.id}" data-order="${esc(d.orderId)}">
         <div class="card-h"><span class="pill">${esc(deptName(d.dept) || '部長会議')}</span><span class="pill due">指示#${esc(d.orderNo || '')}${d.round > 1 ? ' ・ 第' + d.round + '案' : ''}</span>${decAge(d.createdAt)}</div>${recRow('d:' + d.id)}${shareRow(d)}
@@ -1541,6 +1546,24 @@ document.addEventListener('click', async e => {
       toast('取り消しました'); sched.day = null; renderPanel();
     }
   } catch (err) { toast('うまくいきませんでした: ' + (err.message || err)); }
+});
+
+/* ---------- 保護者のログイン状況(サマリの中。2026-10-25) ---------- */
+function pcovHTML() {
+  const d = pcov.data;
+  if (!d) return '';
+  const rows = d.schools.filter(x => x.total || x.waiting.length).map(x => `<div style="margin:8px 0"><b>${esc(x.school)}</b>　登録済み ${x.registered} / 在籍 ${x.total}人${x.total && x.registered === x.total ? ' ✓' : ''}
+      ${x.unregistered.length ? `<div class="pk">未登録(${x.unregistered.length}人): ${x.unregistered.map(u => esc(u.name)).join('、')}</div>` : ''}
+      ${x.waiting.length ? `<div class="pk">名簿と合わない名前で申し込み済み(${x.waiting.length}件): ${x.waiting.map(w => esc(w.name) + (w.status === 'rejected' ? '(断り)' : '')).join('、')}</div>` : ''}</div>`).join('');
+  const tot = d.schools.reduce((a, x) => ({ t: a.t + x.total, r: a.r + x.registered }), { t: 0, r: 0 });
+  return `<p class="pk" style="color:var(--ink)"><b>${esc(d.month)}の在籍 ${tot.t}人のうち、${tot.r}人の保護者が登録済み(未登録 ${tot.t - tot.r}人)</b></p>${rows || '<div class="empty">在籍の塾生がいません</div>'}`;
+}
+document.addEventListener('toggle', e => { if (e.target && e.target.id === 'pc-box') pcov.open = e.target.open; }, true);
+document.addEventListener('click', async e => {
+  const b = e.target.closest('[data-pc="load"]');
+  if (!b) return;
+  try { pcov.data = (await call('aiParentCoverage')({})).data; pcov.open = true; renderPanel(); }
+  catch (err) { toast('調べられませんでした: ' + (err.message || err)); }
 });
 
 const VIEW_TITLE = { decide: '決裁', tasks: 'やること', orders: '指示', sched: '予定', voices: '代表の意見', log: '記録' };
