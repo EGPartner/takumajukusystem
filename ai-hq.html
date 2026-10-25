@@ -1155,6 +1155,8 @@ function renderTicker() {
 }
 let panelTab = 'sum';
 const pcov = { open: false, data: null }; // 保護者のログイン状況(サマリの中)
+let isSysAdmin = false; // システム管理者か(AI本部を使える人を増やせるのは、この人だけ)
+const ga = { open: false, email: '', name: '', msg: '' };
 function renderPanel() {
   const keep = {}, act = document.activeElement, actId = act && act.closest && act.closest('#pbody') ? act.id : '';
   const pos = actId && act.selectionStart != null ? [act.selectionStart, act.selectionEnd] : null;
@@ -1199,7 +1201,12 @@ function renderPanelInner() {
       <details class="vrules" id="pc-box"${pcov.open ? ' open' : ''}><summary>保護者のログイン状況</summary>
         <span class="pk">今月在籍の塾生ごとに、保護者がログイン登録(承認済み)をしているかを、校舎別に調べます。端末を替えた・ブラウザの記録が消えた人は、登録済みでも今は未ログインの場合があります。</span>
         <div class="add"><button type="button" class="btn" data-pc="load">${pcov.data ? '調べ直す' : '調べる'}</button></div>
-        ${pcovHTML()}</details>`;
+        ${pcovHTML()}</details>
+      ${isSysAdmin ? `<details class="vrules" id="ga-box"${ga.open ? ' open' : ''}><summary>AI本部を使える人を増やす</summary>
+        <span class="pk">すでにログインできる人(校舎のスタッフなど)を、AI本部を使える「運用管理者」にします。権限は統括と同じです(全校の閲覧・指示・決裁・LINE送信の承認)。ログインに使っているメールアドレスを入れてください。</span>
+        <div class="add"><label class="sr" for="ga-email">メールアドレス</label><input id="ga-email" type="email" placeholder="ログイン用のメールアドレス" value="${esc(ga.email)}">
+          <label class="sr" for="ga-name">名前</label><input id="ga-name" placeholder="名前(任意)" value="${esc(ga.name)}"><button type="button" class="btn" data-ga="grant">運用管理者にする</button></div>
+        <p class="pk">${esc(ga.msg)}</p></details>` : ''}`;
   } else if (panelTab === 'decide') {
     P.innerHTML = backlogBar() + `<div class="sec-h big">決めること(${decisions.length}件)</div>` + (decisions.length ? decisions.map(d => d.type === 'adoption' ? adoptionCard(d) : `<article class="card" id="card-${d.id}" data-order="${esc(d.orderId)}">
         <div class="card-h"><span class="pill">${esc(deptName(d.dept) || '部長会議')}</span><span class="pill due">指示#${esc(d.orderNo || '')}${d.round > 1 ? ' ・ 第' + d.round + '案' : ''}</span>${decAge(d.createdAt)}</div>${recRow('d:' + d.id)}${shareRow(d)}
@@ -1564,6 +1571,20 @@ document.addEventListener('click', async e => {
   if (!b) return;
   try { pcov.data = (await call('aiParentCoverage')({})).data; pcov.open = true; renderPanel(); }
   catch (err) { toast('調べられませんでした: ' + (err.message || err)); }
+});
+
+document.addEventListener('toggle', e => { if (e.target && e.target.id === 'ga-box') ga.open = e.target.open; }, true);
+document.addEventListener('input', e => { if (e.target.id === 'ga-email') ga.email = e.target.value; if (e.target.id === 'ga-name') ga.name = e.target.value; });
+document.addEventListener('click', async e => {
+  const b = e.target.closest('[data-ga="grant"]');
+  if (!b) return;
+  if (!ga.email.trim()) { toast('メールアドレスを入力してください'); return; }
+  try {
+    const r = (await call('aiGrantAdmin')({ email: ga.email, name: ga.name })).data;
+    ga.msg = r.already ? `${r.email} は、すでに運用管理者です。` : `${r.email} を運用管理者にしました。次にAI本部を開くときから使えます。`;
+    if (!r.already) { ga.email = ''; ga.name = ''; }
+  } catch (err) { ga.msg = '追加できませんでした: ' + (err.message || err); }
+  ga.open = true; renderPanel();
 });
 
 const VIEW_TITLE = { decide: '決裁', tasks: 'やること', orders: '指示', sched: '予定', voices: '代表の意見', log: '記録' };
@@ -2048,6 +2069,7 @@ auth.onAuthStateChanged(async user => {
   if (!user || user.isAnonymous) return showGate('AI本部は統括(本部の管理者)専用です。管理システムにログインしてから開いてください。');
   const [a, s] = await Promise.all([db.doc('hqAdmins/' + user.uid).get().catch(() => null), db.doc('systemAdmins/' + user.uid).get().catch(() => null)]);
   if (!(a && a.exists) && !(s && s.exists)) return showGate('このアカウントには統括(本部の管理者)の権限がありません。');
+  isSysAdmin = !!(s && s.exists);
   if (started) return;
   started = true;
   $('#gate').hidden = true; $('#app').hidden = false;
