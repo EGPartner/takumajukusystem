@@ -1716,19 +1716,19 @@ function renderRoute() {
   if (draft.loading) { el.innerHTML = `<div class="h"><span class="pill">AI秘書</span><span>宛先と業務指示を考えています…(10秒ほど)</span></div><div class="q">「${esc(draft.text)}」</div>`; return; }
   const opts = targets().map(t => `<option value="${t.id}"${t.id === draft.target ? ' selected' : ''}>${esc(t.kind === 'meeting' ? '部長会議' : t.unit + ' ' + t.name)}</option>`).join('');
   el.innerHTML = `<div class="h"><span class="pill">AI秘書</span><span class="to">→ ${esc(targetName(draft.target))}</span><span class="tag">${draft.by === 'ai' ? 'AIが判断' : draft.by === 'manual' ? '統括が変更' : 'キーワードで判断'}${draft.reason ? ' ・ ' + esc(draft.reason) : ''}</span></div>
+    <div class="q">入力した内容: 「${esc(draft.text)}」</div>
     <div>${esc(draft.instruction)}${draft.due ? ` <b>(期限: ${esc(draft.due)})</b>` : ''}</div>
     ${draft.needsDecision ? '<div class="q">統括の判断が必要になりそうなため、途中で部長・部長会議を経て決裁に上がります</div>' : ''}
     <label class="q research-toggle"><input type="checkbox" id="route-research" ${draft.needsResearch ? 'checked' : ''}> Web検索で調べる <span class="tag">${draft.needsResearch ? '1件 約10〜25円ふえます' : '外の情報が要るときだけ'}</span></label>
-    <div class="h"><label class="tag" for="route-sel">宛先</label><select id="route-sel">${opts}</select><span class="spacer"></span><button type="button" class="btn ghost" id="route-cancel">取り消す</button><button type="button" class="btn primary" id="route-now">すぐ送る</button></div>
-    <div class="bar2"><i id="route-bar"></i></div>`;
-  const bar = $('#route-bar'); bar.style.width = '0%';
-  requestAnimationFrame(() => requestAnimationFrame(() => { bar.style.transition = `width ${Math.max(0, draft.deadline - performance.now())}ms linear`; bar.style.width = '100%'; }));
+    <div class="h"><label class="tag" for="route-sel">宛先</label><select id="route-sel">${opts}</select><span class="spacer"></span><button type="button" class="btn ghost" id="route-edit">直す</button><button type="button" class="btn ghost" id="route-cancel">取り消す</button><button type="button" class="btn primary" id="route-now">これでOK、送る</button></div>
+    <div class="h"><b>この内容で送ってよいですか?</b><span class="tag">「送る」を押すまで、何も実行されません</span></div>`;
   $('#route-sel').addEventListener('change', e => { draft.target = e.target.value; draft.by = 'manual'; draft.reason = ''; startCountdown(); });
   $('#route-research').addEventListener('change', e => { draft.needsResearch = e.target.checked; startCountdown(); });
+  $('#route-edit').addEventListener('click', () => { const t = draft.text; draft = null; renderRoute(); cmdText.value = t; autosize(); cmdText.focus(); toast('入力欄に戻しました。直してから、もう一度送ってください'); });
   $('#route-cancel').addEventListener('click', () => { clearTimeout(draftTimer); draft = null; renderRoute(); toast('業務命令を取り消しました'); });
   $('#route-now').addEventListener('click', sendDraft);
 }
-function startCountdown() { clearTimeout(draftTimer); draft.deadline = performance.now() + CONFIRM_MS; draftTimer = setTimeout(sendDraft, CONFIRM_MS); renderRoute(); }
+function startCountdown() { clearTimeout(draftTimer); renderRoute(); } // 以前は3秒で自動送信していた。今は「これでOK、送る」を押すまで送らない
 async function sendDraft() {
   clearTimeout(draftTimer);
   const d = draft; if (!d || d.loading) return;
@@ -1741,7 +1741,6 @@ async function sendDraft() {
   catch (e) { toast('送信できませんでした: ' + e.message); }
 }
 async function submitCommand(text) {
-  if (draft && !draft.loading) await sendDraft();
   draft = { text, loading: true }; renderRoute(); say(secretary, 'talk', 10);
   try {
     const r = await call('aiDraftOrder')({ text });
@@ -1777,6 +1776,7 @@ $('#cmd').addEventListener('submit', e => {
   e.preventDefault();
   const text = cmdText.value.trim();
   if (!text) { cmdText.focus(); toast(inputMode === 'consult' ? '相談の内容を入力するか、マイクで話してください' : '業務命令を入力するか、マイクで話してください'); return; }
+  if (inputMode !== 'consult' && draft) { toast('表示中の指示を、先に「送る」か「取り消す」で決めてください'); return; }
   cmdText.value = ''; autosize();
   if (inputMode === 'consult') consultCommand(text); else submitCommand(text);
 });
