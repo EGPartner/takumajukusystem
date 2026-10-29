@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>タクマ塾｜サッカーが、人生の武器になる。</title>
+<meta name="description" content="タクマ塾は、全国7拠点で選手の未来を育てるサッカー塾。入塾・体験のお申し込みはこちら。">
+<style>
+:root{--black:#0a0a0a;--g1:#141414;--g2:#1e1e1e;--g3:#2a2a2a;--g4:#8c8c8c;--g5:#cfcfcf;--g6:#f2f2f2;--white:#fff}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{background:var(--black);color:var(--white);font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue","Hiragino Sans","Noto Sans JP",sans-serif;line-height:1.8;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+img{display:block;max-width:100%}
+a{color:inherit}
+.in{width:min(1120px,100% - 40px);margin-inline:auto}
+.eyebrow{font-size:12px;font-weight:800;letter-spacing:.22em;color:var(--g4);text-transform:uppercase}
+h2.t{font-size:clamp(30px,6.4vw,60px);font-weight:900;letter-spacing:-.02em;line-height:1.2;margin-top:14px;text-wrap:balance}
+.lead{color:var(--g5);font-size:clamp(15px,2.2vw,18px);max-width:34em;margin-top:20px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:56px;padding:0 32px;border-radius:999px;font-weight:800;font-size:16px;text-decoration:none;transition:transform .2s,background .2s,color .2s}
+.btn.w{background:var(--white);color:var(--black)}
+.btn.w:hover{transform:translateY(-2px);background:var(--g6)}
+.btn.o{border:1.5px solid rgba(255,255,255,.55);color:var(--white)}
+.btn.o:hover{background:rgba(255,255,255,.1)}
+.btn.k{background:var(--black);color:var(--white)}
+/* nav */
+.nav{position:fixed;inset:0 0 auto 0;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:14px max(20px,env(safe-area-inset-left));padding-top:calc(14px + env(safe-area-inset-top));transition:background .3s,backdrop-filter .3s}
+.nav.s{background:rgba(10,10,10,.82);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.logo{font-weight:900;letter-spacing:.06em;font-size:18px;text-decoration:none}
+.logo small{display:block;font-size:9px;letter-spacing:.3em;color:var(--g4);font-weight:800}
+.nav .btn{min-height:42px;padding:0 20px;font-size:14px}
+/* hero */
+.hero{position:relative;min-height:100svh;display:flex;flex-direction:column;justify-content:space-between;background:var(--black) url(lp-hero.jpg) center bottom/cover no-repeat}
+.hero::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,#000 0%,rgba(0,0,0,.85) 28%,rgba(0,0,0,0) 60%,rgba(0,0,0,.55) 100%)}
+.hero .in{position:relative;padding-top:112px}
+.hero h1{font-size:clamp(30px,9.2vw,104px);font-weight:900;letter-spacing:-.035em;line-height:1.08;margin-top:18px}
+.hero p.sub{margin-top:20px;color:var(--g5);font-size:clamp(15px,2.2vw,19px);max-width:26em}
+.hero .cta{position:relative;padding-bottom:calc(40px + env(safe-area-inset-bottom));display:flex;gap:12px;flex-wrap:wrap}
+.scroll{position:absolute;right:20px;bottom:calc(46px + env(safe-area-inset-bottom));writing-mode:vertical-rl;font-size:11px;letter-spacing:.3em;color:var(--g4)}
+@media (min-width:900px){.hero{background-position:70% bottom}.hero::before{background:linear-gradient(90deg,#000 0%,rgba(0,0,0,.85) 38%,rgba(0,0,0,0) 70%)}}
+/* stats */
+.stats{border-block:1px solid var(--g3)}
+.stats .in{display:grid;grid-template-columns:repeat(3,1fr)}
+.stat{padding:34px 8px;text-align:center;border-left:1px solid var(--g3)}
+.stat:first-child{border-left:0}
+.stat b{display:block;font-size:clamp(34px,9vw,76px);font-weight:900;letter-spacing:-.03em;line-height:1}
+.stat span{display:block;margin-top:10px;font-size:12px;color:var(--g4);font-weight:700;letter-spacing:.08em}
+/* sections */
+section{padding:clamp(72px,12vw,140px) 0}
+.light{background:var(--g6);color:var(--black)}
+.light .eyebrow{color:#6b6b6b}.light .lead{color:#4a4a4a}
+.cards{display:grid;gap:14px;margin-top:44px;grid-template-columns:1fr}
+@media (min-width:760px){.cards.c2{grid-template-columns:1fr 1fr}.cards.c3{grid-template-columns:repeat(3,1fr)}}
+.card{background:var(--white);border-radius:20px;padding:30px 26px;color:var(--black)}
+.card .n{font-size:13px;font-weight:900;letter-spacing:.14em;color:#8c8c8c}
+.card h3{font-size:20px;font-weight:900;line-height:1.5;margin-top:10px}
+/* value */
+.val{display:grid;gap:0;margin-top:48px;border-top:1px solid var(--g3)}
+.val article{display:grid;gap:12px;padding:36px 0;border-bottom:1px solid var(--g3)}
+@media (min-width:760px){.val article{grid-template-columns:120px 1fr 1.1fr;gap:40px;align-items:start}}
+.val .no{font-size:clamp(44px,8vw,80px);font-weight:900;color:var(--g3);line-height:1;letter-spacing:-.04em}
+.val h3{font-size:clamp(22px,3.4vw,32px);font-weight:900;line-height:1.35}
+.val h3 small{display:block;font-size:12px;letter-spacing:.2em;color:var(--g4);margin-bottom:8px;font-weight:800}
+.val p{color:var(--g5)}
+/* future */
+.steps{display:grid;gap:0;margin-top:48px}
+.step{display:grid;grid-template-columns:44px 1fr;gap:18px;padding-bottom:34px;position:relative}
+.step::before{content:"";position:absolute;left:21px;top:44px;bottom:0;width:2px;background:var(--black);opacity:.2}
+.step:last-child::before{display:none}
+.step i{width:44px;height:44px;border-radius:50%;background:var(--black);color:#fff;display:flex;align-items:center;justify-content:center;font-style:normal;font-weight:900}
+.step h3{font-size:22px;font-weight:900;line-height:1.4}
+.step small{display:block;color:#6b6b6b;font-weight:800;letter-spacing:.12em;font-size:12px}
+.step p{color:#4a4a4a;margin-top:6px}
+@media (min-width:860px){.steps{grid-template-columns:repeat(3,1fr);gap:28px}.step{grid-template-columns:1fr;padding-bottom:0}.step::before{left:44px;right:-28px;top:21px;bottom:auto;width:auto;height:2px}}
+/* coach */
+.coach{display:grid;gap:36px;align-items:center}
+@media (min-width:860px){.coach{grid-template-columns:1fr 1fr;gap:72px}}
+.coach img{width:100%;border-radius:20px;filter:grayscale(1) contrast(1.05)}
+.coach .name{margin-top:26px;font-size:15px;color:var(--g4)}
+.coach .name b{display:block;font-size:30px;color:var(--white);font-weight:900;letter-spacing:.04em}
+/* base */
+.base{margin-top:44px;border-top:1px solid var(--g3)}
+.base div{display:grid;grid-template-columns:7.5em 1fr;gap:12px;padding:22px 0;border-bottom:1px solid var(--g3);align-items:baseline}
+.base b{font-size:clamp(20px,3vw,28px);font-weight:900}
+.base span{color:var(--g5);font-size:15px}
+/* partners */
+.wide{margin-top:44px;border-radius:20px;overflow:hidden}
+.wide img{width:100%;height:auto}
+/* flow */
+.flow{display:grid;gap:14px;margin-top:44px}
+@media (min-width:760px){.flow{grid-template-columns:repeat(3,1fr)}}
+.flow div{background:var(--g1);border:1px solid var(--g3);border-radius:20px;padding:28px 24px}
+.flow i{font-style:normal;font-weight:900;font-size:13px;letter-spacing:.16em;color:var(--g4)}
+.flow h3{font-size:20px;margin-top:8px;font-weight:900}
+.flow p{color:var(--g5);font-size:15px;margin-top:6px}
+/* cta */
+.final{background:var(--white);color:var(--black);text-align:center;padding:clamp(80px,13vw,150px) 0}
+.final h2{font-size:clamp(32px,8vw,76px);font-weight:900;letter-spacing:-.03em;line-height:1.15;text-wrap:balance}
+.final p{color:#4a4a4a;margin:22px auto 34px;max-width:28em}
+footer{padding:40px 0 calc(48px + env(safe-area-inset-bottom));color:var(--g4);font-size:13px}
+footer .in{display:flex;flex-wrap:wrap;gap:12px 28px;justify-content:space-between;align-items:center}
+footer a{color:var(--g5)}
+.rv{opacity:0;transform:translateY(26px);transition:opacity .8s,transform .8s}
+.rv.on{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){.rv{opacity:1;transform:none;transition:none}html{scroll-behavior:auto}}
+.sticky{position:fixed;left:16px;right:16px;bottom:calc(14px + env(safe-area-inset-bottom));z-index:40;display:none}
+.sticky .btn{width:100%;box-shadow:0 6px 24px rgba(0,0,0,.45)}
+@media (max-width:759px){.sticky.on{display:block}.nav .btn{display:none}}
+</style>
+</head>
+<body>
+
+<nav class="nav" id="nav">
+  <a class="logo" href="#top">タクマ塾<small>TAKUMA JUKU</small></a>
+  <a class="btn w" href="https://forms.gle/nn3Tq1RVYcLpsRvp7" target="_blank" rel="noopener">入塾・体験申し込み</a>
+</nav>
+
+<header class="hero" id="top">
+  <div class="in">
+    <div class="eyebrow">Takuma Juku — Football Academy</div>
+    <h1>サッカーが、<br>人生の武器になる。</h1>
+    <p class="sub">技術・判断・心。全国7拠点で、選手一人ひとりの未来を、本気で育てる。</p>
+  </div>
+  <div class="in cta">
+    <a class="btn w" href="https://forms.gle/nn3Tq1RVYcLpsRvp7" target="_blank" rel="noopener">入塾・体験申し込み ▶</a>
+    <a class="btn o" href="#base">拠点を見る</a>
+  </div>
+  <div class="scroll">SCROLL</div>
+</header>
+
+<div class="stats"><div class="in">
+  <div class="stat"><b>7</b><span>拠点</span></div>
+  <div class="stat"><b>5</b><span>都県</span></div>
+  <div class="stat"><b>1</b><span>年に一度の大舞台</span></div>
+</div></div>
+
+<section class="light" id="problem">
+  <div class="in rv">
+    <div class="eyebrow">Challenge</div>
+    <h2 class="t">「あと一歩」の壁に、<br>立っていませんか。</h2>
+    <p class="lead">練習しているのに、なぜか試合で変われない。その悩みには、理由があります。</p>
+    <div class="cards c2">
+      <div class="card"><div class="n">01</div><h3>練習量はあるのに、試合で活かせない</h3></div>
+      <div class="card"><div class="n">02</div><h3>ミスを恐れて、思い切ったプレーができない</h3></div>
+      <div class="card"><div class="n">03</div><h3>チームでは教わらない「考え方」を知りたい</h3></div>
+      <div class="card"><div class="n">04</div><h3>将来、上のステージで戦える力をつけたい</h3></div>
+    </div>
+  </div>
+</section>
+
+<section id="value">
+  <div class="in rv">
+    <div class="eyebrow">Value</div>
+    <h2 class="t">タクマ塾が、<br>選手に届けること。</h2>
+    <div class="val">
+      <article>
+        <div class="no">01</div>
+        <h3><small>SKILL</small>どこでも通用する、<br>確かな「個の力」。</h3>
+        <p>正しい基本を、徹底して身につける。ボールを扱う技術から、体の使い方まで。どのチームに行っても、自分の武器として使える力を育てます。</p>
+      </article>
+      <article>
+        <div class="no">02</div>
+        <h3><small>THINK</small>見て、考えて、<br>自分で決める。</h3>
+        <p>言われたことをこなすだけでなく、状況を見て、自分で判断する。サッカーで鍛えた「考える力」は、これからの人生の土台になります。</p>
+      </article>
+      <article>
+        <div class="no">03</div>
+        <h3><small>STAGE</small>本気になれる、<br>本物の舞台。</h3>
+        <p>年に一度の福井遠征。デリアテール杯での選抜マッチ。普段の練習を超える舞台が、選手を大きく成長させます。</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="light" id="future">
+  <div class="in rv">
+    <div class="eyebrow">Future</div>
+    <h2 class="t">入塾した、その先へ。</h2>
+    <p class="lead">タクマ塾で積み重ねた時間は、ピッチの外でも、選手を支え続けます。</p>
+    <div class="steps">
+      <div class="step"><i>1</i><div><small>START</small><h3>基礎と習慣が身につく</h3><p>正しい基本と、練習への向き合い方。成長の土台をつくります。</p></div></div>
+      <div class="step"><i>2</i><div><small>GROW</small><h3>プレーと自信が変わる</h3><p>試合での動きが変わり、自分から挑戦できる選手に。</p></div></div>
+      <div class="step"><i>3</i><div><small>NEXT</small><h3>選べる未来が広がる</h3><p>上のカテゴリー、強豪チーム、新しい挑戦へ。可能性が広がります。</p></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="coach">
+  <div class="in coach">
+    <img class="rv" src="lp-takuma.jpg" alt="タクマ塾 塾長 タクマ" loading="lazy">
+    <div class="rv">
+      <div class="eyebrow">Head Coach</div>
+      <h2 class="t">選手と、本気で向き合う。</h2>
+      <p class="lead">技術だけでなく、考え方や姿勢まで。選手一人ひとりの可能性を信じて、本気で向き合うこと。それが、タクマ塾の指導の原点です。</p>
+      <div class="name">塾長<b>タクマ</b></div>
+    </div>
+  </div>
+</section>
+
+<section id="base" style="background:var(--g1)">
+  <div class="in rv">
+    <div class="eyebrow">Locations</div>
+    <h2 class="t">全国に、<br>タクマ塾がある。</h2>
+    <p class="lead">お住まいの近くの拠点で、同じ指導を受けられます。</p>
+    <div class="base">
+      <div><b>福井</b><span>坂井・福井校（エリート）／坂井校（Sエリート）／福井校（Sエリート）</span></div>
+      <div><b>奈良</b><span>奈良校（低学年・高学年）</span></div>
+      <div><b>静岡</b><span>静岡校</span></div>
+      <div><b>山口</b><span>岩国校</span></div>
+      <div><b>愛知</b><span>名古屋校</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="partner">
+  <div class="in rv">
+    <div class="eyebrow">Partners</div>
+    <h2 class="t">選手の背中を押す、<br>たくさんの仲間。</h2>
+    <p class="lead">タクマ塾の活動は、地域の企業・パートナーの皆さまに支えられています。</p>
+    <div class="wide"><img src="lp-jersey.jpg" alt="タクマ塾 ユニフォーム" loading="lazy"></div>
+  </div>
+</section>
+
+<section id="flow" style="padding-top:0">
+  <div class="in rv">
+    <div class="eyebrow">How to join</div>
+    <h2 class="t">はじめかたは、<br>かんたん3ステップ。</h2>
+    <div class="flow">
+      <div><i>STEP 1</i><h3>フォームで申し込み</h3><p>入塾・体験のお申し込みフォームから、必要事項を入力します。</p></div>
+      <div><i>STEP 2</i><h3>体験に参加</h3><p>まずは体験で、タクマ塾の練習を体感してください。</p></div>
+      <div><i>STEP 3</i><h3>入塾</h3><p>納得できたら、入塾。仲間と一緒に、挑戦が始まります。</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="final" id="entry">
+  <div class="in rv">
+    <h2>その一歩が、<br>未来を変える。</h2>
+    <p>まずは、体験から。お子さまの可能性を、一緒に広げましょう。</p>
+    <a class="btn k" href="https://forms.gle/nn3Tq1RVYcLpsRvp7" target="_blank" rel="noopener">入塾・体験申し込み ▶</a>
+  </div>
+</section>
+
+<footer><div class="in">
+  <span>© タクマ塾</span>
+  <a href="index.html">在籍中の保護者の方・スタッフ ログイン</a>
+</div></footer>
+
+<div class="sticky" id="sticky"><a class="btn w" href="https://forms.gle/nn3Tq1RVYcLpsRvp7" target="_blank" rel="noopener">入塾・体験申し込み ▶</a></div>
+
+<script>
+(function(){
+  var nav=document.getElementById('nav'),st=document.getElementById('sticky');
+  function onS(){var y=window.scrollY||0;nav.classList.toggle('s',y>40);st.classList.toggle('on',y>window.innerHeight*.7&&y<document.body.scrollHeight-window.innerHeight*1.6)}
+  window.addEventListener('scroll',onS,{passive:true});onS();
+  var els=document.querySelectorAll('.rv');
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('on');io.unobserve(e.target)}})},{threshold:.12});
+    els.forEach(function(e){io.observe(e)});
+  }else{els.forEach(function(e){e.classList.add('on')})}
+})();
+</script>
+</body>
+</html>
