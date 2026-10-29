@@ -10,7 +10,7 @@
 :root{--black:#0a0a0a;--g1:#141414;--g2:#1e1e1e;--g3:#2a2a2a;--g4:#8c8c8c;--g5:#cfcfcf;--g6:#f2f2f2;--white:#fff}
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
-body{background:var(--black);color:var(--white);font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue","Hiragino Sans","Noto Sans JP",sans-serif;line-height:1.8;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body{background:var(--black);color:var(--white);font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue","Hiragino Sans","Noto Sans JP",sans-serif;line-height:1.8;-webkit-font-smoothing:antialiased;overflow-x:hidden;line-break:strict;word-break:auto-phrase;overflow-wrap:break-word}
 img{display:block;max-width:100%}
 a{color:inherit}
 .in{width:min(1120px,100% - 40px);margin-inline:auto}
@@ -23,6 +23,8 @@ h2.t{font-size:clamp(30px,6.4vw,60px);font-weight:900;letter-spacing:-.02em;line
 .btn.o{border:1.5px solid rgba(255,255,255,.55);color:var(--white)}
 .btn.o:hover{background:rgba(255,255,255,.1)}
 .btn.k{background:var(--black);color:var(--white)}
+p,h3,.lead{text-wrap:pretty}
+.lead,.hero p.sub,.final p,.coach .lead,.val h3,.card h3,.step h3,.flow h3,h2.t,.final h2{text-wrap:balance}
 /* nav */
 .nav{position:fixed;inset:0 0 auto 0;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:14px max(20px,env(safe-area-inset-left));padding-top:calc(14px + env(safe-area-inset-top));transition:background .3s,backdrop-filter .3s}
 .nav.s{background:rgba(10,10,10,.82);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
@@ -124,7 +126,7 @@ footer a{color:var(--g5)}
   <div class="in">
     <div class="eyebrow">Takuma Juku — Football Academy</div>
     <h1>闘える選手を、<br>育成する。</h1>
-    <p class="sub">自分に矢印を向け、きついことにも全力で挑む。その姿勢が、選手を強くする。</p>
+    <p class="sub">自分に矢印を向け、きついことにも全力で挑む。<br>その姿勢が、選手を強くする。</p>
   </div>
   <div class="in cta">
     <a class="btn w" href="https://forms.gle/nn3Tq1RVYcLpsRvp7" target="_blank" rel="noopener">入塾・体験申し込み ▶</a>
@@ -143,7 +145,7 @@ footer a{color:var(--g5)}
   <div class="in rv">
     <div class="eyebrow">Challenge</div>
     <h2 class="t">きつい場面で、<br>逃げていませんか。</h2>
-    <p class="lead">技術の前に、まず必要なのは「闘う心」。こんな姿が見えたら、変わるチャンスです。</p>
+    <p class="lead">技術の前に、まず必要なのは「闘う心」。<br>こんな姿が見えたら、変わるチャンスです。</p>
     <div class="cards c2">
       <div class="card"><div class="n">01</div><h3>苦しい場面になると、すぐに諦めてしまう</h3></div>
       <div class="card"><div class="n">02</div><h3>失敗を恐れて、挑戦できない</h3></div>
@@ -171,7 +173,7 @@ footer a{color:var(--g5)}
       <article>
         <div class="no">03</div>
         <h3><small>STAGE</small>闘う場所で、<br>本当の自分と出会う。</h3>
-        <p>年に一度の福井遠征。デリアテール杯での選抜マッチ。本気で闘う舞台が、選手を大きく成長させます。技術は、その先についてくる。</p>
+        <p>年に一度の福井遠征。デリアテール杯での選抜マッチ。本気で闘う舞台が、選手を大きく成長させます。<span style="white-space:nowrap">技術は、その先についてくる。</span></p>
       </article>
     </div>
   </div>
@@ -242,7 +244,7 @@ footer a{color:var(--g5)}
   <div class="in rv">
     <img class="mark" src="lp-logo.jpg" alt="タクマ塾">
     <h2>闘える自分に、<br>なろう。</h2>
-    <p>まずは、体験から。お子さまの「闘う心」を、一緒に育てましょう。</p>
+    <p>まずは、体験から。<br>お子さまの「闘う心」を、一緒に育てましょう。</p>
     <a class="btn k" href="https://forms.gle/nn3Tq1RVYcLpsRvp7" target="_blank" rel="noopener">入塾・体験申し込み ▶</a>
   </div>
 </section>
