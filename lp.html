@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
-<title>タクマ塾｜サッカーが、人生の武器になる。</title>
-<meta name="description" content="タクマ塾は、全国7拠点で選手の未来を育てるサッカー塾。入塾・体験のお申し込みはこちら。">
+<title>タクマ塾｜闘える選手を育成</title>
+<meta name="description" content="タクマ塾は、闘える選手を育成するサッカー塾。全国7拠点。入塾・体験のお申し込みはこちら。">
 <style>
 :root{--black:#0a0a0a;--g1:#141414;--g2:#1e1e1e;--g3:#2a2a2a;--g4:#8c8c8c;--g5:#cfcfcf;--g6:#f2f2f2;--white:#fff}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -26,18 +26,21 @@ h2.t{font-size:clamp(30px,6.4vw,60px);font-weight:900;letter-spacing:-.02em;line
 /* nav */
 .nav{position:fixed;inset:0 0 auto 0;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:14px max(20px,env(safe-area-inset-left));padding-top:calc(14px + env(safe-area-inset-top));transition:background .3s,backdrop-filter .3s}
 .nav.s{background:rgba(10,10,10,.82);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
-.logo{font-weight:900;letter-spacing:.06em;font-size:18px;text-decoration:none}
+.logo{display:flex;align-items:center;gap:10px;font-weight:900;letter-spacing:.06em;font-size:18px;text-decoration:none}
+.logo img{width:34px;height:42px;object-fit:contain;filter:invert(1) brightness(2.6);mix-blend-mode:screen}
+.logo span{display:block;line-height:1.3}
 .logo small{display:block;font-size:9px;letter-spacing:.3em;color:var(--g4);font-weight:800}
 .nav .btn{min-height:42px;padding:0 20px;font-size:14px}
 /* hero */
-.hero{position:relative;min-height:100svh;display:flex;flex-direction:column;justify-content:space-between;background:var(--black) url(lp-hero.jpg) center bottom/cover no-repeat}
-.hero::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,#000 0%,rgba(0,0,0,.85) 28%,rgba(0,0,0,0) 60%,rgba(0,0,0,.55) 100%)}
-.hero .in{position:relative;padding-top:112px}
-.hero h1{font-size:clamp(30px,9.2vw,104px);font-weight:900;letter-spacing:-.035em;line-height:1.08;margin-top:18px}
+.hero{position:relative;min-height:100svh;display:flex;flex-direction:column;justify-content:space-between;background:#000;overflow:hidden}
+.hero-img{position:absolute;left:0;right:0;bottom:0;width:100%;height:66%;object-fit:cover;object-position:50% 26%;filter:grayscale(1) contrast(1.1) brightness(.8);-webkit-mask-image:linear-gradient(180deg,transparent 0,#000 38%);mask-image:linear-gradient(180deg,transparent 0,#000 38%)}
+.hero::before{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(0,0,0,.35) 0%,rgba(0,0,0,0) 40%,rgba(0,0,0,.7) 100%)}
+.hero .in{position:relative;z-index:2;padding-top:112px}
+.hero h1{font-size:clamp(34px,11vw,110px);font-weight:900;letter-spacing:-.035em;line-height:1.08;margin-top:18px}
 .hero p.sub{margin-top:20px;color:var(--g5);font-size:clamp(15px,2.2vw,19px);max-width:26em}
-.hero .cta{position:relative;padding-bottom:calc(40px + env(safe-area-inset-bottom));display:flex;gap:12px;flex-wrap:wrap}
+.hero .cta{position:relative;z-index:2;padding-bottom:calc(40px + env(safe-area-inset-bottom));display:flex;gap:12px;flex-wrap:wrap}
 .scroll{position:absolute;right:20px;bottom:calc(46px + env(safe-area-inset-bottom));writing-mode:vertical-rl;font-size:11px;letter-spacing:.3em;color:var(--g4)}
-@media (min-width:900px){.hero{background-position:70% bottom}.hero::before{background:linear-gradient(90deg,#000 0%,rgba(0,0,0,.85) 38%,rgba(0,0,0,0) 70%)}}
+@media (min-width:900px){.hero-img{left:auto;width:64%;height:100%;object-position:50% 22%;-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 42%);mask-image:linear-gradient(90deg,transparent 0,#000 42%)}.hero::before{background:linear-gradient(0deg,rgba(0,0,0,.7) 0,rgba(0,0,0,0) 40%)}}
 /* stats */
 .stats{border-block:1px solid var(--g3)}
 .stats .in{display:grid;grid-template-columns:repeat(3,1fr)}
@@ -95,6 +98,7 @@ section{padding:clamp(72px,12vw,140px) 0}
 .flow p{color:var(--g5);font-size:15px;margin-top:6px}
 /* cta */
 .final{background:var(--white);color:var(--black);text-align:center;padding:clamp(80px,13vw,150px) 0}
+.final .mark{display:block;width:84px;height:auto;margin:0 auto 26px;mix-blend-mode:multiply}
 .final h2{font-size:clamp(32px,8vw,76px);font-weight:900;letter-spacing:-.03em;line-height:1.15;text-wrap:balance}
 .final p{color:#4a4a4a;margin:22px auto 34px;max-width:28em}
 footer{padding:40px 0 calc(48px + env(safe-area-inset-bottom));color:var(--g4);font-size:13px}
@@ -111,15 +115,16 @@ footer a{color:var(--g5)}
 <body>
 
 <nav class="nav" id="nav">
-  <a class="logo" href="#top">タクマ塾<small>TAKUMA JUKU</small></a>
+  <a class="logo" href="#top"><img src="lp-logo.jpg" alt=""><span>タクマ塾<small>TAKUMA JUKU</small></span></a>
   <a class="btn w" href="https://forms.gle/nn3Tq1RVYcLpsRvp7" target="_blank" rel="noopener">入塾・体験申し込み</a>
 </nav>
 
 <header class="hero" id="top">
+  <img class="hero-img" src="lp-hero.jpg" alt="タクマ塾 塾長 タクマ" fetchpriority="high">
   <div class="in">
     <div class="eyebrow">Takuma Juku — Football Academy</div>
-    <h1>サッカーが、<br>人生の武器になる。</h1>
-    <p class="sub">技術・判断・心。全国7拠点で、選手一人ひとりの未来を、本気で育てる。</p>
+    <h1>闘える選手を、<br>育成する。</h1>
+    <p class="sub">自分に矢印を向け、きついことにも全力で挑む。その姿勢が、選手を強くする。</p>
   </div>
   <div class="in cta">
     <a class="btn w" href="https://forms.gle/nn3Tq1RVYcLpsRvp7" target="_blank" rel="noopener">入塾・体験申し込み ▶</a>
@@ -137,13 +142,13 @@ footer a{color:var(--g5)}
 <section class="light" id="problem">
   <div class="in rv">
     <div class="eyebrow">Challenge</div>
-    <h2 class="t">「あと一歩」の壁に、<br>立っていませんか。</h2>
-    <p class="lead">練習しているのに、なぜか試合で変われない。その悩みには、理由があります。</p>
+    <h2 class="t">きつい場面で、<br>逃げていませんか。</h2>
+    <p class="lead">技術の前に、まず必要なのは「闘う心」。こんな姿が見えたら、変わるチャンスです。</p>
     <div class="cards c2">
-      <div class="card"><div class="n">01</div><h3>練習量はあるのに、試合で活かせない</h3></div>
-      <div class="card"><div class="n">02</div><h3>ミスを恐れて、思い切ったプレーができない</h3></div>
-      <div class="card"><div class="n">03</div><h3>チームでは教わらない「考え方」を知りたい</h3></div>
-      <div class="card"><div class="n">04</div><h3>将来、上のステージで戦える力をつけたい</h3></div>
+      <div class="card"><div class="n">01</div><h3>苦しい場面になると、すぐに諦めてしまう</h3></div>
+      <div class="card"><div class="n">02</div><h3>失敗を恐れて、挑戦できない</h3></div>
+      <div class="card"><div class="n">03</div><h3>うまくいかない理由を、人やまわりのせいにしてしまう</h3></div>
+      <div class="card"><div class="n">04</div><h3>もっと強くなりたい。自分を変えたい</h3></div>
     </div>
   </div>
 </section>
@@ -151,22 +156,22 @@ footer a{color:var(--g5)}
 <section id="value">
   <div class="in rv">
     <div class="eyebrow">Value</div>
-    <h2 class="t">タクマ塾が、<br>選手に届けること。</h2>
+    <h2 class="t">タクマ塾が、<br>育てるもの。</h2>
     <div class="val">
       <article>
         <div class="no">01</div>
-        <h3><small>SKILL</small>どこでも通用する、<br>確かな「個の力」。</h3>
-        <p>正しい基本を、徹底して身につける。ボールを扱う技術から、体の使い方まで。どのチームに行っても、自分の武器として使える力を育てます。</p>
+        <h3><small>MINDSET</small>矢印は、<br>いつも自分に。</h3>
+        <p>うまくいかない時、人や環境のせいにしない。「自分は何ができるか」に矢印を向けることから、すべてが変わります。</p>
       </article>
       <article>
         <div class="no">02</div>
-        <h3><small>THINK</small>見て、考えて、<br>自分で決める。</h3>
-        <p>言われたことをこなすだけでなく、状況を見て、自分で判断する。サッカーで鍛えた「考える力」は、これからの人生の土台になります。</p>
+        <h3><small>CHALLENGE</small>きついことにも、<br>一生懸命に。</h3>
+        <p>楽な道を選ばない。きつい練習、苦しい場面にこそ、全力でチャレンジする。やり抜いた経験が、折れない心をつくります。</p>
       </article>
       <article>
         <div class="no">03</div>
-        <h3><small>STAGE</small>本気になれる、<br>本物の舞台。</h3>
-        <p>年に一度の福井遠征。デリアテール杯での選抜マッチ。普段の練習を超える舞台が、選手を大きく成長させます。</p>
+        <h3><small>STAGE</small>闘う場所で、<br>本当の自分と出会う。</h3>
+        <p>年に一度の福井遠征。デリアテール杯での選抜マッチ。本気で闘う舞台が、選手を大きく成長させます。技術は、その先についてくる。</p>
       </article>
     </div>
   </div>
@@ -176,11 +181,11 @@ footer a{color:var(--g5)}
   <div class="in rv">
     <div class="eyebrow">Future</div>
     <h2 class="t">入塾した、その先へ。</h2>
-    <p class="lead">タクマ塾で積み重ねた時間は、ピッチの外でも、選手を支え続けます。</p>
+    <p class="lead">闘う姿勢は、ピッチの外でも、選手を支え続けます。</p>
     <div class="steps">
-      <div class="step"><i>1</i><div><small>START</small><h3>基礎と習慣が身につく</h3><p>正しい基本と、練習への向き合い方。成長の土台をつくります。</p></div></div>
-      <div class="step"><i>2</i><div><small>GROW</small><h3>プレーと自信が変わる</h3><p>試合での動きが変わり、自分から挑戦できる選手に。</p></div></div>
-      <div class="step"><i>3</i><div><small>NEXT</small><h3>選べる未来が広がる</h3><p>上のカテゴリー、強豪チーム、新しい挑戦へ。可能性が広がります。</p></div></div>
+      <div class="step"><i>1</i><div><small>START</small><h3>逃げない習慣が身につく</h3><p>きつい練習にも、自分から向き合う。その積み重ねが土台になります。</p></div></div>
+      <div class="step"><i>2</i><div><small>GROW</small><h3>自分を信じられるようになる</h3><p>やり抜いた経験が自信になり、自分から挑戦できる選手に。</p></div></div>
+      <div class="step"><i>3</i><div><small>NEXT</small><h3>闘える人として、先へ進む</h3><p>サッカーでも、勉強でも、仕事でも。困難に立ち向かう力が、一生の武器になります。</p></div></div>
     </div>
   </div>
 </section>
@@ -191,7 +196,7 @@ footer a{color:var(--g5)}
     <div class="rv">
       <div class="eyebrow">Head Coach</div>
       <h2 class="t">選手と、本気で向き合う。</h2>
-      <p class="lead">技術だけでなく、考え方や姿勢まで。選手一人ひとりの可能性を信じて、本気で向き合うこと。それが、タクマ塾の指導の原点です。</p>
+      <p class="lead">技術よりも、まず「闘う姿勢」。自分に矢印を向け、きついことにも一生懸命チャレンジできる選手を育てる。それが、タクマ塾の指導の原点です。</p>
       <div class="name">塾長<b>タクマ</b></div>
     </div>
   </div>
@@ -235,14 +240,15 @@ footer a{color:var(--g5)}
 
 <section class="final" id="entry">
   <div class="in rv">
-    <h2>その一歩が、<br>未来を変える。</h2>
-    <p>まずは、体験から。お子さまの可能性を、一緒に広げましょう。</p>
+    <img class="mark" src="lp-logo.jpg" alt="タクマ塾">
+    <h2>闘える自分に、<br>なろう。</h2>
+    <p>まずは、体験から。お子さまの「闘う心」を、一緒に育てましょう。</p>
     <a class="btn k" href="https://forms.gle/nn3Tq1RVYcLpsRvp7" target="_blank" rel="noopener">入塾・体験申し込み ▶</a>
   </div>
 </section>
 
 <footer><div class="in">
-  <span>© タクマ塾</span>
+  <span style="display:flex;align-items:center;gap:12px"><img src="lp-logo.jpg" alt="" style="width:28px;height:35px;object-fit:contain;filter:invert(1) brightness(2.6);mix-blend-mode:screen">© タクマ塾</span>
   <a href="index.html">在籍中の保護者の方・スタッフ ログイン</a>
 </div></footer>
 
