@@ -136,8 +136,8 @@
         <p class="notice">※「福井校(エリート)」は「坂井・福井校(エリート)」に統合されました。福井校(エリート)の選手の方は「坂井・福井校(エリート)」をお選びください。</p>
       </div>
       <div class="field">
-        <label for="gate-name">塾生のお名前(姓名)</label>
-        <input type="text" id="gate-name" placeholder="例: 山田 蓮">
+        <label for="gate-name">塾生のお名前(カタカナ・姓名)</label>
+        <input type="text" id="gate-name" placeholder="例: ヤマダ レン">
       </div>
       <button type="button" class="submit" id="gate-submit">利用を開始する</button>
       <p class="status-line" id="gate-status"></p>
@@ -292,6 +292,11 @@ async function ensureSignedIn(){
 
 // ---- 塾生名簿との照合による関門(塾生家庭以外の利用を防ぐ) ----
 function normalizeName(n){ return String(n || '').replace(/[\s　・･]/g, ''); }
+// 保護者の本人確認はカタカナで照合する(漢字の字体違い・空白の有無による不一致を防ぐため)。
+// ひらがな・半角カナはカタカナにそろえ、空白と中黒は除く。名簿側(roster-schedule-sync.gs / school.html)も同じ規則で「K:」付きの鍵を作る。
+function normalizeKana(n){ return String(n || '').normalize('NFKC').replace(/[\u3041-\u3096]/g, c => String.fromCharCode(c.charCodeAt(0) + 0x60)).replace(/[\s\u3000・･·]/g, ''); }
+function isKanaName(n){ return /^[\u30A0-\u30FF]+$/.test(normalizeKana(n)); }
+function kanaKey(n){ return 'K:' + normalizeKana(n); }
 function showForm(prefillName){
   document.getElementById('gate-card').style.display = 'none';
   document.getElementById('form-card').style.display = 'block';
@@ -360,12 +365,13 @@ document.getElementById('gate-submit').addEventListener('click', async () => {
   const name = document.getElementById('gate-name').value.trim();
   if (!schoolId){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = '校舎を選択してください。'; return; }
   if (!name){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = '塾生のお名前を入力してください。'; return; }
+  if (!isKanaName(name)){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = 'お名前は、カタカナで入力してください(例: ヤマダ レン)。ひらがなでもかまいません。'; return; }
   statusEl.style.color = 'var(--ink-soft)';
   statusEl.textContent = '確認しています…';
   try {
     const user = await ensureSignedIn();
     try { localStorage.setItem(LAST_SCHOOL_KEY, schoolId); } catch(e){}
-    const base = { studentName: name, nameKey: normalizeName(name), schoolId, createdAt: firebase.firestore.FieldValue.serverTimestamp() };
+    const base = { studentName: name, nameKey: kanaKey(name), schoolId, createdAt: firebase.firestore.FieldValue.serverTimestamp() };
     try {
       await db.collection('parentViewers').doc(user.uid).set(Object.assign({ status: 'approved' }, base));
       showForm(name);
