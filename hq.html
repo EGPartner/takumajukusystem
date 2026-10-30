@@ -537,7 +537,7 @@
 
       <div class="card" id="hq-parent-access-card">
         <h2 style="font-size:15px;margin:0 0 4px;">保護者の閲覧管理</h2>
-        <p class="status" style="margin-top:0;color:var(--text-muted);">保護者ページは、初回に入力された<b>塾生名がスプレッドシートの「塾生リスト」と一致すると自動で利用開始</b>になります。一致しなかった申請は、スプレッドシート「タクマ塾CRM」の<b>「不明者リスト」</b>タブに自動で追加されます(最大10分)。誰かを判断して、新しい塾生なら塾生リストに行を追加、名前の書き方が違う在籍生なら「判定」で「別の名前で在籍」を選んで正しい名前を入れてください。塾生リストと一致した時点で、自動でログインが許可されます。</p>
+        <p class="status" style="margin-top:0;color:var(--text-muted);">保護者ページは、初回に入力された<b>塾生名がスプレッドシートの「塾生リスト」と一致すると自動で利用開始</b>になります。一致しなかった申請は、スプレッドシート「タクマ塾CRM」の<b>「不明者リスト」</b>タブに自動で追加されます(最大10分)。名前の書き方が少し違うだけで、実在する塾生だと目で見て分かるときは、下の承認待ちの「承認」ボタンで、その場で承認できます(同じ名前は次回から自動で通ります)。新しい塾生なら塾生リストに行を追加、名前の書き方が違う在籍生なら「判定」で「別の名前で在籍」を選んでもかまいません。塾生リストと一致した時点で、自動でログインが許可されます。</p>
         <div style="margin-top:8px;">
           <div class="btn-row" style="justify-content:space-between;align-items:center;">
             <strong style="font-size:13px;">承認待ち <span id="hq-pending-count" style="color:var(--danger);font-weight:700;"></span></strong>
@@ -2116,7 +2116,7 @@ function renderParentViewers(snap){
             + '<td>' + escAttr(v.studentName || '-') + '</td>'
             + '<td>' + escAttr(schoolsMap[v.schoolId] || v.schoolId || '-') + '</td>'
             + '<td>' + escAttr(viewerDateLabel(v)) + '</td>'
-            + '<td style="white-space:nowrap;" class="status">不明者リストで判断</td>'
+            + '<td style="white-space:nowrap;"><button class="ghost-small" style="background:var(--accent);color:#fff;border-color:var(--accent);min-height:44px;padding:8px 18px;font-weight:700;" data-approve-viewer="' + escAttr(d.id) + '" data-approve-name="' + escAttr(v.studentName || '') + '">承認</button></td>'
             + '</tr>';
         }).join('');
     viewersTbody.innerHTML = approved.length === 0
@@ -2142,6 +2142,8 @@ function renderParentViewers(snap){
 async function handleViewerAction(e){
   const approveUid = e.target.dataset.approveViewer;
   if (approveUid){
+    // 押し間違いを防ぐ。名前が少し違っていても、目で見て実在する塾生と分かるときだけ承認する
+    if (!confirm('「' + (e.target.dataset.approveName || '') + '」さんを、実在する塾生として承認しますか？\n(同じ名前の申請は、まとめて承認されます)')) return;
     try {
       const docRef = db.collection('parentViewers').doc(approveUid);
       const snap = await docRef.get();
