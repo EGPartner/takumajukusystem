@@ -842,7 +842,8 @@ function actorOfTarget(t) { if (!t) return null; if (t.kind === 'team') return t
 /* ---------- 本番のデータ ---------- */
 let orders = [], decisions = [], logs = [], usage = null, apiKeyMeta = null;
 let decided = [], voices = [], voiceFilter = '対応が必要', voiceLink = null; // voiceLink: 次に出す指示と結びつける意見のID(1件、またはテーマの打ち手なら複数)
-let tkTasks = [], tkState = null; // 統括タスク(統括グループの会話から、代表の指示・助言・お叱りを整理したもの)
+let tkTasks = [], tkState = null, tkCompose = null; // tkCompose: LINE送信の作成中 { id, text, busy }
+let _tkx = 0; // 統括タスク(統括グループの会話から、代表の指示・助言・お叱りを整理したもの)
 let tasks = []; // 「やること」台帳(承認・採用した案件の人の作業と、LINE・議事録の宿題)
 let knMemos = [], knState = null, knFilter = 'すべて'; // 社内メモ(スタッフ用LINEと議事録から毎晩整理したもの)
 let voiceThemes = [], voiceReview = null, voiceRules = [], voiceView = 'theme', rulesOpen = null; // rulesOpen: 台帳を開いているか(null=承認待ちがあれば開く)
@@ -1308,7 +1309,11 @@ function tkItem(t) {
   return `<li class="task${over ? ' over' : ''}${t.status !== '未着手' ? ' fin' : ''}"><span class="no">${esc(t.no)}</span><div>
     <div class="tt"><span class="pill">${esc(t.kind || '指示')}</span> ${esc(t.text)}${t.urgent ? ' <span class="pill urg-高">急ぎ</span>' : ''}${t.repeats ? ` <span class="pill urg-高">${esc(t.repeats + 1)}回言われています</span>` : ''}</div>
     <div class="pk">${esc(t.owner || '担当未定')}${t.due ? ' ・ 期限 ' + esc(t.due.slice(5).replace('-', '/')) + (over ? '(期限切れ)' : t.due === today ? '(今日)' : '') : ' ・ 期限なし'}${t.quote ? ' ・ 発言「' + esc(t.quote) + '」' : ''}${t.status !== '未着手' ? ` ・ ${esc(t.status)}${t.doneBy ? '(' + esc(t.doneBy) + ')' : ''}${t.evidence ? ' — ' + esc(t.evidence) : ''}` : ''}</div>
-    <div class="ta">${t.status === '未着手' ? `<button type="button" class="btn" data-tkset="${esc(t.id)}" data-st="完了">完了</button><button type="button" class="btn ghost" data-tkset="${esc(t.id)}" data-st="不要">不要</button><button type="button" class="btn ghost" data-tkowner="${esc(t.id)}">担当</button><button type="button" class="btn ghost" data-tkdue="${esc(t.id)}">期限</button>` : `<button type="button" class="btn ghost" data-tkset="${esc(t.id)}" data-st="未着手">未完了に戻す</button>`}</div></div></li>`;
+    ${(t.history || []).length ? `<details class="prep"><summary>経過(${t.history.length}件)</summary>${t.history.map(h => `<p><span class="pk">${esc(new Date(h.at).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }))}${h.by && h.by !== '会話' ? ' ・ ' + esc(h.by) : ''}</span><br>${esc(h.note).replace(/\n/g, '<br>')}</p>`).join('')}</details>` : ''}
+    <div class="ta">${t.status === '未着手' ? `<button type="button" class="btn" data-tkset="${esc(t.id)}" data-st="完了">完了</button><button type="button" class="btn ghost" data-tkset="${esc(t.id)}" data-st="不要">不要</button><button type="button" class="btn ghost" data-tkowner="${esc(t.id)}">担当</button><button type="button" class="btn ghost" data-tkdue="${esc(t.id)}">期限</button>` : `<button type="button" class="btn ghost" data-tkset="${esc(t.id)}" data-st="未着手">未完了に戻す</button>`}<button type="button" class="btn ghost" data-tkline="${esc(t.id)}">LINE送信</button></div>
+    ${tkCompose && tkCompose.id === t.id ? `<div class="vform"><b>統括グループにLINEを送る</b><p class="pk">${tkCompose.busy === 'draft' ? '文案を作っています…' : '文案はAIが作りました。直してから送れます。送った内容は、この項目の「経過」に残ります。'}</p>
+      <textarea id="tk-msg" rows="4" ${tkCompose.busy ? 'disabled' : ''} placeholder="送る文">${esc(tkCompose.text || '')}</textarea>
+      <div class="actions"><button type="button" class="btn primary" data-tksendgo="${esc(t.id)}" ${tkCompose.busy ? 'disabled' : ''}>${tkCompose.busy === 'send' ? '送っています…' : '統括グループに送る'}</button><button type="button" class="btn ghost" data-tksendcancel="1" ${tkCompose.busy === 'send' ? 'disabled' : ''}>やめる</button></div></div>` : ''}</div></li>`;
 }
 function tkHTML() {
   const today = todayJst(), week = addDaysYmd(today, 7), open = tkOpen();
@@ -1858,6 +1863,22 @@ document.addEventListener('click', async e => {
   if (btn.dataset.vf) { voiceFilter = btn.dataset.vf; renderPanel(); return; }
   if (btn.dataset.vview) { voiceView = btn.dataset.vview; renderPanel(); return; }
   if (btn.dataset.knf) { knFilter = btn.dataset.knf; renderPanel(); return; }
+  if (btn.dataset.tkline) {
+    const id = btn.dataset.tkline; tkCompose = { id, text: '', busy: 'draft' }; renderPanel();
+    try { const r = await call('aiTokatsuTasks')({ action: 'draft', id }); if (tkCompose && tkCompose.id === id) tkCompose = { id, text: r.data.message || '', busy: '' }; }
+    catch (err) { toast('文案を作れませんでした: ' + err.message); if (tkCompose && tkCompose.id === id) tkCompose = { id, text: '', busy: '' }; }
+    renderPanel(); return;
+  }
+  if (btn.dataset.tksendcancel) { tkCompose = null; renderPanel(); return; }
+  if (btn.dataset.tksendgo) {
+    const id = btn.dataset.tksendgo, ta = $('#tk-msg'), text = ta ? ta.value.trim() : '';
+    if (!text) { if (ta) ta.focus(); return; }
+    if (!confirm('統括グループ(代表・事務員・指導統括・あなた)に、LINEを送ります。\n送ったあとは取り消せません。\n\n' + text)) return;
+    tkCompose = { id, text, busy: 'send' }; renderPanel();
+    try { const r = await call('aiTokatsuTasks')({ action: 'send', id, text }); tkCompose = null; toast(`統括グループに送りました(今日あと${r.data.left}通)`); }
+    catch (err) { tkCompose = { id, text, busy: '' }; toast('送れませんでした: ' + err.message); }
+    renderPanel(); return;
+  }
   if (btn.id === 'tk-run') {
     btn.disabled = true; btn.textContent = '分析しています…';
     try { const r = await call('aiTokatsuTasks')({ action: 'run' }); toast(`発言 ${r.data.lines}件を分析し、新しい項目 ${r.data.made}件を追加しました`); }
