@@ -586,12 +586,11 @@ document.getElementById('gate-submit').addEventListener('click', async () => {
   const name = document.getElementById('gate-name').value.trim();
   if (!schoolId){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = '校舎を選択してください。'; return; }
   if (!name){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = '塾生のお名前を入力してください。'; return; }
-  if (!isKanaName(name)){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = 'お名前は、カタカナで入力してください(例: ヤマダ レン)。ひらがなでもかまいません。'; return; }
   statusEl.style.color = 'var(--ink-soft)';
   statusEl.textContent = '確認しています…';
   const user = await ensureAnon();
   try { localStorage.setItem(LAST_SCHOOL_KEY, schoolId); } catch(e){}
-  const base = { studentName: name, nameKey: kanaKey(name), schoolId, createdAt: firebase.firestore.FieldValue.serverTimestamp() };
+  const base = { studentName: name, nameKey: (isKanaName(name) ? kanaKey(name) : normalizeName(name)), schoolId, createdAt: firebase.firestore.FieldValue.serverTimestamp() };
   try {
     // まず名簿との照合(一致すれば即「承認済み」で登録できる)
     await db.collection('parentViewers').doc(user.uid).set(Object.assign({ status: 'approved' }, base));
