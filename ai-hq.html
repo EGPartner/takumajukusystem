@@ -364,6 +364,41 @@
   .prep{margin-top:4px;font-size:12.5px}
   .prep summary{cursor:pointer;color:var(--accent-ink);font-weight:700}
   .prep p{margin:4px 0 0;white-space:normal;overflow-wrap:anywhere;color:var(--ink-2)}
+  /* 統括タスク */
+  .tk-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .tk-head b{font-size:15px}
+  .tk-head .sp{flex:1}
+  .tk-sec{display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:700;margin:8px 0 2px}
+  .tk-sec .d{width:9px;height:9px;border-radius:50%;display:inline-block}
+  .tk-sec .n{font-family:var(--f-num);font-size:12px;color:var(--ink-3);font-weight:600}
+  .tkc{border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:12px;padding:12px 14px;display:grid;gap:8px;background:var(--surface);font-size:13px}
+  .tkc.hot{border-left-color:var(--bad)}
+  .tkc.over{border-left-color:var(--warn);background:var(--warn-soft)}
+  .tkc .tk-t{font-size:14.5px;font-weight:700;line-height:1.55;overflow-wrap:anywhere;margin:0}
+  .tk-meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  .tk-chip{font-size:11.5px;font-weight:700;padding:2px 9px;border-radius:999px;background:var(--surface-2);color:var(--ink-2);border:1px solid var(--line);white-space:nowrap}
+  .tk-chip.kind{background:var(--accent-soft);color:var(--accent-ink);border-color:transparent}
+  .tk-chip.bad{background:var(--bad-soft);color:var(--bad);border-color:transparent}
+  .tk-chip.warn{background:var(--warn-soft);color:var(--warn);border-color:transparent}
+  .tk-quote{font-size:12px;color:var(--ink-3);overflow-wrap:anywhere;margin:0}
+  .tk-hist summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--accent-ink)}
+  .tk-hist ol{list-style:none;margin:6px 0 0;padding:0 0 0 10px;border-left:2px solid var(--line);display:grid;gap:8px}
+  .tk-hist li{font-size:12.5px;color:var(--ink-2);overflow-wrap:anywhere}
+  .tk-hist li .w{display:block;font-size:11px;color:var(--ink-3)}
+  .tk-act{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  .tk-act .btn{padding:6px 12px;font-size:12px}
+  .tk-act .btn.tk-done{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+  .tk-act .sp{flex:1}
+  .tkdone{list-style:none;margin:0;padding:0;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface)}
+  .tkdone>li{border-top:1px solid var(--line);padding:9px 12px}
+  .tkdone>li:first-child{border-top:0}
+  .tkdone summary{display:flex;gap:8px;align-items:center;cursor:pointer;list-style:none;font-size:13px}
+  .tkdone summary::-webkit-details-marker{display:none}
+  .tkdone .ck{color:var(--ok);font-weight:900}
+  .tkdone .t{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink-2)}
+  .tkdone .s{font-size:11px;color:var(--ink-3);white-space:nowrap}
+  .tkdone .more{margin-top:8px;display:grid;gap:6px;font-size:12.5px;color:var(--ink-2)}
+  .tkpurge{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--ink-3)}
   .vform .meta input:not([type]){font:inherit;font-size:13px;border:1px solid var(--line-strong);border-radius:8px;padding:5px 6px;background:var(--surface-2);color:var(--ink)}
   .tag.plan-human,.tag.plan-ask{background:var(--warn-soft);color:var(--warn)} .tag.plan-send_staff{background:var(--accent-soft);color:var(--accent-ink)} .tag.plan-ai,.tag.plan-research{background:var(--ok-soft);color:var(--ok)}
   .share-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:2px 0 4px}
@@ -1302,24 +1337,31 @@ function taskItem(t) {
     ${t.prep ? `<details class="prep"><summary>準備メモ</summary><p>${esc(t.prep).replace(/\n/g, '<br>')}</p></details>` : ''}
     <div class="ta">${t.status === '未着手' ? `<button type="button" class="btn" data-tset="${esc(t.id)}" data-st="完了">完了</button><button type="button" class="btn ghost" data-tset="${esc(t.id)}" data-st="不要">不要</button><button type="button" class="btn ghost" data-towner="${esc(t.id)}">担当</button><button type="button" class="btn ghost" data-tdue="${esc(t.id)}">期限</button>` : `<button type="button" class="btn ghost" data-tset="${esc(t.id)}" data-st="未着手">未完了に戻す</button>`}</div></div></li>`;
 }
-/** 統括タスク: 統括グループのLINEで代表が言った指示・助言・お叱りを、先回りして動けるように並べる */
+/** 統括タスク: 統括グループのLINEの会話から拾った、全員の「やること」 */
 const tkOpen = () => tkTasks.filter(t => t.status === '未着手');
+const tkMd = d => (d ? d.slice(5).replace('-', '/') : '');
+const tkWhen = at => new Date(at).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 function tkItem(t) {
-  const today = todayJst(), over = t.status === '未着手' && t.due && t.due < today;
-  return `<li class="task${over ? ' over' : ''}${t.status !== '未着手' ? ' fin' : ''}"><span class="no">${esc(t.no)}</span><div>
-    <div class="tt"><span class="pill">${esc(t.kind || '指示')}</span> ${esc(t.text)}${t.urgent ? ' <span class="pill urg-高">急ぎ</span>' : ''}${t.repeats ? ` <span class="pill urg-高">${esc(t.repeats + 1)}回言われています</span>` : ''}</div>
-    <div class="pk">${esc(t.owner || '担当未定')}${t.due ? ' ・ 期限 ' + esc(t.due.slice(5).replace('-', '/')) + (over ? '(期限切れ)' : t.due === today ? '(今日)' : '') : ' ・ 期限なし'}${t.quote ? ' ・ 発言「' + esc(t.quote) + '」' : ''}${t.status !== '未着手' ? ` ・ ${esc(t.status)}${t.doneBy ? '(' + esc(t.doneBy) + ')' : ''}${t.evidence ? ' — ' + esc(t.evidence) : ''}` : ''}</div>
-    ${(t.history || []).length ? `<details class="prep"><summary>経過(${t.history.length}件)</summary>${t.history.map(h => `<p><span class="pk">${esc(new Date(h.at).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }))}${h.by && h.by !== '会話' ? ' ・ ' + esc(h.by) : ''}</span><br>${esc(h.note).replace(/\n/g, '<br>')}</p>`).join('')}</details>` : ''}
-    <div class="ta">${t.status === '未着手' ? `<button type="button" class="btn" data-tkset="${esc(t.id)}" data-st="完了">完了</button><button type="button" class="btn ghost" data-tkset="${esc(t.id)}" data-st="不要">不要</button><button type="button" class="btn ghost" data-tkowner="${esc(t.id)}">担当</button><button type="button" class="btn ghost" data-tkdue="${esc(t.id)}">期限</button>` : `<button type="button" class="btn ghost" data-tkset="${esc(t.id)}" data-st="未着手">未完了に戻す</button>`}<button type="button" class="btn ghost" data-tkline="${esc(t.id)}">LINE送信</button></div>
-    ${tkCompose && tkCompose.id === t.id ? `<div class="vform"><b>統括グループにLINEを送る</b><p class="pk">${tkCompose.busy === 'draft' ? '文案を作っています…' : '文案はAIが作りました。直してから送れます。送った内容は、この項目の「経過」に残ります。'}</p>
+  const today = todayJst(), over = !!(t.due && t.due < today), hot = !!(t.urgent || t.repeats), id = esc(t.id);
+  const dueChip = t.due ? `<span class="tk-chip${over ? ' warn' : ''}">期限 ${esc(tkMd(t.due))}${over ? '(期限切れ)' : t.due === today ? '(今日)' : ''}</span>` : '<span class="tk-chip">期限なし</span>';
+  const hist = (t.history || []).length ? `<details class="tk-hist"><summary>経過 ${t.history.length}件</summary><ol>${t.history.map(h => `<li><span class="w">${esc(tkWhen(h.at))}${h.by && h.by !== '会話' ? ' ・ ' + esc(h.by) : ''}</span>${esc(h.note).replace(/\n/g, '<br>')}</li>`).join('')}</ol></details>` : '';
+  const compose = tkCompose && tkCompose.id === t.id ? `<div class="vform"><b>統括グループにLINEを送る</b><p class="pk">${tkCompose.busy === 'draft' ? '文案を作っています…' : '文案はAIが作りました。直してから送れます。送った内容は、この項目の「経過」に残ります。'}</p>
       <textarea id="tk-msg" rows="4" ${tkCompose.busy ? 'disabled' : ''} placeholder="送る文">${esc(tkCompose.text || '')}</textarea>
-      <div class="actions"><button type="button" class="btn primary" data-tksendgo="${esc(t.id)}" ${tkCompose.busy ? 'disabled' : ''}>${tkCompose.busy === 'send' ? '送っています…' : '統括グループに送る'}</button><button type="button" class="btn ghost" data-tksendcancel="1" ${tkCompose.busy === 'send' ? 'disabled' : ''}>やめる</button></div></div>` : ''}</div></li>`;
+      <div class="actions"><button type="button" class="btn primary" data-tksendgo="${id}" ${tkCompose.busy ? 'disabled' : ''}>${tkCompose.busy === 'send' ? '送っています…' : '統括グループに送る'}</button><button type="button" class="btn ghost" data-tksendcancel="1" ${tkCompose.busy === 'send' ? 'disabled' : ''}>やめる</button></div></div>` : '';
+  return `<li class="tkc${hot ? ' hot' : over ? ' over' : ''}">
+    <div class="tk-meta"><span class="tk-chip kind">${esc(t.kind || '指示')}</span>${t.urgent ? '<span class="tk-chip bad">急ぎ</span>' : ''}${t.repeats ? `<span class="tk-chip bad">${esc(t.repeats + 1)}回言われています</span>` : ''}<span class="tk-chip">${esc(t.owner || '担当未定')}</span>${dueChip}</div>
+    <p class="tk-t">${esc(t.text)}</p>
+    ${t.quote ? `<p class="tk-quote">発言「${esc(t.quote)}」</p>` : ''}
+    ${hist}
+    <div class="tk-act"><button type="button" class="btn tk-done" data-tkset="${id}" data-st="完了">完了</button><button type="button" class="btn" data-tkline="${id}">LINE送信</button><button type="button" class="btn ghost" data-tkowner="${id}">担当</button><button type="button" class="btn ghost" data-tkdue="${id}">期限</button><span class="sp"></span><button type="button" class="btn ghost" data-tkset="${id}" data-st="不要">不要</button></div>
+    ${compose}</li>`;
 }
+/** 終わったもの1件(タイトルだけ。タップで詳細と「未完了に戻す」) */
 function tkFinRow(t) {
-  return `<li class="task fin"><span class="no">${esc(t.no)}</span><div><details><summary><span class="pill">${esc(t.kind || '指示')}</span> ${esc(t.text)} <span class="pk">${esc(t.status)}</span></summary>
-    <div class="pk">${esc(t.owner || '担当未定')}${t.due ? ' ・ 期限 ' + esc(t.due.slice(5).replace('-', '/')) : ''}${t.doneBy ? ' ・ ' + esc(t.status) + '(' + esc(t.doneBy) + ')' : ''}${t.evidence ? ' — ' + esc(t.evidence) : ''}</div>
-    ${(t.history || []).map(h => `<p class="pk">${esc(h.note).replace(/\n/g, '<br>')}</p>`).join('')}
-    <div class="ta"><button type="button" class="btn ghost" data-tkset="${esc(t.id)}" data-st="未着手">未完了に戻す</button></div></details></div></li>`;
+  return `<li><details><summary><span class="ck">✓</span><span class="t">${esc(t.text)}</span><span class="s">${esc(t.status)}${t.doneAt ? ' ' + esc(tkMd(String(t.doneAt).slice(0, 10))) : ''}</span></summary>
+    <div class="more"><div>${esc(t.kind || '指示')} ・ ${esc(t.owner || '担当未定')}${t.due ? ' ・ 期限 ' + esc(tkMd(t.due)) : ''}${t.doneBy ? ' ・ ' + esc(t.doneBy) : ''}${t.evidence ? ' — ' + esc(t.evidence) : ''}</div>
+    ${(t.history || []).map(h => `<div>${esc(h.note).replace(/\n/g, '<br>')}</div>`).join('')}
+    <div class="tk-act"><button type="button" class="btn ghost" data-tkset="${esc(t.id)}" data-st="未着手">未完了に戻す</button></div></div></details></li>`;
 }
 function tkHTML() {
   const today = todayJst(), week = addDaysYmd(today, 7), open = tkOpen();
@@ -1328,15 +1370,15 @@ function tkHTML() {
   const hot = open.filter(t => t.urgent || t.repeats).sort(by), rest = open.filter(t => !(t.urgent || t.repeats));
   const over = rest.filter(t => t.due && t.due < today).sort(by), soon = rest.filter(t => t.due && t.due >= today && t.due <= week).sort(by), later = rest.filter(t => !t.due || t.due > week).sort(by);
   const finAll = tkTasks.filter(t => t.status !== '未着手').sort((a, b) => String(b.doneAt || '').localeCompare(String(a.doneAt || ''))), fin = finAll.slice(0, 5), hiddenN = finAll.length - fin.length;
-  const sec = (h, l) => (l.length ? `<div class="sec-h big">${h}(${l.length}件)</div><ul class="tasks">${l.map(tkItem).join('')}</ul>` : '');
-  const when = tkState && tkState.lastRunAt ? new Date(tkState.lastRunAt).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'まだありません';
-  return `<div class="vboard"><div class="vb-h"><b>統括タスク(統括グループの会話から)</b><span class="pk">未完了 ${open.length}件 ・ 前回の分析: ${esc(when)}</span><span class="sp"></span><button type="button" class="btn ghost" id="tk-rerun">直近24時間を分析し直す</button><button type="button" class="btn" id="tk-run">今すぐ分析する</button></div>
-      <p>統括グループのLINEの全員の発言から、代表の指示・助言・お叱り、メンバー同士の依頼、本人の「やります」を、毎晩23時50分にAIが「やること」に直します。代表に言われる前に動けるよう、急ぎのもの・繰り返し言われているものを一番上に出します。</p></div>
-    ${sec('急ぎ・繰り返し言われている', hot)}${sec('期限切れ', over)}${sec('今週まで', soon)}${sec('それ以降・期限なし', later)}
+  const sec = (h, color, l) => (l.length ? `<div class="tk-sec"><i class="d" style="background:${color}"></i>${h}<span class="n">${l.length}</span></div><ul class="tasks">${l.map(tkItem).join('')}</ul>` : '');
+  const when = tkState && tkState.lastRunAt ? tkWhen(tkState.lastRunAt) : 'まだありません';
+  return `<div class="vboard"><div class="tk-head"><b>統括タスク</b><span class="pk">未完了 ${open.length}件 ・ 前回の分析 ${esc(when)}</span><span class="sp"></span><button type="button" class="btn" id="tk-run">今すぐ分析</button></div>
+      <details class="prep"><summary>しくみ</summary><p>統括グループのLINEの全員の発言から、代表の指示・助言・お叱り、メンバー同士の依頼、本人の「やります」を、毎晩23時50分にAIが拾います。急ぎのもの・繰り返し言われているものは一番上に出ます。関係する会話は、各項目の「経過」に足されます。</p></details></div>
+    ${sec('急ぎ・繰り返し言われている', 'var(--bad)', hot)}${sec('期限切れ', 'var(--warn)', over)}${sec('今週まで', 'var(--accent)', soon)}${sec('それ以降・期限なし', 'var(--idle)', later)}
     ${!open.length ? '<div class="empty"><b>未完了の統括タスクはありません</b>統括グループの会話が分析されると、ここに並びます。</div>' : ''}
-    ${fin.length ? `<div class="sec-h big">最近終わったもの(新しい順に${fin.length}件)</div><ul class="tasks tkfin" style="max-height:340px;overflow-y:auto">${fin.map(tkFinRow).join('')}</ul>` : ''}
-    ${hiddenN ? `<p class="pk">これより古い終わったもの ${hiddenN}件は、非表示にしています。 <button type="button" class="btn ghost" id="tk-purge">古い${hiddenN}件をまとめて削除</button></p>` : ''}
-    <div class="sec-h big">スタッフ用の「やること」</div>`;
+    ${fin.length ? `<div class="tk-sec"><i class="d" style="background:var(--ok)"></i>最近終わったもの<span class="n">新しい順に${fin.length}件</span></div><ul class="tkdone">${fin.map(tkFinRow).join('')}</ul>` : ''}
+    ${hiddenN ? `<div class="tkpurge">これより古い ${hiddenN}件は非表示です <button type="button" class="btn ghost" id="tk-purge">古い${hiddenN}件をまとめて削除</button></div>` : ''}
+    <div class="tk-sec"><i class="d" style="background:var(--ink-3)"></i>スタッフ用の「やること」</div>`;
 }
 function tasksHTML() {
   const today = todayJst(), week = addDaysYmd(today, 7), open = tasksOpen();
@@ -1885,12 +1927,6 @@ document.addEventListener('click', async e => {
     try { const r = await call('aiTokatsuTasks')({ action: 'send', id, text }); tkCompose = null; toast(`統括グループに送りました(今日あと${r.data.left}通)`); }
     catch (err) { tkCompose = { id, text, busy: '' }; toast('送れませんでした: ' + err.message); }
     renderPanel(); return;
-  }
-  if (btn.id === 'tk-rerun') {
-    btn.disabled = true; btn.textContent = '分析しています…';
-    try { const r = await call('aiTokatsuTasks')({ action: 'run', hours: 24 }); toast(`直近24時間の発言 ${r.data.lines}件を分析し、新しい項目 ${r.data.made}件を追加しました(経過は項目に足されます)`); }
-    catch (err) { toast('分析できませんでした: ' + err.message); }
-    btn.disabled = false; btn.textContent = '直近24時間を分析し直す'; return;
   }
   if (btn.id === 'tk-purge') {
     if (!confirm('古い「終わったもの」をまとめて削除します。\n(新しい順に5件は残ります。未完了の項目は消えません)\n削除したものは元に戻せません。よろしいですか?')) return;
