@@ -1315,20 +1315,27 @@ function tkItem(t) {
       <textarea id="tk-msg" rows="4" ${tkCompose.busy ? 'disabled' : ''} placeholder="送る文">${esc(tkCompose.text || '')}</textarea>
       <div class="actions"><button type="button" class="btn primary" data-tksendgo="${esc(t.id)}" ${tkCompose.busy ? 'disabled' : ''}>${tkCompose.busy === 'send' ? '送っています…' : '統括グループに送る'}</button><button type="button" class="btn ghost" data-tksendcancel="1" ${tkCompose.busy === 'send' ? 'disabled' : ''}>やめる</button></div></div>` : ''}</div></li>`;
 }
+function tkFinRow(t) {
+  return `<li class="task fin"><span class="no">${esc(t.no)}</span><div><details><summary><span class="pill">${esc(t.kind || '指示')}</span> ${esc(t.text)} <span class="pk">${esc(t.status)}</span></summary>
+    <div class="pk">${esc(t.owner || '担当未定')}${t.due ? ' ・ 期限 ' + esc(t.due.slice(5).replace('-', '/')) : ''}${t.doneBy ? ' ・ ' + esc(t.status) + '(' + esc(t.doneBy) + ')' : ''}${t.evidence ? ' — ' + esc(t.evidence) : ''}</div>
+    ${(t.history || []).map(h => `<p class="pk">${esc(h.note).replace(/\n/g, '<br>')}</p>`).join('')}
+    <div class="ta"><button type="button" class="btn ghost" data-tkset="${esc(t.id)}" data-st="未着手">未完了に戻す</button></div></details></div></li>`;
+}
 function tkHTML() {
   const today = todayJst(), week = addDaysYmd(today, 7), open = tkOpen();
   const first = t => (t.urgent ? 0 : 1) - (t.repeats ? 1 : 0) * 0.5;
   const by = (a, b) => first(a) - first(b) || String(a.due || '9999').localeCompare(String(b.due || '9999')) || a.no - b.no;
   const hot = open.filter(t => t.urgent || t.repeats).sort(by), rest = open.filter(t => !(t.urgent || t.repeats));
   const over = rest.filter(t => t.due && t.due < today).sort(by), soon = rest.filter(t => t.due && t.due >= today && t.due <= week).sort(by), later = rest.filter(t => !t.due || t.due > week).sort(by);
-  const fin = tkTasks.filter(t => t.status !== '未着手').sort((a, b) => String(b.doneAt || '').localeCompare(String(a.doneAt || ''))).slice(0, 10);
+  const finAll = tkTasks.filter(t => t.status !== '未着手').sort((a, b) => String(b.doneAt || '').localeCompare(String(a.doneAt || ''))), fin = finAll.slice(0, 5), hiddenN = finAll.length - fin.length;
   const sec = (h, l) => (l.length ? `<div class="sec-h big">${h}(${l.length}件)</div><ul class="tasks">${l.map(tkItem).join('')}</ul>` : '');
   const when = tkState && tkState.lastRunAt ? new Date(tkState.lastRunAt).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'まだありません';
-  return `<div class="vboard"><div class="vb-h"><b>統括タスク(統括グループの会話から)</b><span class="pk">未完了 ${open.length}件 ・ 前回の分析: ${esc(when)}</span><span class="sp"></span><button type="button" class="btn" id="tk-run">今すぐ分析する</button></div>
+  return `<div class="vboard"><div class="vb-h"><b>統括タスク(統括グループの会話から)</b><span class="pk">未完了 ${open.length}件 ・ 前回の分析: ${esc(when)}</span><span class="sp"></span><button type="button" class="btn ghost" id="tk-rerun">直近24時間を分析し直す</button><button type="button" class="btn" id="tk-run">今すぐ分析する</button></div>
       <p>統括グループのLINEの全員の発言から、代表の指示・助言・お叱り、メンバー同士の依頼、本人の「やります」を、毎晩23時50分にAIが「やること」に直します。代表に言われる前に動けるよう、急ぎのもの・繰り返し言われているものを一番上に出します。</p></div>
     ${sec('急ぎ・繰り返し言われている', hot)}${sec('期限切れ', over)}${sec('今週まで', soon)}${sec('それ以降・期限なし', later)}
     ${!open.length ? '<div class="empty"><b>未完了の統括タスクはありません</b>統括グループの会話が分析されると、ここに並びます。</div>' : ''}
-    ${sec('最近終わったもの', fin)}
+    ${fin.length ? `<div class="sec-h big">最近終わったもの(新しい順に${fin.length}件)</div><ul class="tasks tkfin" style="max-height:340px;overflow-y:auto">${fin.map(tkFinRow).join('')}</ul>` : ''}
+    ${hiddenN ? `<p class="pk">これより古い終わったもの ${hiddenN}件は、非表示にしています。 <button type="button" class="btn ghost" id="tk-purge">古い${hiddenN}件をまとめて削除</button></p>` : ''}
     <div class="sec-h big">スタッフ用の「やること」</div>`;
 }
 function tasksHTML() {
@@ -1878,6 +1885,19 @@ document.addEventListener('click', async e => {
     try { const r = await call('aiTokatsuTasks')({ action: 'send', id, text }); tkCompose = null; toast(`統括グループに送りました(今日あと${r.data.left}通)`); }
     catch (err) { tkCompose = { id, text, busy: '' }; toast('送れませんでした: ' + err.message); }
     renderPanel(); return;
+  }
+  if (btn.id === 'tk-rerun') {
+    btn.disabled = true; btn.textContent = '分析しています…';
+    try { const r = await call('aiTokatsuTasks')({ action: 'run', hours: 24 }); toast(`直近24時間の発言 ${r.data.lines}件を分析し、新しい項目 ${r.data.made}件を追加しました(経過は項目に足されます)`); }
+    catch (err) { toast('分析できませんでした: ' + err.message); }
+    btn.disabled = false; btn.textContent = '直近24時間を分析し直す'; return;
+  }
+  if (btn.id === 'tk-purge') {
+    if (!confirm('古い「終わったもの」をまとめて削除します。\n(新しい順に5件は残ります。未完了の項目は消えません)\n削除したものは元に戻せません。よろしいですか?')) return;
+    btn.disabled = true;
+    try { const r = await call('aiTokatsuTasks')({ action: 'purge' }); toast(`${r.data.removed}件を削除しました`); }
+    catch (err) { btn.disabled = false; toast('削除できませんでした: ' + err.message); }
+    return;
   }
   if (btn.id === 'tk-run') {
     btn.disabled = true; btn.textContent = '分析しています…';
