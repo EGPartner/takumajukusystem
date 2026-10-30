@@ -307,8 +307,8 @@
         <p class="notice"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16.5v.5"/></svg><span>「福井校(エリート)」は「坂井・福井校(エリート)」に統合されました。福井校(エリート)の方は「坂井・福井校(エリート)」をお選びください。</span></p>
       </div>
       <div class="field">
-        <label for="gate-name">塾生のお名前(姓名)</label>
-        <input type="text" id="gate-name" placeholder="例: 山田 蓮" autocomplete="off">
+        <label for="gate-name">塾生のお名前(カタカナ・姓名)</label>
+        <input type="text" id="gate-name" placeholder="例: ヤマダ レン" autocomplete="off">
       </div>
       <button type="button" class="primary" id="gate-submit">利用を開始する
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
@@ -495,6 +495,11 @@ document.getElementById('btn-notify-email').addEventListener('click', async () =
 
 // ---- 塾生名簿との照合による関門(塾生家庭以外の閲覧を防ぐ) ----
 function normalizeName(n){ return String(n || '').replace(/[\s　・･]/g, ''); }
+// 保護者の本人確認はカタカナで照合する(漢字の字体違い・空白の有無による不一致を防ぐため)。
+// ひらがな・半角カナはカタカナにそろえ、空白と中黒は除く。名簿側(roster-schedule-sync.gs / school.html)も同じ規則で「K:」付きの鍵を作る。
+function normalizeKana(n){ return String(n || '').normalize('NFKC').replace(/[\u3041-\u3096]/g, c => String.fromCharCode(c.charCodeAt(0) + 0x60)).replace(/[\s\u3000・･·]/g, ''); }
+function isKanaName(n){ return /^[\u30A0-\u30FF]+$/.test(normalizeKana(n)); }
+function kanaKey(n){ return 'K:' + normalizeKana(n); }
 // ページを開いた直後は、Firebaseが「以前ログインした状態」を復元し終えるまで一瞬の空白がある。
 // この間に signInAnonymously() を呼んでしまうと、復元前の一瞬だけ別の(新しい)アカウントを
 // 作ってしまい、直前に保存したはずのデータと食い違うことがあった。そのため、最初の1回だけ
@@ -531,7 +536,7 @@ function showPending(uid){
     if (data.status === 'rejected'){
       // 本部が不明者リストで「塾生ではない」と判断した申請
       const box = document.getElementById('gate-pending');
-      if (box && !document.getElementById('gate-rejected')) box.insertAdjacentHTML('afterbegin', '<div id="gate-rejected" style="margin:0 0 12px;padding:10px 12px;border-radius:10px;background:#FCE7E4;"><p style="color:var(--danger);font-weight:700;margin:0 0 4px;">塾生名簿でお名前を確認できませんでした。</p><p style="margin:0;font-size:13px;">お名前の漢字やひらがなが名簿と違うと確認できません。下の「名前を入力し直す」から、もう一度お試しください。解決しないときは、タクマ塾の公式LINEのトークからお問い合わせください。</p></div>');
+      if (box && !document.getElementById('gate-rejected')) box.insertAdjacentHTML('afterbegin', '<div id="gate-rejected" style="margin:0 0 12px;padding:10px 12px;border-radius:10px;background:#FCE7E4;"><p style="color:var(--danger);font-weight:700;margin:0 0 4px;">塾生名簿でお名前を確認できませんでした。</p><p style="margin:0;font-size:13px;">お名前(カタカナ)が名簿と違うと確認できません。下の「名前を入力し直す」から、もう一度お試しください。解決しないときは、タクマ塾の公式LINEのトークからお問い合わせください。</p></div>');
       return;
     }
     if (data.notifyEmail){
@@ -581,11 +586,12 @@ document.getElementById('gate-submit').addEventListener('click', async () => {
   const name = document.getElementById('gate-name').value.trim();
   if (!schoolId){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = '校舎を選択してください。'; return; }
   if (!name){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = '塾生のお名前を入力してください。'; return; }
+  if (!isKanaName(name)){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = 'お名前は、カタカナで入力してください(例: ヤマダ レン)。ひらがなでもかまいません。'; return; }
   statusEl.style.color = 'var(--ink-soft)';
   statusEl.textContent = '確認しています…';
   const user = await ensureAnon();
   try { localStorage.setItem(LAST_SCHOOL_KEY, schoolId); } catch(e){}
-  const base = { studentName: name, nameKey: normalizeName(name), schoolId, createdAt: firebase.firestore.FieldValue.serverTimestamp() };
+  const base = { studentName: name, nameKey: kanaKey(name), schoolId, createdAt: firebase.firestore.FieldValue.serverTimestamp() };
   try {
     // まず名簿との照合(一致すれば即「承認済み」で登録できる)
     await db.collection('parentViewers').doc(user.uid).set(Object.assign({ status: 'approved' }, base));
