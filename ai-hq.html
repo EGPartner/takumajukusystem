@@ -1368,7 +1368,7 @@ function tkHTML() {
   const sec = (h, color, l) => (l.length ? `<div class="tk-sec"><i class="d" style="background:${color}"></i>${h}<span class="n">${l.length}</span></div><ul class="tasks">${l.map(tkItem).join('')}</ul>` : '');
   const when = tkState && tkState.lastRunAt ? tkWhen(tkState.lastRunAt) : 'まだありません';
   return `<div class="vboard"><div class="tk-head"><b>統括タスク</b><span class="pk">未完了 ${open.length}件 ・ 前回の分析 ${esc(when)}</span><span class="sp"></span><button type="button" class="btn" id="tk-run">今すぐ分析</button></div>
-      <details class="prep"><summary>しくみ</summary><p>統括グループのLINEの全員の発言から、代表の指示・助言・お叱り、メンバー同士の依頼、本人の「やります」を、毎晩23時50分にAIが拾います。急ぎのもの・繰り返し言われているものは一番上に出ます。関係する会話は、各項目の「経過」に足されます。</p></details></div>
+      <p class="pk">統括グループの会話から、やることを自動で整理します。完了・担当・期限の変更、LINE送信ができます。</p></div>
     ${sec('急ぎ・繰り返し言われている', 'var(--bad)', hot)}${sec('期限切れ', 'var(--warn)', over)}${sec('今週まで', 'var(--accent)', soon)}${sec('それ以降・期限なし', 'var(--idle)', later)}
     ${!open.length ? '<div class="empty"><b>未完了の統括タスクはありません</b>統括グループの会話が分析されると、ここに並びます。</div>' : ''}
     ${fin.length ? `<div class="tk-sec"><i class="d" style="background:var(--ok)"></i>最近終わったもの<span class="n">新しい順に${fin.length}件</span></div><ul class="tkdone">${fin.map(tkFinRow).join('')}</ul>` : ''}
