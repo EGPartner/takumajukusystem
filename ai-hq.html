@@ -390,14 +390,12 @@
   .tk-act .btn.tk-done{background:var(--ink);color:var(--surface);border-color:var(--ink)}
   .tk-act .sp{flex:1}
   .tkdone{list-style:none;margin:0;padding:0;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface)}
-  .tkdone>li{border-top:1px solid var(--line);padding:9px 12px}
+  .tkdone>li{border-top:1px solid var(--line);padding:8px 12px;display:flex;gap:8px;align-items:center;font-size:13px}
   .tkdone>li:first-child{border-top:0}
-  .tkdone summary{display:flex;gap:8px;align-items:center;cursor:pointer;list-style:none;font-size:13px}
-  .tkdone summary::-webkit-details-marker{display:none}
   .tkdone .ck{color:var(--ok);font-weight:900}
   .tkdone .t{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink-2)}
   .tkdone .s{font-size:11px;color:var(--ink-3);white-space:nowrap}
-  .tkdone .more{margin-top:8px;display:grid;gap:6px;font-size:12.5px;color:var(--ink-2)}
+  .tkdone .btn{padding:4px 10px;font-size:12px;border-color:var(--line-strong);color:var(--ink-2);white-space:nowrap}
   .tkpurge{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--ink-3)}
   .vform .meta input:not([type]){font:inherit;font-size:13px;border:1px solid var(--line-strong);border-radius:8px;padding:5px 6px;background:var(--surface-2);color:var(--ink)}
   .tag.plan-human,.tag.plan-ask{background:var(--warn-soft);color:var(--warn)} .tag.plan-send_staff{background:var(--accent-soft);color:var(--accent-ink)} .tag.plan-ai,.tag.plan-research{background:var(--ok-soft);color:var(--ok)}
@@ -1356,12 +1354,9 @@ function tkItem(t) {
     <div class="tk-act"><button type="button" class="btn tk-done" data-tkset="${id}" data-st="完了">完了</button><button type="button" class="btn" data-tkline="${id}">LINE送信</button><button type="button" class="btn ghost" data-tkowner="${id}">担当</button><button type="button" class="btn ghost" data-tkdue="${id}">期限</button><span class="sp"></span><button type="button" class="btn ghost" data-tkset="${id}" data-st="不要">不要</button></div>
     ${compose}</li>`;
 }
-/** 終わったもの1件(タイトルだけ。タップで詳細と「未完了に戻す」) */
+/** 終わったもの1件(1行。右に「未完了に戻す」ボタンを出しておく) */
 function tkFinRow(t) {
-  return `<li><details><summary><span class="ck">✓</span><span class="t">${esc(t.text)}</span><span class="s">${esc(t.status)}${t.doneAt ? ' ' + esc(tkMd(String(t.doneAt).slice(0, 10))) : ''}</span></summary>
-    <div class="more"><div>${esc(t.kind || '指示')} ・ ${esc(t.owner || '担当未定')}${t.due ? ' ・ 期限 ' + esc(tkMd(t.due)) : ''}${t.doneBy ? ' ・ ' + esc(t.doneBy) : ''}${t.evidence ? ' — ' + esc(t.evidence) : ''}</div>
-    ${(t.history || []).map(h => `<div>${esc(h.note).replace(/\n/g, '<br>')}</div>`).join('')}
-    <div class="tk-act"><button type="button" class="btn ghost" data-tkset="${esc(t.id)}" data-st="未着手">未完了に戻す</button></div></div></details></li>`;
+  return `<li><span class="ck">✓</span><span class="t" title="${esc(t.text)}">${esc(t.text)}</span><span class="s">${esc(t.status)}${t.doneAt ? ' ' + esc(tkMd(String(t.doneAt).slice(0, 10))) : ''}</span><button type="button" class="btn ghost" data-tkset="${esc(t.id)}" data-st="未着手">戻す</button></li>`;
 }
 function tkHTML() {
   const today = todayJst(), week = addDaysYmd(today, 7), open = tkOpen();
