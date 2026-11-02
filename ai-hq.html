@@ -876,7 +876,7 @@ function actorOfTarget(t) { if (!t) return null; if (t.kind === 'team') return t
 let orders = [], decisions = [], logs = [], usage = null, apiKeyMeta = null;
 let decided = [], voices = [], voiceFilter = '対応が必要', voiceLink = null; // voiceLink: 次に出す指示と結びつける意見のID(1件、またはテーマの打ち手なら複数)
 let tkTasks = [], tkState = null, tkCompose = null; // tkCompose: LINE送信の作成中 { id, text, busy }
-let _tkx = 0; // 統括タスク(統括グループの会話から、代表の指示・助言・お叱りを整理したもの)
+let _tkx = 0; // 統括タスク(統括グループの会話から整理したもの)
 let tasks = []; // 「やること」台帳(承認・採用した案件の人の作業と、LINE・議事録の宿題)
 let knMemos = [], knState = null, knFilter = 'すべて'; // 社内メモ(スタッフ用LINEと議事録から毎晩整理したもの)
 let voiceThemes = [], voiceReview = null, voiceRules = [], voiceView = 'theme', rulesOpen = null; // rulesOpen: 台帳を開いているか(null=承認待ちがあれば開く)
@@ -1337,6 +1337,7 @@ function taskItem(t) {
 }
 /** 統括タスク: 統括グループのLINEの会話から拾った、全員の「やること」 */
 const tkOpen = () => tkTasks.filter(t => t.status === '未着手');
+const tkKindLabel = k => (k === 'お叱り' ? '要改善' : k || '指示');
 const tkMd = d => (d ? d.slice(5).replace('-', '/') : '');
 const tkWhen = at => new Date(at).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 function tkItem(t) {
@@ -1347,7 +1348,7 @@ function tkItem(t) {
       <textarea id="tk-msg" rows="4" ${tkCompose.busy ? 'disabled' : ''} placeholder="送る文">${esc(tkCompose.text || '')}</textarea>
       <div class="actions"><button type="button" class="btn primary" data-tksendgo="${id}" ${tkCompose.busy ? 'disabled' : ''}>${tkCompose.busy === 'send' ? '送っています…' : '統括グループに送る'}</button><button type="button" class="btn ghost" data-tksendcancel="1" ${tkCompose.busy === 'send' ? 'disabled' : ''}>やめる</button></div></div>` : '';
   return `<li class="tkc${hot ? ' hot' : over ? ' over' : ''}">
-    <div class="tk-meta"><span class="tk-chip kind">${esc(t.kind || '指示')}</span>${t.urgent ? '<span class="tk-chip bad">急ぎ</span>' : ''}${t.repeats ? `<span class="tk-chip bad">${esc(t.repeats + 1)}回言われています</span>` : ''}<span class="tk-chip">${esc(t.owner || '担当未定')}</span>${dueChip}</div>
+    <div class="tk-meta"><span class="tk-chip kind">${esc(tkKindLabel(t.kind))}</span>${t.urgent ? '<span class="tk-chip bad">急ぎ</span>' : ''}${t.repeats ? `<span class="tk-chip bad">再確認 ${esc(t.repeats)}回</span>` : ''}<span class="tk-chip">${esc(t.owner || '担当未定')}</span>${dueChip}</div>
     <p class="tk-t">${esc(t.text)}</p>
     ${t.quote ? `<p class="tk-quote">発言「${esc(t.quote)}」</p>` : ''}
     ${hist}
@@ -1370,7 +1371,7 @@ function tkHTML() {
   const err = tkState && tkState.error ? `<div class="alertbox"><b>統括グループの会話の分析がうまくいっていません</b>${esc(tkState.error.message || '')}(${esc(tkWhen(tkState.error.at))})。次に成功すると、この表示は消えます。続くときは、画面を撮って連絡してください。</div>` : '';
   return `${err}<div class="vboard"><div class="tk-head"><b>統括タスク</b><span class="pk">未完了 ${open.length}件 ・ 前回の分析 ${esc(when)}</span><span class="sp"></span><button type="button" class="btn" id="tk-run">今すぐ分析</button></div>
       <p class="pk">統括グループの会話から、やることを自動で整理します。完了・担当・期限の変更、LINE送信ができます。</p></div>
-    ${sec('急ぎ・繰り返し言われている', 'var(--bad)', hot)}${sec('期限切れ', 'var(--warn)', over)}${sec('今週まで', 'var(--accent)', soon)}${sec('それ以降・期限なし', 'var(--idle)', later)}
+    ${sec('急ぎ・再確認', 'var(--bad)', hot)}${sec('期限切れ', 'var(--warn)', over)}${sec('今週まで', 'var(--accent)', soon)}${sec('それ以降・期限なし', 'var(--idle)', later)}
     ${!open.length ? '<div class="empty"><b>未完了の統括タスクはありません</b>統括グループの会話が分析されると、ここに並びます。</div>' : ''}
     ${fin.length ? `<div class="tk-sec"><i class="d" style="background:var(--ok)"></i>最近終わったもの<span class="n">新しい順に${fin.length}件</span></div><ul class="tkdone">${fin.map(tkFinRow).join('')}</ul>` : ''}
     ${hiddenN ? `<div class="tkpurge">これより古い ${hiddenN}件は非表示です <button type="button" class="btn ghost" id="tk-purge">古い${hiddenN}件をまとめて削除</button></div>` : ''}
