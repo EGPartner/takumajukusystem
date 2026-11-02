@@ -1367,7 +1367,8 @@ function tkHTML() {
   const finAll = tkTasks.filter(t => t.status !== '未着手').sort((a, b) => String(b.doneAt || '').localeCompare(String(a.doneAt || ''))), fin = finAll.slice(0, 5), hiddenN = finAll.length - fin.length;
   const sec = (h, color, l) => (l.length ? `<div class="tk-sec"><i class="d" style="background:${color}"></i>${h}<span class="n">${l.length}</span></div><ul class="tasks">${l.map(tkItem).join('')}</ul>` : '');
   const when = tkState && tkState.lastRunAt ? tkWhen(tkState.lastRunAt) : 'まだありません';
-  return `<div class="vboard"><div class="tk-head"><b>統括タスク</b><span class="pk">未完了 ${open.length}件 ・ 前回の分析 ${esc(when)}</span><span class="sp"></span><button type="button" class="btn" id="tk-run">今すぐ分析</button></div>
+  const err = tkState && tkState.error ? `<div class="alertbox"><b>統括グループの会話の分析がうまくいっていません</b>${esc(tkState.error.message || '')}(${esc(tkWhen(tkState.error.at))})。次に成功すると、この表示は消えます。続くときは、画面を撮って連絡してください。</div>` : '';
+  return `${err}<div class="vboard"><div class="tk-head"><b>統括タスク</b><span class="pk">未完了 ${open.length}件 ・ 前回の分析 ${esc(when)}</span><span class="sp"></span><button type="button" class="btn" id="tk-run">今すぐ分析</button></div>
       <p class="pk">統括グループの会話から、やることを自動で整理します。完了・担当・期限の変更、LINE送信ができます。</p></div>
     ${sec('急ぎ・繰り返し言われている', 'var(--bad)', hot)}${sec('期限切れ', 'var(--warn)', over)}${sec('今週まで', 'var(--accent)', soon)}${sec('それ以降・期限なし', 'var(--idle)', later)}
     ${!open.length ? '<div class="empty"><b>未完了の統括タスクはありません</b>統括グループの会話が分析されると、ここに並びます。</div>' : ''}
@@ -1917,7 +1918,7 @@ document.addEventListener('click', async e => {
   if (btn.dataset.tksendgo) {
     const id = btn.dataset.tksendgo, ta = $('#tk-msg'), text = ta ? ta.value.trim() : '';
     if (!text) { if (ta) ta.focus(); return; }
-    if (!confirm('統括グループ(代表・事務員・指導統括・あなた)に、LINEを送ります。\n送ったあとは取り消せません。\n\n' + text)) return;
+    if (!confirm('統括グループ(代表・事務員・指導統括・あなた)に、LINEを送ります。\n文末に「(あなたの名前より)」が付きます。送ったあとは取り消せません。\n\n' + text)) return;
     tkCompose = { id, text, busy: 'send' }; renderPanel();
     try { const r = await call('aiTokatsuTasks')({ action: 'send', id, text }); tkCompose = null; toast(`統括グループに送りました(今日あと${r.data.left}通)`); }
     catch (err) { tkCompose = { id, text, busy: '' }; toast('送れませんでした: ' + err.message); }
