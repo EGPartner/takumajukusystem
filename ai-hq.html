@@ -389,6 +389,22 @@
   .tk-act .btn{padding:6px 12px;font-size:12px}
   .tk-act .btn.tk-done{background:var(--ink);color:var(--surface);border-color:var(--ink)}
   .tk-act .sp{flex:1}
+  .pa-todo{list-style:none;border-top:1px solid var(--line);padding-top:10px;display:grid;gap:6px}
+  .pa-todo:first-child{border-top:0;padding-top:0}
+  .pa-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .pa-head b{font-size:15px}
+  .pa-head .sp{flex:1}
+  .pa-prev{font-size:12px;color:var(--ink-3);overflow-wrap:anywhere;margin:0}
+  .pa-box{background:var(--surface-2);border-radius:10px;padding:10px 12px;font-size:12.5px;color:var(--ink-2);overflow-wrap:anywhere;display:grid;gap:4px}
+  .pa-box h4{margin:0;font-size:12px;color:var(--ink-3)}
+  .pa-msg{margin:0;padding:6px 0;border-top:1px solid var(--line)}
+  .pa-msg:first-of-type{border-top:0}
+  .pa-msg span{display:block;font-size:11px;color:var(--ink-3)}
+  .pa-rows{list-style:none;margin:0;padding:0;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface)}
+  .pa-rows>li{border-top:1px solid var(--line);padding:8px 12px;display:flex;gap:8px;align-items:center;font-size:13px}
+  .pa-rows>li:first-child{border-top:0}
+  .pa-rows .t{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pa-rows .s{font-size:11px;color:var(--ink-3);white-space:nowrap}
   .tkdone{list-style:none;margin:0;padding:0;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface)}
   .tkdone>li{border-top:1px solid var(--line);padding:8px 12px;display:flex;gap:8px;align-items:center;font-size:13px}
   .tkdone>li:first-child{border-top:0}
@@ -875,6 +891,7 @@ function actorOfTarget(t) { if (!t) return null; if (t.kind === 'team') return t
 /* ---------- 本番のデータ ---------- */
 let orders = [], decisions = [], logs = [], usage = null, apiKeyMeta = null;
 let decided = [], voices = [], voiceFilter = '対応が必要', voiceLink = null; // voiceLink: 次に出す指示と結びつける意見のID(1件、またはテーマの打ち手なら複数)
+let tasksView = 'tk', paList = [], paState = null, paOpen = null, paCompose = null; // 保護者対応。paCompose: 返信案の作成中 { uid, text, busy }
 let tkTasks = [], tkState = null, tkCompose = null; // tkCompose: LINE送信の作成中 { id, text, busy }
 let _tkx = 0; // 統括タスク(統括グループの会話から整理したもの)
 let tasks = []; // 「やること」台帳(承認・採用した案件の人の作業と、LINE・議事録の宿題)
@@ -1262,7 +1279,7 @@ function renderPanelInner() {
       + (pendingB().length ? `<div class="sec-h big">目を通すもの ・ 完了報告(${pendingB().length}件)</div><p class="pk">押さなくても業務は止まりません。${7}日たつと自動で「確認なしで完了」になり、記録は残ります(後からでも採用・不採用にできます)。</p>` + pendingB().map(reviewCard).join('') : '');
     P.insertAdjacentHTML('beforeend', decidedHTML());
   } else if (panelTab === 'tasks') {
-    P.innerHTML = tkHTML() + tasksHTML();
+    P.innerHTML = paSwitch() + (tasksView === 'parent' ? parentsHTML() : tkHTML() + tasksHTML());
   } else if (panelTab === 'voices') {
     P.innerHTML = voicesHTML();
   } else if (panelTab === 'sched') {
@@ -1336,6 +1353,53 @@ function taskItem(t) {
     <div class="ta">${t.status === '未着手' ? `<button type="button" class="btn" data-tset="${esc(t.id)}" data-st="完了">完了</button><button type="button" class="btn ghost" data-tset="${esc(t.id)}" data-st="不要">不要</button><button type="button" class="btn ghost" data-towner="${esc(t.id)}">担当</button><button type="button" class="btn ghost" data-tdue="${esc(t.id)}">期限</button>` : `<button type="button" class="btn ghost" data-tset="${esc(t.id)}" data-st="未着手">未完了に戻す</button>`}</div></div></li>`;
 }
 /** 統括タスク: 統括グループのLINEの会話から拾った、全員の「やること」 */
+/* ---------- 保護者対応(公式LINEの1対1) ---------- */
+const paName = p => p.name || '名前未設定';
+const paOpenTodos = p => (p.todos || []).filter(t => t.status === '未対応');
+const paOpenCount = () => paList.reduce((n, p) => n + paOpenTodos(p).length, 0);
+function paSwitch() {
+  return `<div class="vfilter"><button type="button" data-tview="tk" aria-pressed="${tasksView === 'tk'}">統括・スタッフのやること</button><button type="button" data-tview="parent" aria-pressed="${tasksView === 'parent'}">保護者対応${paOpenCount() ? ' ' + paOpenCount() : ''}</button></div>`;
+}
+function paTodo(p, t) {
+  const uid = esc(p.id), tid = esc(t.id), over = !!(t.due && t.due < todayJst());
+  const h = Math.floor((Date.now() - Date.parse(t.createdAt)) / 3600e3);
+  const wait = h >= 24 ? `<span class="tk-chip bad">${Math.floor(h / 24)}日経過</span>` : h >= 1 ? `<span class="tk-chip">${h}時間経過</span>` : '';
+  const due = t.due ? `<span class="tk-chip${over ? ' warn' : ''}">期限 ${esc(tkMd(t.due))}${over ? '(期限切れ)' : ''}</span>` : '';
+  const hist = (t.history || []).length ? `<details class="tk-hist"><summary>経過 ${t.history.length}件</summary><ol>${t.history.map(x => `<li><span class="w">${esc(tkWhen(x.at))}${x.by ? ' ・ ' + esc(x.by) : ''}</span>${esc(x.note)}</li>`).join('')}</ol></details>` : '';
+  return `<li class="pa-todo"><div class="tk-meta"><span class="tk-chip kind">${esc(t.kind)}</span>${t.urgent ? '<span class="tk-chip bad">急ぎ</span>' : ''}${wait}${due}</div>
+    <p class="tk-t">${esc(t.text)}</p>${t.quote ? `<p class="tk-quote">発言「${esc(t.quote)}」</p>` : ''}${hist}
+    <div class="tk-act"><button type="button" class="btn tk-done" data-pact="done" data-uid="${uid}" data-tid="${tid}">対応済み</button><button type="button" class="btn ghost" data-pact="due" data-uid="${uid}" data-tid="${tid}">期限</button><span class="sp"></span><button type="button" class="btn ghost" data-pact="none" data-uid="${uid}" data-tid="${tid}">不要</button></div></li>`;
+}
+function paDetail(p) {
+  const uid = esc(p.id), done = (p.todos || []).filter(t => t.status !== '未対応').slice(-6).reverse();
+  const c = paCompose && paCompose.uid === p.id ? `<div class="vform"><b>返信案</b><p class="pk">${paCompose.busy === 'draft' ? '返信案を作っています…' : 'AIの案です。直して、コピーしてLINE公式アカウントから送ってください。このシステムからは送られません。'}</p>
+      <textarea id="pa-msg" rows="6" ${paCompose.busy ? 'disabled' : ''}>${esc(paCompose.text || '')}</textarea>
+      <div class="actions"><button type="button" class="btn primary" data-pact="copy" data-uid="${uid}" ${paCompose.busy ? 'disabled' : ''}>コピー</button><button type="button" class="btn ghost" data-pact="closedraft" data-uid="${uid}">閉じる</button></div></div>` : '';
+  return `<div class="pa-box"><h4>これまでの要点</h4>${p.summary ? esc(p.summary) : '(まだありません。受信が分析されると入ります)'}
+      ${p.memo ? `<h4>メモ</h4>${esc(p.memo)}` : ''}</div>
+    <div class="pa-box"><h4>直近の受信(新しい順)</h4>${(p.recent || []).slice().reverse().map(m => `<p class="pa-msg"><span>${esc(tkWhen(m.at))}</span>${esc(m.text).replace(/\n/g, '<br>')}</p>`).join('') || '(なし)'}</div>
+    ${done.length ? `<div class="pa-box"><h4>終わったこと</h4>${done.map(t => `<p class="pa-msg"><span>${esc(t.status)} ${t.doneAt ? esc(tkWhen(t.doneAt)) : ''}${t.doneBy ? ' ・ ' + esc(t.doneBy) : ''}</span>${esc(t.text)}${(t.history || []).map(x => `<br>└ ${esc(x.note)}`).join('')}${t.note ? `<br>└ ${esc(t.note)}` : ''}</p>`).join('')}</div>` : ''}
+    ${c}
+    <div class="tk-act"><button type="button" class="btn" data-pact="draft" data-uid="${uid}">返信案を作る</button><button type="button" class="btn ghost" data-pact="add" data-uid="${uid}">やることを足す</button><button type="button" class="btn ghost" data-pact="name" data-uid="${uid}">名前</button><button type="button" class="btn ghost" data-pact="memo" data-uid="${uid}">メモ</button><span class="sp"></span><button type="button" class="btn ghost" data-pact="erase" data-uid="${uid}">記録を削除</button></div>`;
+}
+function paCard(p) {
+  const open = paOpenTodos(p), uid = esc(p.id), isOpen = paOpen === p.id, last = (p.recent || [])[(p.recent || []).length - 1];
+  return `<li class="tkc${open.some(t => t.urgent) ? ' hot' : ''}"><div class="pa-head"><b>${esc(paName(p))}</b><span class="tk-chip">未対応 ${open.length}件</span>${last ? `<span class="pk">最終受信 ${esc(tkWhen(last.at))}</span>` : ''}<span class="sp"></span><button type="button" class="btn ghost" data-pact="open" data-uid="${uid}">${isOpen ? '閉じる' : '詳しく'}</button></div>
+    ${!p.name && last ? `<p class="pa-prev">「${esc(last.text.slice(0, 40))}」</p>` : ''}
+    <ul class="tasks" style="display:grid;gap:10px">${open.sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt))).map(t => paTodo(p, t)).join('')}</ul>
+    ${isOpen ? paDetail(p) : ''}</li>`;
+}
+function parentsHTML() {
+  const withOpen = paList.filter(p => paOpenTodos(p).length).sort((a, b) => String(paOpenTodos(a)[0].createdAt).localeCompare(String(paOpenTodos(b)[0].createdAt)));
+  const quiet = paList.filter(p => !paOpenTodos(p).length).sort((a, b) => String(b.lastInAt || '').localeCompare(String(a.lastInAt || '')));
+  const when = paState && paState.lastRunAt ? tkWhen(paState.lastRunAt) : 'まだありません';
+  const err = paState && paState.error ? `<div class="alertbox"><b>保護者の受信の分析がうまくいっていません</b>${esc(paState.error.message || '')}(${esc(tkWhen(paState.error.at))})。次に成功すると、この表示は消えます。</div>` : '';
+  const quietRows = quiet.slice(0, 20).map(p => `<li><span class="t">${esc(paName(p))}${p.summary ? ' ・ ' + esc(p.summary.slice(0, 30)) : ''}</span><span class="s">${p.lastInAt ? esc(tkWhen(p.lastInAt)) : ''}</span><button type="button" class="btn ghost" data-pact="open" data-uid="${esc(p.id)}">${paOpen === p.id ? '閉じる' : '詳しく'}</button></li>${paOpen === p.id ? `<li style="display:block">${paDetail(p)}</li>` : ''}`).join('');
+  return `${err}<div class="vboard"><div class="tk-head"><b>保護者対応</b><span class="pk">未対応 ${paOpenCount()}件 ・ 前回の分析 ${esc(when)}</span><span class="sp"></span><button type="button" class="btn" data-pact="run">今すぐ分析</button></div>
+      <p class="pk">公式LINEに届いた保護者のメッセージから、塾側のやることを整理します。返信はLINEアプリから行い、終わったら「対応済み」を押してください。</p></div>
+    ${withOpen.length ? `<ul class="tasks" style="display:grid;gap:10px">${withOpen.map(paCard).join('')}</ul>` : '<div class="empty"><b>未対応の保護者対応はありません</b>公式LINEに保護者からメッセージが届くと、ここに並びます。</div>'}
+    ${quiet.length ? `<div class="tk-sec"><i class="d" style="background:var(--idle)"></i>やることのない保護者<span class="n">${quiet.length}人</span></div><ul class="pa-rows">${quietRows}</ul>` : ''}`;
+}
 const tkOpen = () => tkTasks.filter(t => t.status === '未着手');
 const tkKindLabel = k => (k === 'お叱り' ? '要改善' : k || '指示');
 const tkMd = d => (d ? d.slice(5).replace('-', '/') : '');
@@ -1909,6 +1973,35 @@ document.addEventListener('click', async e => {
   if (btn.dataset.vf) { voiceFilter = btn.dataset.vf; renderPanel(); return; }
   if (btn.dataset.vview) { voiceView = btn.dataset.vview; renderPanel(); return; }
   if (btn.dataset.knf) { knFilter = btn.dataset.knf; renderPanel(); return; }
+  if (btn.dataset.tview) { tasksView = btn.dataset.tview; renderPanel(); return; }
+  if (btn.dataset.pact) {
+    const act = btn.dataset.pact, uid = btn.dataset.uid, tid = btn.dataset.tid, p = paList.find(x => x.id === uid);
+    const op = async (data, ok) => { btn.disabled = true; try { await call('aiParentOps')({ uid, ...data }); if (ok) toast(ok); } catch (err) { btn.disabled = false; toast('できませんでした: ' + err.message); } };
+    if (act === 'run') {
+      btn.disabled = true;
+      try { const r = await call('aiParentOps')({ action: 'run' }); toast(r.data.skipped ? 'ほかの分析が動いています。少し待ってください' : `${r.data.parents}人の受信を分析し、新しいやること ${r.data.made}件を追加しました`); }
+      catch (err) { toast('分析できませんでした: ' + err.message); }
+      btn.disabled = false; return;
+    }
+    if (!p) return;
+    if (act === 'open') { paOpen = paOpen === uid ? null : uid; paCompose = null; renderPanel(); return; }
+    if (act === 'closedraft') { paCompose = null; renderPanel(); return; }
+    if (act === 'copy') { const ta = $('#pa-msg'); if (!ta) return; try { await navigator.clipboard.writeText(ta.value); toast('コピーしました。LINE公式アカウントに貼り付けてください'); } catch (e) { ta.select(); toast('選択しました。コピーしてください'); } return; }
+    if (act === 'draft') {
+      paCompose = { uid, text: '', busy: 'draft' }; renderPanel();
+      try { const r = await call('aiParentOps')({ action: 'draft', uid }); if (paCompose && paCompose.uid === uid) paCompose = { uid, text: r.data.reply || '', busy: '' }; }
+      catch (err) { toast('返信案を作れませんでした: ' + err.message); if (paCompose && paCompose.uid === uid) paCompose = null; }
+      renderPanel(); return;
+    }
+    if (act === 'done') { const n = prompt('返信した内容や、約束したことを一言(空でもOK。あとで経歴に残ります)', ''); if (n === null) return; return op({ action: 'set', id: tid, status: '対応済み', note: n.trim() }, '対応済みにしました'); }
+    if (act === 'none') return op({ action: 'set', id: tid, status: '不要' }, '不要にしました');
+    if (act === 'due') { const t = (p.todos || []).find(x => x.id === tid); const v = prompt('期限(YYYY-MM-DD。空にすると期限なし)', (t && t.due) || todayJst()); if (v === null) return; return op({ action: 'set', id: tid, due: v.trim() }, '変更しました'); }
+    if (act === 'name') { const v = prompt('保護者の呼び名(例: 山田さん(太郎くんの保護者))', p.name || ''); if (v === null) return; return op({ action: 'edit', name: v }, '変更しました'); }
+    if (act === 'memo') { const v = prompt('メモ(配慮してほしいこと・約束事など)', p.memo || ''); if (v === null) return; return op({ action: 'edit', memo: v }, '変更しました'); }
+    if (act === 'add') { const v = prompt('塾側のやること(例: 来週火曜に折り返し電話する)', ''); if (!v || !v.trim()) return; return op({ action: 'add', text: v.trim() }, '足しました'); }
+    if (act === 'erase') { if (!confirm(`${paName(p)}の記録(要点・やること・受信)をすべて削除します。元に戻せません。よろしいですか?`)) return; paOpen = null; return op({ action: 'erase' }, '削除しました'); }
+    return;
+  }
   if (btn.dataset.tkline) {
     const id = btn.dataset.tkline; tkCompose = { id, text: '', busy: 'draft' }; renderPanel();
     try { const r = await call('aiTokatsuTasks')({ action: 'draft', id }); if (tkCompose && tkCompose.id === id) tkCompose = { id, text: r.data.message || '', busy: '' }; }
@@ -2219,6 +2312,8 @@ auth.onAuthStateChanged(async user => {
   [0, 1].forEach(off => db.doc('aiMeta/kn_' + ym(off)).onSnapshot(sn => { knParts[off] = sn.exists ? sn.data().items || [] : []; knMemos = [...(knParts[1] || []), ...(knParts[0] || [])]; if (panelTab === 'log') renderPanel(); }, e => console.error(e)));
   db.doc('aiMeta/tasks').onSnapshot(sn => { tasks = sn.exists ? sn.data().items || [] : []; renderCounts(); if (panelTab === 'tasks' || panelTab === 'sum') renderPanel(); }, e => console.error(e));
   db.doc('aiMeta/tokatsuTasks').onSnapshot(sn => { tkTasks = sn.exists ? sn.data().items || [] : []; if (panelTab === 'tasks') renderPanel(); }, e => console.error(e));
+  db.collection('aiParents').onSnapshot(sn => { paList = sn.docs.map(d => ({ id: d.id, ...d.data() })); if (panelTab === 'tasks') renderPanel(); }, e => console.error(e));
+  db.doc('aiMeta/parentState').onSnapshot(sn => { paState = sn.exists ? sn.data() : null; if (panelTab === 'tasks') renderPanel(); }, e => console.error(e));
   db.doc('aiMeta/tokatsuState').onSnapshot(sn => { tkState = sn.exists ? sn.data() : null; if (panelTab === 'tasks') renderPanel(); }, e => console.error(e));
   db.doc('aiMeta/backlogReview').onSnapshot(sn => { backlog = sn.exists ? sn.data() : null; if (panelTab === 'decide') renderPanel(); }, e => console.error(e));
   db.doc('aiMeta/knowledgeState').onSnapshot(sn => { knState = sn.exists ? sn.data() : null; if (panelTab === 'log') renderPanel(); }, e => console.error(e));
