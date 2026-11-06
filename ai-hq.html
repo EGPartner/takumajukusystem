@@ -124,13 +124,14 @@
     .panel .tabs .close{font-size:13.5px;color:var(--ink-2);border:1px solid var(--line-strong);border-radius:9px;padding:7px 14px;margin-bottom:8px}
     .panel .tabs .close:hover{border-color:var(--accent);color:var(--ink)}
     .panel .pbody{zoom:1.2;padding:20px 24px 32px;grid-template-columns:minmax(0,900px);justify-content:center;overscroll-behavior:contain}
+    .panel .pbody.wide{zoom:1;padding:14px 20px 40px;grid-template-columns:minmax(0,1500px)}
   }
   .tabs{display:flex;gap:4px;padding:10px 10px 0;border-bottom:1px solid var(--line)}
   .tabs button{white-space:nowrap;border:0;background:none;padding:8px 8px;font-size:13px;font-weight:700;color:var(--ink-3);border-bottom:2px solid transparent;cursor:pointer;display:inline-flex;gap:6px;align-items:center}
   .tabs button[aria-selected="true"]{color:var(--ink);border-color:var(--accent)}
   .tabs .n{font-family:var(--f-num);font-size:11px;background:var(--bad);color:#fff;border-radius:8px;padding:0 6px;min-width:18px;text-align:center}
   .tabs .close{margin-left:auto;font-size:18px;color:var(--ink-3)}
-  .pbody{padding:12px 14px;overflow:auto;flex:1;display:grid;align-content:start;gap:12px}
+  .pbody{padding:12px 14px;overflow:auto;flex:1;min-height:0;display:grid;align-content:start;grid-auto-rows:max-content;gap:12px}
   .alertbox{border-radius:10px;background:var(--bad-soft);padding:10px 12px;font-size:12.5px}
   .alertbox b{color:var(--bad);display:block;margin-bottom:2px}
   .mini{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
@@ -389,7 +390,7 @@
   .tk-act .btn{padding:6px 12px;font-size:12px}
   .tk-act .btn.tk-done{background:var(--ink);color:var(--surface);border-color:var(--ink)}
   .tk-act .sp{flex:1}
-  .pa-list{list-style:none;margin:0;padding:0;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface)}
+  .pa-list{list-style:none;margin:0;padding:0;border:1px solid var(--line);border-radius:12px;overflow:clip;background:var(--surface)}
   .pa-row{border-top:1px solid var(--line);padding:10px 14px;display:grid;gap:4px;border-left:4px solid var(--line)}
   .pa-row:first-child{border-top:0}
   .pa-row.st-open{border-left-color:var(--bad);background:var(--bad-soft)}
@@ -415,7 +416,7 @@
   .pa-in{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:7px 11px;font-size:13px;line-height:1.55;overflow-wrap:anywhere;max-width:92%;justify-self:start}
   .pa-in time{display:block;font-size:10.5px;color:var(--ink-3)}
   .pa-act{font-size:11.5px;color:var(--accent-ink);justify-self:center;text-align:center;overflow-wrap:anywhere}
-  .pt{list-style:none;margin:0;padding:0;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface);font-size:12px;line-height:1.45}
+  .pt{list-style:none;margin:0;padding:0;border:1px solid var(--line);border-radius:12px;overflow:clip;background:var(--surface);font-size:12px;line-height:1.45}
   .pt-h,.pt-line{display:grid;grid-template-columns:62px minmax(0,1fr) 58px 64px auto;gap:8px;align-items:start;padding:5px 8px}
   .pt-h{background:var(--surface-2);font-size:11px;font-weight:700;color:var(--ink-3);position:sticky;top:0;z-index:1}
   .pt-h .m{display:grid;grid-template-columns:104px minmax(0,1fr)}
@@ -1302,6 +1303,7 @@ function renderPanel() {
 function renderPanelInner() {
   document.querySelectorAll('[data-ptab]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.ptab === panelTab)));
   const P = $('#pbody');
+  P.classList.toggle('wide', panelTab === 'tasks'); // PCでは、やること・保護者LINEの表を広く・拡大なしで出す
   if (panelTab === 'sum') {
     const bad = orders.filter(o => o.stage === 'error' || o.stage === 'paused_quota');
     const rows = ORG.depts.map(d => {
