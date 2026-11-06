@@ -409,33 +409,36 @@
   .pa-r3{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:12px;color:var(--ink-3)}
   .pa-r3 .sp{flex:1}
   .pa-r3 .btn{padding:5px 12px;font-size:12px}
-  .pa-thread{background:var(--surface-2);border-radius:10px;padding:10px 12px;display:grid;gap:6px;max-height:420px;overflow:auto}
+  .pa-thread{background:var(--surface-2);border-radius:10px;padding:10px 12px;display:grid;gap:6px}
   .pa-thread h4{margin:0;font-size:12px;color:var(--ink-3)}
   .pa-td{font-size:11.5px;font-weight:700;color:var(--ink-3);text-align:center;margin:6px 0 0}
   .pa-in{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:7px 11px;font-size:13px;line-height:1.55;overflow-wrap:anywhere;max-width:92%;justify-self:start}
   .pa-in time{display:block;font-size:10.5px;color:var(--ink-3)}
   .pa-act{font-size:11.5px;color:var(--accent-ink);justify-self:center;text-align:center;overflow-wrap:anywhere}
-  .pt{list-style:none;margin:0;padding:0;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface);font-size:12.5px}
-  .pt-h,.pt-line{display:grid;grid-template-columns:70px minmax(0,1fr) 72px 84px auto;gap:8px;align-items:center;padding:6px 10px}
+  .pt{list-style:none;margin:0;padding:0;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface);font-size:12px;line-height:1.45}
+  .pt-h,.pt-line{display:grid;grid-template-columns:62px minmax(0,1fr) 58px 64px auto;gap:8px;align-items:start;padding:5px 8px}
   .pt-h{background:var(--surface-2);font-size:11px;font-weight:700;color:var(--ink-3);position:sticky;top:0;z-index:1}
-  .pt-h .m{display:grid;grid-template-columns:130px minmax(0,1fr)}
+  .pt-h .m{display:grid;grid-template-columns:104px minmax(0,1fr)}
   .pt-row{border-top:1px solid var(--line);border-left:4px solid var(--line)}
   .pt-row.st-open{border-left-color:var(--bad);background:var(--bad-soft)}
   .pt-row.st-working{border-left-color:var(--warn);background:var(--warn-soft)}
   .pt-row.st-done{border-left-color:var(--ok)}
-  .pt-main{all:unset;cursor:pointer;display:grid;grid-template-columns:130px minmax(0,1fr);gap:8px;align-items:center;min-width:0}
+  .pt-main{all:unset;cursor:pointer;display:grid;grid-template-columns:104px minmax(0,1fr);gap:8px;align-items:start;min-width:0}
   .pt-main:focus-visible{outline:2px solid var(--accent);border-radius:4px}
-  .pt-main b{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .pt-main span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink-2)}
-  .pt-b{font-size:11px;font-weight:700;padding:2px 0;border-radius:999px;text-align:center;background:var(--surface);border:1px solid var(--line);color:var(--ink-2)}
+  .pt-main b{font-size:12.5px;overflow-wrap:anywhere}
+  .pt-main>span{color:var(--ink);overflow-wrap:anywhere;white-space:normal;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:12;overflow:hidden}
+  .pt-main>span>i{display:block;font-style:normal}
+  .pt-main>span>i+i{margin-top:2px;padding-top:2px;border-top:1px dotted var(--line)}
+  .pt-main time{color:var(--ink-3);font-size:10.5px;margin-right:5px}
+  .pt-b{align-self:start;font-size:10.5px;font-weight:700;padding:2px 0;border-radius:999px;text-align:center;background:var(--surface);border:1px solid var(--line);color:var(--ink-2)}
   .st-open .pt-b{background:var(--bad);border-color:var(--bad);color:#fff}
   .st-working .pt-b{background:var(--warn);border-color:var(--warn);color:#fff}
   .st-done .pt-b{background:var(--ok);border-color:var(--ok);color:#fff}
-  .pt-t{font-size:11.5px;color:var(--ink-3);white-space:nowrap}
+  .pt-t{font-size:11px;color:var(--ink-3);white-space:nowrap}
   .pt-t.late{color:var(--bad);font-weight:700}
-  .pt-who{font-size:11.5px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .pt-a{display:flex;gap:4px;justify-content:flex-end}
-  .pt-a .btn{padding:3px 9px;font-size:11.5px}
+  .pt-who{font-size:11px;color:var(--ink-2);overflow-wrap:anywhere}
+  .pt-a{display:flex;gap:3px;justify-content:flex-end;flex-wrap:wrap}
+  .pt-a .btn{padding:2px 8px;font-size:11px}
   .pt-x{padding:8px 10px 12px 14px;display:grid;gap:10px;border-top:1px dashed var(--line)}
   @media (max-width:760px){
     .pt-h{display:none}
@@ -966,7 +969,7 @@ function actorOfTarget(t) { if (!t) return null; if (t.kind === 'team') return t
 /* ---------- 本番のデータ ---------- */
 let orders = [], decisions = [], logs = [], usage = null, apiKeyMeta = null;
 let decided = [], voices = [], voiceFilter = '対応が必要', voiceLink = null; // voiceLink: 次に出す指示と結びつける意見のID(1件、またはテーマの打ち手なら複数)
-let tasksView = 'tk', paFilter = 'need', paList = [], paState = null, paOpen = null, paCompose = null; // 保護者対応。paCompose: 返信案の作成中 { uid, text, busy }
+let paThreadFull = null, tasksView = 'tk', paFilter = 'need', paList = [], paState = null, paOpen = null, paCompose = null; // 保護者対応。paCompose: 返信案の作成中 { uid, text, busy }
 let tkTasks = [], tkState = null, tkCompose = null; // tkCompose: LINE送信の作成中 { id, text, busy }
 let _tkx = 0; // 統括タスク(統括グループの会話から整理したもの)
 let tasks = []; // 「やること」台帳(承認・採用した案件の人の作業と、LINE・議事録の宿題)
@@ -1433,7 +1436,8 @@ function paStatus(p) {
 }
 const paCount = st => paList.filter(p => paStatus(p) === st).length;
 const paOpenCount = () => paCount('open');
-const paUnanswered = p => (p.recent || []).filter(m => paMs(m.at) > paMs(p.handledAt));
+const paIns = p => ((p.thread && p.thread.length) ? p.thread.filter(e => e.k === 'in').map(e => ({ at: e.at, text: e.t })) : (p.recent || [])); // 保護者の発言(古い順)
+const paUnanswered = p => paIns(p).filter(m => paMs(m.at) > paMs(p.handledAt));
 const paSince = p => { const u = paUnanswered(p); return u.length ? paMs(u[0].at) : paMs(p.lastInAt); };
 const paDayKey = ms => new Date(ms + 9 * 3600e3).toISOString().slice(0, 10);
 const paDayLabel = key => { const t = todayJst(); return key === t ? '今日 ' + tkMd(key) : key === addDaysYmd(t, -1) ? '昨日 ' + tkMd(key) : tkMd(key); };
@@ -1455,13 +1459,15 @@ function paTodo(p, t) {
 function paThreadHTML(p) {
   const items = ((p.thread && p.thread.length) ? p.thread : (p.recent || []).map(m => ({ at: m.at, k: 'in', t: m.text }))).slice().sort((a, b) => String(b.at).localeCompare(String(a.at)));
   if (!items.length) return '<div class="pa-thread"><h4>やり取り</h4>(まだありません)</div>';
+  const full = paThreadFull === p.id, total = items.length, vis = full ? items : items.slice(0, 40);
   let day = '', out = '';
-  items.forEach(e => {
+  vis.forEach(e => {
     const d = paDayKey(paMs(e.at));
     if (d !== day) { day = d; out += `<p class="pa-td">${esc(paDayLabel(d))}</p>`; }
     out += e.k === 'act' ? `<p class="pa-act">${esc(paHm(e.at))} ${esc(e.by || '')} ${esc(e.t)}</p>` : `<div class="pa-in"><time>${esc(paHm(e.at))}</time>${esc(e.t).replace(/\n/g, '<br>')}</div>`;
   });
-  return `<div class="pa-thread"><h4>やり取り(新しい順・${items.length}件)</h4>${out}</div>`;
+  const more = total > vis.length ? `<button type="button" class="btn ghost" data-pact="threadmore" data-uid="${esc(p.id)}">さらに古い ${total - vis.length}件を表示</button>` : '';
+  return `<div class="pa-thread"><h4>やり取り(新しい順・${total}件)</h4>${out}${more}</div>`;
 }
 function paDetail(p) {
   const uid = esc(p.id), done = (p.todos || []).filter(t => t.status !== '未対応').slice(-6).reverse();
@@ -1479,16 +1485,18 @@ const paAgo = ms => { const m = Math.floor((Date.now() - ms) / 60000); return m 
 /** 全員を1つの表に。1人=1行(状態・名前・最新メッセージ・経過・対応者・操作)。行をタップすると、その下にやり取りが開く */
 function paRow(p) {
   const st = paStatus(p), uid = esc(p.id), isOpen = paOpen === p.id, open = paOpenTodos(p);
-  const last = (p.recent || [])[(p.recent || []).length - 1] || ((p.thread || []).filter(e => e.k === 'in').slice(-1)[0] && { text: p.thread.filter(e => e.k === 'in').slice(-1)[0].t });
+  const ins = paIns(p), unans = st === 'done' ? [] : paUnanswered(p), shown = (st === 'done' || !unans.length ? ins.slice(-1) : unans.slice(-5)), hiddenN = Math.max(0, unans.length - shown.length);
+  const tFmt = at => { const k = paDayKey(paMs(at)); return (k === todayJst() ? '' : tkMd(k) + ' ') + paHm(at); };
   const lastMs = paMs(p.lastInAt), late = st === 'open' && Date.now() - paSince(p) >= 24 * 3600e3;
   const badge = { open: '未対応', working: '対応中', done: '対応済み' }[st], seen = esc(p.lastInAt || '');
   const urgent = open.some(t => t.urgent) ? '【急】' : '';
   const acts = st === 'open' ? `<button type="button" class="btn" data-pact="work" data-uid="${uid}" title="対応を始める">開始</button><button type="button" class="btn ghost" data-pact="handled" data-uid="${uid}" data-seen="${seen}" title="対応済みにする">済み</button>`
     : st === 'working' ? `<button type="button" class="btn tk-done" data-pact="handled" data-uid="${uid}" data-seen="${seen}" title="対応済みにする">済み</button><button type="button" class="btn ghost" data-pact="unwork" data-uid="${uid}" title="対応中をやめる">戻す</button>` : '';
   const who = st === 'working' ? p.workingBy : st === 'done' ? p.handledBy : '';
-  const msg = last ? String(last.text || '').replace(/\s+/g, ' ') : '';
+  const msg = shown.map(m => String(m.text || '').replace(/\s+/g, ' ')).join(' / ');
+  const msgHtml = (hiddenN ? `<i class="pk">(ほか前の未返信 ${hiddenN}件。行をタップで全部)</i>` : '') + shown.map(m => `<i><time>${esc(tFmt(m.at))}</time>${esc(String(m.text || '').trim()).replace(/\n/g, '<br>')}</i>`).join('');
   return `<li class="pt-row st-${st}"><div class="pt-line"><span class="pt-b">${badge}</span>
-      <button type="button" class="pt-main" data-pact="open" data-uid="${uid}" aria-expanded="${isOpen}" title="${esc(msg)}"><b>${esc(urgent + paName(p))}</b><span>${esc(msg)}</span></button>
+      <button type="button" class="pt-main" data-pact="open" data-uid="${uid}" aria-expanded="${isOpen}" title="${esc(msg)}"><b>${esc(urgent + paName(p))}</b><span>${msgHtml}</span></button>
       <span class="pt-t${late ? ' late' : ''}">${esc(lastMs ? paAgo(lastMs) : '')}</span><span class="pt-who">${esc(who || '')}</span><span class="pt-a">${acts}</span></div>
     ${isOpen ? `<div class="pt-x">${open.length ? `<ul class="tasks" style="display:grid;gap:10px">${open.map(t => paTodo(p, t)).join('')}</ul>` : ''}${paDetail(p)}</div>` : ''}</li>`;
 }
@@ -2098,6 +2106,7 @@ document.addEventListener('click', async e => {
       btn.disabled = false; return;
     }
     if (!p) return;
+    if (act === 'threadmore') { paThreadFull = uid; renderPanel(); return; }
     if (act === 'open') { paOpen = paOpen === uid ? null : uid; paCompose = null; renderPanel(); return; }
     if (act === 'closedraft') { paCompose = null; renderPanel(); return; }
     if (act === 'copy') { const ta = $('#pa-msg'); if (!ta) return; try { await navigator.clipboard.writeText(ta.value); toast('コピーしました。LINE公式アカウントに貼り付けてください'); } catch (e) { ta.select(); toast('選択しました。コピーしてください'); } return; }
