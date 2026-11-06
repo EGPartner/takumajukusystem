@@ -409,6 +409,12 @@
   .pa-r3{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:12px;color:var(--ink-3)}
   .pa-r3 .sp{flex:1}
   .pa-r3 .btn{padding:5px 12px;font-size:12px}
+  .pa-thread{background:var(--surface-2);border-radius:10px;padding:10px 12px;display:grid;gap:6px;max-height:420px;overflow:auto}
+  .pa-thread h4{margin:0;font-size:12px;color:var(--ink-3)}
+  .pa-td{font-size:11.5px;font-weight:700;color:var(--ink-3);text-align:center;margin:6px 0 0}
+  .pa-in{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:7px 11px;font-size:13px;line-height:1.55;overflow-wrap:anywhere;max-width:92%;justify-self:start}
+  .pa-in time{display:block;font-size:10.5px;color:var(--ink-3)}
+  .pa-act{font-size:11.5px;color:var(--accent-ink);justify-self:center;text-align:center;overflow-wrap:anywhere}
   .pa-day{font-size:12.5px;font-weight:700;color:var(--ink-2);margin:14px 0 6px;display:flex;gap:8px;align-items:center}
   .pa-day .n{font-family:var(--f-num);font-weight:600;color:var(--ink-3)}
   .pa-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
@@ -1417,6 +1423,18 @@ function paTodo(p, t) {
     <p class="tk-t">${esc(t.text)}</p>${t.quote ? `<p class="tk-quote">発言「${esc(t.quote)}」</p>` : ''}${hist}
     <div class="tk-act"><button type="button" class="btn tk-done" data-pact="done" data-uid="${uid}" data-tid="${tid}">対応済み</button><button type="button" class="btn ghost" data-pact="due" data-uid="${uid}" data-tid="${tid}">期限</button><span class="sp"></span><button type="button" class="btn ghost" data-pact="none" data-uid="${uid}" data-tid="${tid}">不要</button></div></li>`;
 }
+/** この人とのやり取りの記録(新しい順)。保護者の発言と、管理者の操作(対応を始めた・対応済み)が日ごとに並ぶ */
+function paThreadHTML(p) {
+  const items = ((p.thread && p.thread.length) ? p.thread : (p.recent || []).map(m => ({ at: m.at, k: 'in', t: m.text }))).slice().sort((a, b) => String(b.at).localeCompare(String(a.at)));
+  if (!items.length) return '<div class="pa-thread"><h4>やり取り</h4>(まだありません)</div>';
+  let day = '', out = '';
+  items.forEach(e => {
+    const d = paDayKey(paMs(e.at));
+    if (d !== day) { day = d; out += `<p class="pa-td">${esc(paDayLabel(d))}</p>`; }
+    out += e.k === 'act' ? `<p class="pa-act">${esc(paHm(e.at))} ${esc(e.by || '')} ${esc(e.t)}</p>` : `<div class="pa-in"><time>${esc(paHm(e.at))}</time>${esc(e.t).replace(/\n/g, '<br>')}</div>`;
+  });
+  return `<div class="pa-thread"><h4>やり取り(新しい順・${items.length}件)</h4>${out}</div>`;
+}
 function paDetail(p) {
   const uid = esc(p.id), done = (p.todos || []).filter(t => t.status !== '未対応').slice(-6).reverse();
   const c = paCompose && paCompose.uid === p.id ? `<div class="vform"><b>返信案</b><p class="pk">${paCompose.busy === 'draft' ? '返信案を作っています…' : 'AIの案です。直して、コピーしてLINE公式アカウントから送ってください。このシステムからは送られません。'}</p>
@@ -1424,7 +1442,7 @@ function paDetail(p) {
       <div class="actions"><button type="button" class="btn primary" data-pact="copy" data-uid="${uid}" ${paCompose.busy ? 'disabled' : ''}>コピー</button><button type="button" class="btn ghost" data-pact="closedraft" data-uid="${uid}">閉じる</button></div></div>` : '';
   return `<div class="pa-box"><h4>これまでの要点</h4>${p.summary ? esc(p.summary) : '(まだありません。受信が分析されると入ります)'}
       ${p.memo ? `<h4>メモ</h4>${esc(p.memo)}` : ''}</div>
-    <div class="pa-box"><h4>直近の受信(新しい順)</h4>${(p.recent || []).slice().reverse().map(m => `<p class="pa-msg"><span>${esc(tkWhen(m.at))}</span>${esc(m.text).replace(/\n/g, '<br>')}</p>`).join('') || '(なし)'}</div>
+    ${paThreadHTML(p)}
     ${done.length ? `<div class="pa-box"><h4>終わったこと</h4>${done.map(t => `<p class="pa-msg"><span>${esc(t.status)} ${t.doneAt ? esc(tkWhen(t.doneAt)) : ''}${t.doneBy ? ' ・ ' + esc(t.doneBy) : ''}</span>${esc(t.text)}${(t.history || []).map(x => `<br>└ ${esc(x.note)}`).join('')}${t.note ? `<br>└ ${esc(t.note)}` : ''}</p>`).join('')}</div>` : ''}
     ${c}
     <div class="tk-act"><button type="button" class="btn" data-pact="draft" data-uid="${uid}">返信案を作る</button><button type="button" class="btn ghost" data-pact="add" data-uid="${uid}">やることを足す</button><button type="button" class="btn ghost" data-pact="name" data-uid="${uid}">名前</button><button type="button" class="btn ghost" data-pact="memo" data-uid="${uid}">メモ</button><span class="sp"></span><button type="button" class="btn ghost" data-pact="erase" data-uid="${uid}">記録を削除</button></div>`;
@@ -1444,7 +1462,7 @@ function paRow(p) {
   const more = msgs.length > 1 ? ` ・ 未返信 ${msgs.length}件` : '';
   return `<li class="pa-row st-${st}"><div class="pa-r1"><span class="pa-badge">${badge}</span><b>${esc(paName(p))}</b>${urgent}<span class="sp"></span><span class="pa-ago${late ? ' late' : ''}">${esc(lastMs ? paAgo(lastMs) : '')}</span></div>
     <p class="pa-last${isOpen ? ' full' : ''}">${last ? esc(last.text).replace(/\n/g, '<br>') : '(メッセージなし)'}</p>
-    <div class="pa-r3"><span>${who}${more}</span><span class="sp"></span>${acts}<button type="button" class="btn ghost" data-pact="open" data-uid="${uid}">${isOpen ? '閉じる' : '詳しく'}</button></div>
+    <div class="pa-r3"><span>${who}${more}</span><span class="sp"></span>${acts}<button type="button" class="btn ghost" data-pact="open" data-uid="${uid}">${isOpen ? '閉じる' : 'やり取りを見る'}</button></div>
     ${isOpen ? `${open.length ? `<ul class="tasks" style="display:grid;gap:10px">${open.map(t => paTodo(p, t)).join('')}</ul>` : ''}${paDetail(p)}` : ''}</li>`;
 }
 function parentsHTML() {
