@@ -413,6 +413,11 @@
   .pa-thread{background:var(--surface-2);border-radius:10px;padding:10px 12px;display:grid;gap:6px}
   .pa-thread h4{margin:0;font-size:12px;color:var(--ink-3)}
   .pa-td{font-size:11.5px;font-weight:700;color:var(--ink-3);text-align:center;margin:6px 0 0}
+  .pa-two{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:10px;align-items:start}
+  @media (max-width:760px){.pa-two{grid-template-columns:1fr}}
+  .pa-acts ol{list-style:none;margin:0;padding:0 0 0 10px;border-left:2px solid var(--line);display:grid;gap:8px}
+  .pa-acts li{font-size:12px;color:var(--ink);overflow-wrap:anywhere}
+  .pa-acts li .w{display:block;font-size:10.5px;color:var(--ink-3)}
   .pa-in{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:7px 11px;font-size:13px;line-height:1.55;overflow-wrap:anywhere;max-width:92%;justify-self:start}
   .pa-in time{display:block;font-size:10.5px;color:var(--ink-3)}
   .pa-act{font-size:11.5px;color:var(--accent-ink);justify-self:center;text-align:center;overflow-wrap:anywhere}
@@ -1457,19 +1462,21 @@ function paTodo(p, t) {
     <p class="tk-t">${esc(t.text)}</p>${t.quote ? `<p class="tk-quote">発言「${esc(t.quote)}」</p>` : ''}${hist}
     <div class="tk-act"><button type="button" class="btn tk-done" data-pact="done" data-uid="${uid}" data-tid="${tid}">対応済み</button><button type="button" class="btn ghost" data-pact="due" data-uid="${uid}" data-tid="${tid}">期限</button><span class="sp"></span><button type="button" class="btn ghost" data-pact="none" data-uid="${uid}" data-tid="${tid}">不要</button></div></li>`;
 }
-/** この人とのやり取りの記録(新しい順)。保護者の発言と、管理者の操作(対応を始めた・対応済み)が日ごとに並ぶ */
+/** この人とのやり取りの記録(新しい順)。左=保護者のメッセージ(日ごと)、右=管理者の対応(誰が・いつ・開始/済み・メモ) */
 function paThreadHTML(p) {
-  const items = ((p.thread && p.thread.length) ? p.thread : (p.recent || []).map(m => ({ at: m.at, k: 'in', t: m.text }))).slice().sort((a, b) => String(b.at).localeCompare(String(a.at)));
-  if (!items.length) return '<div class="pa-thread"><h4>やり取り</h4>(まだありません)</div>';
-  const full = paThreadFull === p.id, total = items.length, vis = full ? items : items.slice(0, 40);
-  let day = '', out = '';
+  const all = ((p.thread && p.thread.length) ? p.thread : (p.recent || []).map(m => ({ at: m.at, k: 'in', t: m.text }))).slice().sort((a, b) => String(b.at).localeCompare(String(a.at)));
+  const ins = all.filter(e => e.k !== 'act'), acts = all.filter(e => e.k === 'act');
+  const full = paThreadFull === p.id, vis = full ? ins : ins.slice(0, 40);
+  let day = '', left = '';
   vis.forEach(e => {
     const d = paDayKey(paMs(e.at));
-    if (d !== day) { day = d; out += `<p class="pa-td">${esc(paDayLabel(d))}</p>`; }
-    out += e.k === 'act' ? `<p class="pa-act">${esc(paHm(e.at))} ${esc(e.by || '')} ${esc(e.t)}</p>` : `<div class="pa-in"><time>${esc(paHm(e.at))}</time>${esc(e.t).replace(/\n/g, '<br>')}</div>`;
+    if (d !== day) { day = d; left += `<p class="pa-td">${esc(paDayLabel(d))}</p>`; }
+    left += `<div class="pa-in"><time>${esc(paHm(e.at))}</time>${esc(e.t).replace(/\n/g, '<br>')}</div>`;
   });
-  const more = total > vis.length ? `<button type="button" class="btn ghost" data-pact="threadmore" data-uid="${esc(p.id)}">さらに古い ${total - vis.length}件を表示</button>` : '';
-  return `<div class="pa-thread"><h4>やり取り(新しい順・${total}件)</h4>${out}${more}</div>`;
+  const more = ins.length > vis.length ? `<button type="button" class="btn ghost" data-pact="threadmore" data-uid="${esc(p.id)}">さらに古い ${ins.length - vis.length}件を表示</button>` : '';
+  const right = acts.length ? acts.map(e => `<li><span class="w">${esc(tkWhen(e.at))}${e.by ? ' ・ ' + esc(e.by) : ''}</span>${esc(e.t).replace(/\n/g, '<br>')}</li>`).join('') : '<li class="pk">まだありません。「開始」「済み」を押すと、ここに残ります。</li>';
+  return `<div class="pa-two"><div class="pa-thread"><h4>保護者のメッセージ(新しい順・${ins.length}件)</h4>${left || '(まだありません)'}${more}</div>
+    <div class="pa-thread pa-acts"><h4>管理者の対応(${acts.length}件)</h4><ol>${right}</ol><p class="pk">返信の本文は、LINEの仕様でここには届きません。「LINE↗」でManagerのチャットを開けます。</p></div></div>`;
 }
 function paDetail(p) {
   const uid = esc(p.id), done = (p.todos || []).filter(t => t.status !== '未対応').slice(-6).reverse();
@@ -1483,6 +1490,7 @@ function paDetail(p) {
     ${c}
     <div class="tk-act"><button type="button" class="btn" data-pact="draft" data-uid="${uid}">返信案を作る</button><button type="button" class="btn ghost" data-pact="add" data-uid="${uid}">やることを足す</button><button type="button" class="btn ghost" data-pact="name" data-uid="${uid}">名前</button><button type="button" class="btn ghost" data-pact="memo" data-uid="${uid}">メモ</button><span class="sp"></span><button type="button" class="btn ghost" data-pact="erase" data-uid="${uid}">記録を削除</button></div>`;
 }
+const LINE_CHAT_BASE = 'https://chat.line.biz/U91689be46b4c7a64eeb685a327019f50/chat/'; // 公式アカウントのManagerの、個別チャットの住所(この後ろに保護者のLINE IDを付ける)
 const paAgo = ms => { const m = Math.floor((Date.now() - ms) / 60000); return m < 1 ? 'たった今' : m < 60 ? m + '分前' : m < 1440 ? Math.floor(m / 60) + '時間前' : Math.floor(m / 1440) + '日前'; };
 /** 全員を1つの表に。1人=1行(状態・名前・最新メッセージ・経過・対応者・操作)。行をタップすると、その下にやり取りが開く */
 function paRow(p) {
@@ -1495,11 +1503,12 @@ function paRow(p) {
   const acts = st === 'open' ? `<button type="button" class="btn" data-pact="work" data-uid="${uid}" title="対応を始める">開始</button><button type="button" class="btn ghost" data-pact="handled" data-uid="${uid}" data-seen="${seen}" title="対応済みにする">済み</button>`
     : st === 'working' ? `<button type="button" class="btn tk-done" data-pact="handled" data-uid="${uid}" data-seen="${seen}" title="対応済みにする">済み</button><button type="button" class="btn ghost" data-pact="unwork" data-uid="${uid}" title="対応中をやめる">戻す</button>` : '';
   const who = st === 'working' ? p.workingBy : st === 'done' ? p.handledBy : '';
+  const chatLink = `<a class="btn ghost" href="${LINE_CHAT_BASE}${encodeURIComponent(p.id)}" target="_blank" rel="noopener" title="公式アカウントのManagerで、この人とのチャットを開く">LINE↗</a>`;
   const msg = shown.map(m => String(m.text || '').replace(/\s+/g, ' ')).join(' / ');
   const msgHtml = (hiddenN ? `<i class="pk">(ほか前の未返信 ${hiddenN}件。行をタップで全部)</i>` : '') + shown.map(m => `<i><time>${esc(tFmt(m.at))}</time>${esc(String(m.text || '').trim()).replace(/\n/g, '<br>')}</i>`).join('');
   return `<li class="pt-row st-${st}"><div class="pt-line"><span class="pt-b">${badge}</span>
       <button type="button" class="pt-main" data-pact="open" data-uid="${uid}" aria-expanded="${isOpen}" title="${esc(msg)}"><b>${esc(urgent + paName(p))}</b><span>${msgHtml}</span></button>
-      <span class="pt-t${late ? ' late' : ''}">${esc(lastMs ? paAgo(lastMs) : '')}</span><span class="pt-who">${esc(who || '')}</span><span class="pt-a">${acts}</span></div>
+      <span class="pt-t${late ? ' late' : ''}">${esc(lastMs ? paAgo(lastMs) : '')}</span><span class="pt-who">${esc(who || '')}</span><span class="pt-a">${chatLink}${acts}</span></div>
     ${isOpen ? `<div class="pt-x">${open.length ? `<ul class="tasks" style="display:grid;gap:10px">${open.map(t => paTodo(p, t)).join('')}</ul>` : ''}${paDetail(p)}</div>` : ''}</li>`;
 }
 function parentsHTML() {
@@ -2120,7 +2129,7 @@ document.addEventListener('click', async e => {
     }
     if (act === 'work') return op({ action: 'work', on: true }, '対応中にしました。ほかの管理者にも表示されます');
     if (act === 'unwork') return op({ action: 'work', on: false }, '対応中をやめました');
-    if (act === 'handled') { const n = prompt('返信した内容や約束したことを一言(空でもOK。あとで経過に残ります)', ''); if (n === null) return; return op({ action: 'handled', note: n.trim(), seen: btn.dataset.seen || '' }, '対応済みにしました'); }
+    if (act === 'handled') { const n = prompt('返信した内容や約束したことを一言(空でもOK。「管理者の対応」に残ります)', ''); if (n === null) return; return op({ action: 'handled', note: n.trim(), seen: btn.dataset.seen || '' }, '対応済みにしました'); }
     if (act === 'done') { const n = prompt('返信した内容や、約束したことを一言(空でもOK。あとで経歴に残ります)', ''); if (n === null) return; return op({ action: 'set', id: tid, status: '対応済み', note: n.trim() }, '対応済みにしました'); }
     if (act === 'none') return op({ action: 'set', id: tid, status: '不要' }, '不要にしました');
     if (act === 'due') { const t = (p.todos || []).find(x => x.id === tid); const v = prompt('期限(YYYY-MM-DD。空にすると期限なし)', (t && t.due) || todayJst()); if (v === null) return; return op({ action: 'set', id: tid, due: v.trim() }, '変更しました'); }
