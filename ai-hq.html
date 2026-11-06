@@ -443,6 +443,15 @@
     .pt-main{grid-column:2/4;grid-template-columns:minmax(0,1fr);gap:2px}
     .pt-t{grid-column:1}.pt-who{grid-column:2}.pt-a{grid-column:3}
   }
+  .pt2 .pt-h,.pt2 .pt-line{grid-template-columns:78px minmax(0,1fr) 84px 54px 66px auto}
+  .pt2 .pt-main{grid-template-columns:minmax(0,1fr)}
+  .st-later .pt-b{background:var(--surface-2)}
+  .pt2 .pt-who{color:var(--ink-2)}
+  @media (max-width:760px){
+    .pt2 .pt-line{grid-template-columns:62px 1fr 56px auto}
+    .pt2 .pt-main{grid-column:2/-1}
+    .pt2 .pt-who{grid-column:2}.pt2 .pt-t{grid-column:3}.pt2 .pt-a{grid-column:4}.pt2 .pt-src{display:none}
+  }
   .pa-day{font-size:12.5px;font-weight:700;color:var(--ink-2);margin:14px 0 6px;display:flex;gap:8px;align-items:center}
   .pa-day .n{font-family:var(--f-num);font-weight:600;color:var(--ink-3)}
   .pa-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
@@ -1345,7 +1354,7 @@ function renderPanelInner() {
       + (pendingB().length ? `<div class="sec-h big">目を通すもの ・ 完了報告(${pendingB().length}件)</div><p class="pk">押さなくても業務は止まりません。${7}日たつと自動で「確認なしで完了」になり、記録は残ります(後からでも採用・不採用にできます)。</p>` + pendingB().map(reviewCard).join('') : '');
     P.insertAdjacentHTML('beforeend', decidedHTML());
   } else if (panelTab === 'tasks') {
-    P.innerHTML = paSwitch() + (tasksView === 'parent' ? parentsHTML() : tkHTML() + tasksHTML());
+    P.innerHTML = paSwitch() + (tasksView === 'parent' ? parentsHTML() : todoTableHTML());
   } else if (panelTab === 'voices') {
     P.innerHTML = voicesHTML();
   } else if (panelTab === 'sched') {
@@ -1409,15 +1418,6 @@ const addDaysYmd = (ymd, n) => new Date(Date.parse(ymd + 'T00:00:00Z') + n * 864
 const tasksOpen = () => tasks.filter(t => t.status === '未着手');
 const tasksDue = () => tasksOpen().filter(t => !t.old && t.due && t.due <= todayJst());
 const PLAN_LABEL = { ai: 'AIの係が作る', research: 'AIの係が調べる', human: '人の作業', ask: '統括の判断', send_staff: 'スタッフ用LINEに送る', reset_password: 'パスワードの再設定メールを送る', send_person: '本人にLINEで送る' };
-function taskItem(t) {
-  const today = todayJst(), over = t.status === '未着手' && t.due && t.due < today;
-  const src = t.source || {}, srcText = src.label || (src.orderNo ? '指示#' + src.orderNo : '');
-  return `<li class="task${over ? ' over' : ''}${t.status !== '未着手' ? ' fin' : ''}"><span class="no">${esc(t.no)}</span><div>
-    <div class="tt">${esc(t.text)}</div>
-    <div class="pk">${esc(t.owner || '担当未定')}${t.due ? ' ・ 期限 ' + esc(t.due.slice(5).replace('-', '/')) + (over ? '(期限切れ)' : t.due === today ? '(今日)' : '') : ' ・ 期限なし'}${srcText ? ' ・ ' + (src.url ? `<a href="${esc(src.url)}" target="_blank" rel="noopener">${esc(srcText)}</a>` : esc(srcText)) : ''}${t.status !== '未着手' ? ` ・ ${esc(t.status)}${t.doneBy ? '(' + esc(t.doneBy) + ')' : ''}${t.evidence ? ' — ' + esc(t.evidence) : ''}` : ''}</div>
-    ${t.prep ? `<details class="prep"><summary>準備メモ</summary><p>${esc(t.prep).replace(/\n/g, '<br>')}</p></details>` : ''}
-    <div class="ta">${t.status === '未着手' ? `<button type="button" class="btn" data-tset="${esc(t.id)}" data-st="完了">完了</button><button type="button" class="btn ghost" data-tset="${esc(t.id)}" data-st="不要">不要</button><button type="button" class="btn ghost" data-towner="${esc(t.id)}">担当</button><button type="button" class="btn ghost" data-tdue="${esc(t.id)}">期限</button>` : `<button type="button" class="btn ghost" data-tset="${esc(t.id)}" data-st="未着手">未完了に戻す</button>`}</div></div></li>`;
-}
 /** 統括タスク: 統括グループのLINEの会話から拾った、全員の「やること」 */
 /* ---------- 保護者対応(公式LINEの1対1) ---------- */
 const paName = p => p.name || p.lineName || '名前未設定';
@@ -1506,61 +1506,71 @@ const tkOpen = () => tkTasks.filter(t => t.status === '未着手');
 const tkKindLabel = k => (k === 'お叱り' ? '要改善' : k || '指示');
 const tkMd = d => (d ? d.slice(5).replace('-', '/') : '');
 const tkWhen = at => new Date(at).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-function tkItem(t) {
-  const today = todayJst(), over = !!(t.due && t.due < today), hot = !!(t.urgent || t.repeats), id = esc(t.id);
-  const dueChip = t.due ? `<span class="tk-chip${over ? ' warn' : ''}">期限 ${esc(tkMd(t.due))}${over ? '(期限切れ)' : t.due === today ? '(今日)' : ''}</span>` : '<span class="tk-chip">期限なし</span>';
-  const hist = (t.history || []).length ? `<details class="tk-hist"><summary>経過 ${t.history.length}件</summary><ol>${t.history.map(h => `<li><span class="w">${esc(tkWhen(h.at))}${h.by && h.by !== '会話' ? ' ・ ' + esc(h.by) : ''}</span>${esc(h.note).replace(/\n/g, '<br>')}</li>`).join('')}</ol></details>` : '';
-  const compose = tkCompose && tkCompose.id === t.id ? `<div class="vform"><b>統括グループにLINEを送る</b><p class="pk">${tkCompose.busy === 'draft' ? '文案を作っています…' : '文案はAIが作りました。直してから送れます。送った内容は、この項目の「経過」に残ります。'}</p>
+/* ---------- 統括・スタッフのやること: 1つの表に(統括グループの会話から拾ったもの+スタッフ用のやること) ---------- */
+let tdOpen = null; // 開いている行 'tk:ID' / 'st:ID'
+function tdRows() {
+  const today = todayJst(), week = addDaysYmd(today, 7), out = [];
+  const add = (src, t) => {
+    const isOpen = t.status === '未着手', due = t.due || '', over = isOpen && due && due < today, hot = src === 'tk' && !!(t.urgent || t.repeats);
+    let cls, label, rank;
+    if (!isOpen) { cls = 'done'; label = t.status; rank = 5; }
+    else if (over) { cls = 'open'; label = '期限切れ'; rank = 0; }
+    else if (hot) { cls = 'open'; label = t.urgent ? '急ぎ' : '再確認'; rank = 0; }
+    else if (src === 'st' && t.old) { cls = 'later'; label = '古い宿題'; rank = 4; }
+    else if (due && due <= today) { cls = 'working'; label = '今日'; rank = 1; }
+    else if (due && due <= week) { cls = 'working'; label = '今週'; rank = 2; }
+    else { cls = 'later'; label = '未着手'; rank = 3; }
+    out.push({ src, t, key: src + ':' + t.id, isOpen, cls, label, rank, due });
+  };
+  tkTasks.forEach(t => add('tk', t)); tasks.forEach(t => add('st', t));
+  const open = out.filter(r => r.isOpen).sort((a, b) => a.rank - b.rank || String(a.due || '9999').localeCompare(String(b.due || '9999')) || (a.t.no || 0) - (b.t.no || 0));
+  const doneAll = out.filter(r => !r.isOpen).sort((a, b) => String(b.t.doneAt || '').localeCompare(String(a.t.doneAt || '')));
+  const tkDone = doneAll.filter(r => r.src === 'tk'), hidden = Math.max(0, tkDone.length - 5);
+  const done = [...tkDone.slice(0, 5), ...doneAll.filter(r => r.src === 'st').slice(0, 10)].sort((a, b) => String(b.t.doneAt || '').localeCompare(String(a.t.doneAt || '')));
+  return { open, done, hidden };
+}
+function tdExtra(r) {
+  const t = r.t, id = esc(t.id), tk = r.src === 'tk', over = r.label === '期限切れ';
+  const chips = tk ? `<div class="tk-meta"><span class="tk-chip kind">${esc(tkKindLabel(t.kind))}</span>${t.urgent ? '<span class="tk-chip bad">急ぎ</span>' : ''}${t.repeats ? `<span class="tk-chip bad">再確認 ${esc(t.repeats)}回</span>` : ''}${t.due ? `<span class="tk-chip${over ? ' warn' : ''}">期限 ${esc(tkMd(t.due))}</span>` : ''}</div>` : '';
+  const srcL = !tk && t.source ? (t.source.label || (t.source.orderNo ? '指示#' + t.source.orderNo : '')) : '';
+  const src = srcL ? `<p class="pk">出所: ${t.source.url ? `<a href="${esc(t.source.url)}" target="_blank" rel="noopener">${esc(srcL)}</a>` : esc(srcL)}</p>` : '';
+  const quote = tk && t.quote ? `<p class="tk-quote">発言「${esc(t.quote)}」</p>` : '';
+  const hs = (t.history || []);
+  const hist = hs.length ? `<details class="tk-hist" open><summary>経過 ${hs.length}件</summary><ol>${hs.map(h => `<li><span class="w">${esc(tkWhen(h.at))}${h.by && h.by !== '会話' ? ' ・ ' + esc(h.by) : ''}</span>${esc(h.note).replace(/\n/g, '<br>')}</li>`).join('')}</ol></details>` : '';
+  const prep = !tk && t.prep ? `<details class="prep" open><summary>準備メモ</summary><p>${esc(t.prep).replace(/\n/g, '<br>')}</p></details>` : '';
+  const fin = !r.isOpen && (t.doneBy || t.evidence) ? `<p class="pk">${esc(t.status)}${t.doneBy ? '(' + esc(t.doneBy) + ')' : ''}${t.evidence ? ' — ' + esc(t.evidence) : ''}</p>` : '';
+  const acts = !r.isOpen ? '' : tk ? `<div class="tk-act"><button type="button" class="btn ghost" data-tkowner="${id}">担当を変える</button><button type="button" class="btn ghost" data-tkdue="${id}">期限を変える</button><button type="button" class="btn" data-tkline="${id}">統括グループにLINE送信</button></div>`
+    : `<div class="tk-act"><button type="button" class="btn ghost" data-towner="${id}">担当を変える</button><button type="button" class="btn ghost" data-tdue="${id}">期限を変える</button></div>`;
+  const compose = tk && tkCompose && tkCompose.id === t.id ? `<div class="vform"><b>統括グループにLINEを送る</b><p class="pk">${tkCompose.busy === 'draft' ? '文案を作っています…' : '文案はAIが作りました。直してから送れます。送った内容は、この項目の「経過」に残ります。'}</p>
       <textarea id="tk-msg" rows="4" ${tkCompose.busy ? 'disabled' : ''} placeholder="送る文">${esc(tkCompose.text || '')}</textarea>
       <div class="actions"><button type="button" class="btn primary" data-tksendgo="${id}" ${tkCompose.busy ? 'disabled' : ''}>${tkCompose.busy === 'send' ? '送っています…' : '統括グループに送る'}</button><button type="button" class="btn ghost" data-tksendcancel="1" ${tkCompose.busy === 'send' ? 'disabled' : ''}>やめる</button></div></div>` : '';
-  return `<li class="tkc${hot ? ' hot' : over ? ' over' : ''}">
-    <div class="tk-meta"><span class="tk-chip kind">${esc(tkKindLabel(t.kind))}</span>${t.urgent ? '<span class="tk-chip bad">急ぎ</span>' : ''}${t.repeats ? `<span class="tk-chip bad">再確認 ${esc(t.repeats)}回</span>` : ''}<span class="tk-chip">${esc(t.owner || '担当未定')}</span>${dueChip}</div>
-    <p class="tk-t">${esc(t.text)}</p>
-    ${t.quote ? `<p class="tk-quote">発言「${esc(t.quote)}」</p>` : ''}
-    ${hist}
-    <div class="tk-act"><button type="button" class="btn tk-done" data-tkset="${id}" data-st="完了">完了</button><button type="button" class="btn" data-tkline="${id}">LINE送信</button><button type="button" class="btn ghost" data-tkowner="${id}">担当</button><button type="button" class="btn ghost" data-tkdue="${id}">期限</button><span class="sp"></span><button type="button" class="btn ghost" data-tkset="${id}" data-st="不要">不要</button></div>
-    ${compose}</li>`;
+  return `<div class="pt-x">${chips}<p class="tk-t" style="font-size:13.5px">${esc(t.text)}</p>${quote}${src}${prep}${hist}${fin}${acts}${compose}</div>`;
 }
-/** 終わったもの1件(1行。右に「未完了に戻す」ボタンを出しておく) */
-function tkFinRow(t) {
-  return `<li><span class="ck">✓</span><span class="t" title="${esc(t.text)}">${esc(t.text)}</span><span class="s">${esc(t.status)}${t.doneAt ? ' ' + esc(tkMd(String(t.doneAt).slice(0, 10))) : ''}</span><button type="button" class="btn ghost" data-tkset="${esc(t.id)}" data-st="未着手">戻す</button></li>`;
+function tdRow(r) {
+  const t = r.t, id = esc(t.id), tk = r.src === 'tk', isOpen = tdOpen === r.key || (tk && tkCompose && tkCompose.id === t.id);
+  const kind = tk ? tkKindLabel(t.kind) + ' ' : '';
+  const acts = r.isOpen
+    ? `<button type="button" class="btn" ${tk ? `data-tkset="${id}"` : `data-tset="${id}"`} data-st="完了">完了</button><button type="button" class="btn ghost" ${tk ? `data-tkset="${id}"` : `data-tset="${id}"`} data-st="不要">不要</button>`
+    : `<button type="button" class="btn ghost" ${tk ? `data-tkset="${id}"` : `data-tset="${id}"`} data-st="未着手">戻す</button>`;
+  const msg = (kind + t.text).replace(/\s+/g, ' ');
+  return `<li class="pt-row st-${r.cls}"><div class="pt-line"><span class="pt-b">${esc(r.label)}</span>
+      <button type="button" class="pt-main" data-topen="${esc(r.key)}" aria-expanded="${isOpen}" title="${esc(msg)}"><span style="color:var(--ink)">${esc(msg)}</span></button>
+      <span class="pt-who">${esc(t.owner || '担当未定')}</span><span class="pt-t${r.label === '期限切れ' ? ' late' : ''}">${r.due ? esc(tkMd(r.due)) : '期限なし'}</span><span class="pt-who pt-src">${tk ? '統括G' : 'スタッフ'}</span><span class="pt-a">${acts}</span></div>
+    ${isOpen ? tdExtra(r) : ''}</li>`;
 }
-function tkHTML() {
-  const today = todayJst(), week = addDaysYmd(today, 7), open = tkOpen();
-  const first = t => (t.urgent ? 0 : 1) - (t.repeats ? 1 : 0) * 0.5;
-  const by = (a, b) => first(a) - first(b) || String(a.due || '9999').localeCompare(String(b.due || '9999')) || a.no - b.no;
-  const hot = open.filter(t => t.urgent || t.repeats).sort(by), rest = open.filter(t => !(t.urgent || t.repeats));
-  const over = rest.filter(t => t.due && t.due < today).sort(by), soon = rest.filter(t => t.due && t.due >= today && t.due <= week).sort(by), later = rest.filter(t => !t.due || t.due > week).sort(by);
-  const finAll = tkTasks.filter(t => t.status !== '未着手').sort((a, b) => String(b.doneAt || '').localeCompare(String(a.doneAt || ''))), fin = finAll.slice(0, 5), hiddenN = finAll.length - fin.length;
-  const sec = (h, color, l) => (l.length ? `<div class="tk-sec"><i class="d" style="background:${color}"></i>${h}<span class="n">${l.length}</span></div><ul class="tasks">${l.map(tkItem).join('')}</ul>` : '');
+function todoTableHTML() {
+  const { open, done, hidden } = tdRows(), list = [...open, ...done];
   const when = tkState && tkState.lastRunAt ? tkWhen(tkState.lastRunAt) : 'まだありません';
   const err = tkState && tkState.error ? `<div class="alertbox"><b>統括グループの会話の分析がうまくいっていません</b>${esc(tkState.error.message || '')}(${esc(tkWhen(tkState.error.at))})。次に成功すると、この表示は消えます。続くときは、画面を撮って連絡してください。</div>` : '';
-  return `${err}<div class="vboard"><div class="tk-head"><b>統括タスク</b><span class="pk">未完了 ${open.length}件 ・ 前回の分析 ${esc(when)}</span><span class="sp"></span><button type="button" class="btn" id="tk-run">今すぐ分析</button></div>
-      <p class="pk">統括グループの会話から、やることを自動で整理します。完了・担当・期限の変更、LINE送信ができます。</p></div>
-    ${sec('急ぎ・再確認', 'var(--bad)', hot)}${sec('期限切れ', 'var(--warn)', over)}${sec('今週まで', 'var(--accent)', soon)}${sec('それ以降・期限なし', 'var(--idle)', later)}
-    ${!open.length ? '<div class="empty"><b>未完了の統括タスクはありません</b>統括グループの会話が分析されると、ここに並びます。</div>' : ''}
-    ${fin.length ? `<div class="tk-sec"><i class="d" style="background:var(--ok)"></i>最近終わったもの<span class="n">新しい順に${fin.length}件</span></div><ul class="tkdone">${fin.map(tkFinRow).join('')}</ul>` : ''}
-    ${hiddenN ? `<div class="tkpurge">これより古い ${hiddenN}件は非表示です <button type="button" class="btn ghost" id="tk-purge">古い${hiddenN}件をまとめて削除</button></div>` : ''}
-    <div class="tk-sec"><i class="d" style="background:var(--ink-3)"></i>スタッフ用の「やること」</div>`;
-}
-function tasksHTML() {
-  const today = todayJst(), week = addDaysYmd(today, 7), open = tasksOpen();
-  const by = d => (a, b) => String(a.due || '9999').localeCompare(String(b.due || '9999')) * d || a.no - b.no;
-  const over = open.filter(t => !t.old && t.due && t.due < today).sort(by(1));
-  const soon = open.filter(t => !t.old && t.due && t.due >= today && t.due <= week).sort(by(1));
-  const later = open.filter(t => !t.old && (!t.due || t.due > week)).sort(by(1));
-  const old = open.filter(t => t.old).sort(by(1));
-  const fin = tasks.filter(t => t.status !== '未着手').sort((a, b) => String(b.doneAt || '').localeCompare(String(a.doneAt || ''))).slice(0, 15);
-  const sec = (h, l, note = '') => (l.length ? `<div class="sec-h big">${h}(${l.length}件)</div>${note ? `<p class="pk">${note}</p>` : ''}<ul class="tasks">${l.map(taskItem).join('')}</ul>` : '');
-  return `<div class="vboard"><div class="vb-h"><b>やること</b><span class="pk">未完了 ${open.length}件</span></div>
-      <p>承認・採用した案件の人の作業と、スタッフ用LINE・議事録の宿題を、ここで追いかけます。毎朝7時30分に、期限切れ・今日・2日以内のものを担当者名つきでスタッフ用LINEに送ります。終わったら、LINEで「完了 番号」(例: 完了 12)と送るか、ここで「完了」を押してください。LINEの発言から終わったと分かるものは、毎晩AIが完了にします。</p></div>
-    <div class="vform"><b>やることを足す</b><div class="cmd-mini" style="margin-top:0"><label for="task-text" class="sr">内容</label><textarea id="task-text" rows="2" placeholder="誰が・何を(例: 総合体育館へ11月の土日の空きを電話で確認)"></textarea></div>
-      <div class="meta"><label class="pk">担当 <input id="task-owner" placeholder="例: やん"></label><label class="pk">期限 <input type="date" id="task-due"></label></div>
-      <div class="actions" style="margin-top:0"><button type="button" class="btn primary" id="task-add">足す</button></div></div>
-    ${sec('期限切れ', over)}${sec('今週まで', soon)}${sec('それ以降・期限なし', later)}
-    ${sec('古い宿題(済んだかどうか確認してください)', old, '取り込み始めた時点で30日以上前の宿題です。毎朝のLINEには出しません。済んでいれば「完了」、不要なら「不要」を押してください。')}
-    ${!open.length ? '<div class="empty"><b>未完了のやることはありません</b>承認・採用した案件の人の作業や、LINE・議事録の宿題が、ここに並びます。</div>' : ''}
-    ${sec('最近終わったもの', fin)}`;
+  const nOver = open.filter(r => r.label === '期限切れ').length;
+  return `${err}<div class="vboard"><div class="tk-head"><b>やること</b><span class="pk">未完了 ${open.length}件${nOver ? ` ・ 期限切れ ${nOver}件` : ''} ・ 統括グループの分析 ${esc(when)}</span><span class="sp"></span><button type="button" class="btn ghost" id="tk-run">今すぐ分析</button></div>
+      <p class="pk">統括グループの会話から自動で整理したものと、スタッフ用のやることを、1つの表にしています。赤は期限切れ・急ぎ、黄は今週まで。行をタップすると詳細が開きます。LINEで「完了 12」と送っても完了になります。</p>
+      <details class="pt-add"><summary class="btn ghost" style="display:inline-block;cursor:pointer">＋ やることを足す</summary>
+        <div class="vform" style="margin-top:8px"><div class="cmd-mini" style="margin-top:0"><label for="task-text" class="sr">内容</label><textarea id="task-text" rows="2" placeholder="誰が・何を(例: 総合体育館へ11月の土日の空きを電話で確認)"></textarea></div>
+        <div class="meta"><label class="pk">担当 <input id="task-owner" placeholder="例: やん"></label><label class="pk">期限 <input type="date" id="task-due"></label></div>
+        <div class="actions" style="margin-top:0"><button type="button" class="btn primary" id="task-add">足す</button></div></div></details></div>
+    ${list.length ? `<ul class="pt pt2"><li class="pt-h"><span>状態</span><span>内容</span><span>担当</span><span>期限</span><span>出所</span><span></span></li>${list.map(tdRow).join('')}</ul>` : '<div class="empty"><b>やることはありません</b>統括グループの会話が分析されると、ここに並びます。</div>'}
+    ${hidden ? `<div class="tkpurge">統括グループの終わったもののうち、古い ${hidden}件は非表示です <button type="button" class="btn ghost" id="tk-purge">古い${hidden}件をまとめて削除</button></div>` : ''}`;
 }
 /** 成果物の「次にやること」の実行計画(採用すると、この印のとおりに動く) */
 function planTag(o, i) {
@@ -2076,6 +2086,7 @@ document.addEventListener('click', async e => {
   if (btn.dataset.vview) { voiceView = btn.dataset.vview; renderPanel(); return; }
   if (btn.dataset.knf) { knFilter = btn.dataset.knf; renderPanel(); return; }
   if (btn.dataset.tview) { tasksView = btn.dataset.tview; renderPanel(); return; }
+  if (btn.dataset.topen) { tdOpen = tdOpen === btn.dataset.topen ? null : btn.dataset.topen; renderPanel(); return; }
   if (btn.dataset.pfilter) { paFilter = btn.dataset.pfilter; renderPanel(); return; }
   if (btn.dataset.pact) {
     const act = btn.dataset.pact, uid = btn.dataset.uid, tid = btn.dataset.tid, p = paList.find(x => x.id === uid);
