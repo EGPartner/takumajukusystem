@@ -1366,7 +1366,7 @@ function taskItem(t) {
 }
 /** 統括タスク: 統括グループのLINEの会話から拾った、全員の「やること」 */
 /* ---------- 保護者対応(公式LINEの1対1) ---------- */
-const paName = p => p.name || '名前未設定';
+const paName = p => p.name || p.lineName || '名前未設定';
 const paOpenTodos = p => (p.todos || []).filter(t => t.status === '未対応');
 // 1人の保護者の状態。AIが「やること」を拾えなかった受信も落とさないよう、「最後の対応より後に受信があるか」で決める。
 //   open=未対応 / working=対応中(誰かが「対応を始める」を押した後、新しい受信がない) / done=対応済み
