@@ -433,7 +433,12 @@
   .pt-main:focus-visible{outline:2px solid var(--accent);border-radius:4px}
   .pt-main b{font-size:12.5px;overflow-wrap:anywhere}
   .pt-main>span{color:var(--ink);overflow-wrap:anywhere;white-space:normal;display:block}
-  .pt-main>span>i{display:block;font-style:normal}
+  .pt-main>span>i{display:grid;grid-template-columns:34px 34px minmax(0,1fr);column-gap:6px;font-style:normal}
+  .pt-main>span>i.pk{display:block}
+  .pt-main>span>i>em{font-style:normal;color:var(--ink-3);font-size:10.5px;white-space:nowrap;padding-top:1px}
+  .pt-main>span>i>.b{overflow-wrap:anywhere}
+  .pt-h .mh{display:grid;grid-template-columns:34px 34px minmax(0,1fr);column-gap:6px}
+  .pt-h .mh em{font-style:normal}
   .pt-main>span>i+i{margin-top:2px;padding-top:2px;border-top:1px dotted var(--line)}
   .pt-main time{color:var(--ink-3);font-size:10.5px;margin-right:5px}
   .pt-b{align-self:start;font-size:10.5px;font-weight:700;padding:2px 0;border-radius:999px;text-align:center;background:var(--surface);border:1px solid var(--line);color:var(--ink-2)}
@@ -1533,12 +1538,11 @@ function paRow(p) {
   const st = paStatus(p), uid = esc(p.id), isOpen = paOpen === p.id, open = paOpenTodos(p);
   const ins = paIns(p), unans = st === 'done' || st === 'skip' || st === 'none' ? [] : paUnanswered(p);
   const shown = st === 'none' ? [] : (unans.length ? unans.slice(-5) : ins.slice(-1)), hiddenN = Math.max(0, unans.length - shown.length);
-  const tFmt = at => { const k = paDayKey(paMs(at)); return (k === todayJst() ? '' : tkMd(k) + ' ') + paHm(at); };
   const lastMs = paMs(p.lastInAt), late = (st === 'new' || st === 'need') && Date.now() - paSince(p) >= 24 * 3600e3;
   const acts = { new: paBtn(p, '要対応', '要対応', '') + paBtn(p, '対応不要', '不要', 'ghost'), need: paBtn(p, '対応中', '開始', '') + paBtn(p, '対応済み', '済み', 'ghost'),
     working: paBtn(p, '対応済み', '済み', 'tk-done') + paBtn(p, '要対応', '戻す', 'ghost'), done: paBtn(p, '未確認', '戻す', 'ghost'), skip: paBtn(p, '未確認', '戻す', 'ghost'), none: '' }[st];
   const rv = p.review, who = st === 'working' ? (rv && rv.by) || p.workingBy : st === 'done' ? (rv && rv.by) || p.handledBy : st === 'skip' || st === 'need' ? (rv && rv.by) || '' : '';
-  const msgHtml = st === 'none' ? '<i class="pk">(まだメッセージはありません)</i>' : (hiddenN ? `<i class="pk">(ほか前の未返信 ${hiddenN}件。行をタップで全部)</i>` : '') + shown.map(m => `<i><time>${esc(tFmt(m.at))}</time>${esc(String(m.text || '').trim()).replace(/\n/g, '<br>')}</i>`).join('');
+  const msgHtml = st === 'none' ? '<i class="pk">(まだメッセージはありません)</i>' : (hiddenN ? `<i class="pk">(ほか前の未返信 ${hiddenN}件。行をタップで全部)</i>` : '') + shown.map(m => `<i><em>${esc(tkMd(paDayKey(paMs(m.at))))}</em><em>${esc(paHm(m.at))}</em><span class="b">${esc(String(m.text || '').trim()).replace(/\n/g, '<br>')}</span></i>`).join('');
   const setRow = `<div class="pa-set"><span class="pk">状態を選ぶ:</span>${['未確認', '要対応', '対応中', '対応済み', '対応不要'].map(x => `<button type="button" class="btn ghost" aria-pressed="${PA_ST[st] === x}" data-pact="review" data-st="${x}" data-uid="${uid}" data-seen="${esc(p.lastInAt || '')}">${x}</button>`).join('')}</div>`;
   return `<li class="pt-row st-${st}"><div class="pt-line"><input type="checkbox" class="pt-ck" data-psel="${uid}" ${paSel.has(p.id) ? 'checked' : ''} aria-label="${esc(paName(p))}を選ぶ"><span class="pt-b">${st === 'none' ? 'なし' : PA_ST[st]}</span>
       <button type="button" class="pt-main" data-pact="open" data-uid="${uid}" aria-expanded="${isOpen}"><b>${esc(paName(p))}</b><span>${msgHtml}</span></button>
@@ -1547,7 +1551,7 @@ function paRow(p) {
 }
 function paTableInner() {
   const list = paVisible();
-  return list.length ? `<ul class="pt pt3"><li class="pt-h"><span></span><span>状態</span><span class="m"><span>名前</span><span>メッセージ</span></span><span>最終受信 ↓</span><span>選んだ人</span><span></span></li>${list.map(paRow).join('')}</ul>` : '<div class="empty"><b>該当する保護者はいません</b>条件を変えてください。</div>';
+  return list.length ? `<ul class="pt pt3"><li class="pt-h"><span></span><span>状態</span><span class="m"><span>名前</span><span class="mh"><em>日付</em><em>時刻</em><em>本文</em></span></span><span>最終受信</span><span>選んだ人</span><span></span></li>${list.map(paRow).join('')}</ul>` : '<div class="empty"><b>該当する保護者はいません</b>条件を変えてください。</div>';
 }
 function parentsHTML() {
   const when = paState && paState.lastRunAt ? tkWhen(paState.lastRunAt) : 'まだありません';
