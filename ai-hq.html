@@ -1903,8 +1903,8 @@ document.addEventListener('click', async e => {
   if (!ga.email.trim()) { toast('メールアドレスを入力してください'); return; }
   try {
     const r = (await call('aiGrantAdmin')({ email: ga.email, name: ga.name })).data;
-    ga.msg = r.already ? `${r.email} は、すでに運用管理者です。` : `${r.email} を運用管理者にしました。次にAI本部を開くときから使えます。`;
-    if (!r.already) { ga.email = ''; ga.name = ''; }
+    ga.msg = r.updated ? `${r.email} の表示名を「${r.name}」に更新しました。` : r.already ? `${r.email} は、すでに運用管理者です。名前を直すときは、名前も入力してもう一度押してください。` : `${r.email} を運用管理者にしました。次にAI本部を開くときから使えます。`;
+    if (!r.already || r.updated) { ga.email = ''; ga.name = ''; }
   } catch (err) { ga.msg = '追加できませんでした: ' + (err.message || err); }
   ga.open = true; renderPanel();
 });
