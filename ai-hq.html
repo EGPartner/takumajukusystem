@@ -1506,7 +1506,7 @@ function paThreadHTML(p) {
     left += `<div class="pa-in"><time>${esc(paHm(e.at))}</time>${esc(e.t).replace(/\n/g, '<br>')}</div>`;
   });
   const more = ins.length > vis.length ? `<button type="button" class="btn ghost" data-pact="threadmore" data-uid="${esc(p.id)}">さらに古い ${ins.length - vis.length}件を表示</button>` : '';
-  const right = acts.length ? acts.map(e => `<li><span class="w">${esc(tkWhen(e.at))}${e.by ? ' ・ ' + esc(e.by) : ''}</span>${esc(e.t).replace(/\n/g, '<br>')}</li>`).join('') : '<li class="pk">まだありません。「開始」「済み」を押すと、ここに残ります。</li>';
+  const right = acts.length ? acts.map(e => `<li><span class="w">${esc(tkWhen(e.at))}${e.by ? ' ・ ' + esc(paWho(e.by)) : ''}</span>${esc(e.t).replace(/\n/g, '<br>')}</li>`).join('') : '<li class="pk">まだありません。「開始」「済み」を押すと、ここに残ります。</li>';
   return `<div class="pa-two"><div class="pa-thread"><h4>保護者のメッセージ(新しい順・${ins.length}件)</h4>${left || '(まだありません)'}${more}</div>
     <div class="pa-thread pa-acts"><h4>管理者の対応(${acts.length}件)</h4><ol>${right}</ol><p class="pk">返信の本文は、LINEの仕様でここには届きません。「LINE↗」でManagerを開けます。</p></div></div>`;
 }
@@ -1522,6 +1522,9 @@ function paDetail(p) {
     ${c}
     <div class="tk-act"><button type="button" class="btn" data-pact="draft" data-uid="${uid}">返信案を作る</button><button type="button" class="btn ghost" data-pact="add" data-uid="${uid}">やることを足す</button><button type="button" class="btn ghost" data-pact="name" data-uid="${uid}">名前</button><button type="button" class="btn ghost" data-pact="memo" data-uid="${uid}">メモ</button><span class="sp"></span><button type="button" class="btn ghost" data-pact="erase" data-uid="${uid}">記録を削除</button></div>`;
 }
+// 「選んだ人」「管理者の対応」に出す名前。記録にはログインのメールアドレスの@より前が残っていることがあるため、ここで人の名前に読み替える(過去の記録にも効く)
+const PA_WHO = { 'contact': 'ヤマグチ', 'mf2yan': 'ヤマグチ', 'campeon10041004': 'タクマ', 'yukiya.k.80': 'ユキヤ', 'kaikio72268': 'kkk' };
+const paWho = n => PA_WHO[String(n || '').trim()] || String(n || '');
 const LINE_CHAT_BASE = 'https://chat.line.biz/U91689be46b4c7a64eeb685a327019f50'; // 公式アカウントのManager(チャット一覧)。個別チャットの住所は、保護者のLINE IDでは開けなかったため、一覧に行く
 const paAgo = ms => { const m = Math.floor((Date.now() - ms) / 60000); return m < 1 ? 'たった今' : m < 60 ? m + '分前' : m < 1440 ? Math.floor(m / 60) + '時間前' : Math.floor(m / 1440) + '日前'; };
 /** 全保護者の一覧(1人=1行)。状態は人が選ぶ。行をタップすると、その下にやり取りと状態の選択が開く */
@@ -1546,7 +1549,7 @@ function paRow(p) {
   const setRow = `<div class="pa-set"><span class="pk">状態を選ぶ:</span>${['未確認', '要対応', '対応中', '対応済み', '対応不要'].map(x => `<button type="button" class="btn ghost" aria-pressed="${PA_ST[st] === x}" data-pact="review" data-st="${x}" data-uid="${uid}" data-seen="${esc(p.lastInAt || '')}">${x}</button>`).join('')}</div>`;
   return `<li class="pt-row st-${st}"><div class="pt-line"><input type="checkbox" class="pt-ck" data-psel="${uid}" ${paSel.has(p.id) ? 'checked' : ''} aria-label="${esc(paName(p))}を選ぶ"><span class="pt-b">${st === 'none' ? 'なし' : PA_ST[st]}</span>
       <button type="button" class="pt-main" data-pact="open" data-uid="${uid}" aria-expanded="${isOpen}"><b>${esc(paName(p))}</b><span>${msgHtml}</span></button>
-      <span class="pt-t${late ? ' late' : ''}">${esc(lastMs ? paAgo(lastMs) : '')}</span><span class="pt-who">${esc(who || '')}</span><span class="pt-a">${LINE_LINK}${acts}</span></div>
+      <span class="pt-t${late ? ' late' : ''}">${esc(lastMs ? paAgo(lastMs) : '')}</span><span class="pt-who">${esc(paWho(who))}</span><span class="pt-a">${LINE_LINK}${acts}</span></div>
     ${isOpen ? `<div class="pt-x">${setRow}${open.length ? `<p class="pk">AIが拾った要点(参考です。要否は上の「状態を選ぶ」で決まります):</p><ul class="tasks" style="display:grid;gap:10px">${open.map(t => paTodo(p, t)).join('')}</ul>` : ''}${paDetail(p)}</div>` : ''}</li>`;
 }
 function paTableInner() {
