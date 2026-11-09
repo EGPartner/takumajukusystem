@@ -489,6 +489,34 @@
     .pt3 .pt-main{grid-column:3/-1}
     .pt3 .pt-t{grid-column:3}.pt3 .pt-who{grid-column:3}.pt3 .pt-a{grid-column:1/-1}
   }
+  .gt-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+  .gt{min-width:900px}
+  .gt-row{display:grid;grid-template-columns:104px repeat(28,minmax(24px,1fr));align-items:stretch;border-top:1px solid var(--line);position:relative;min-height:30px}
+  .gt-row>.gt-l{grid-column:1}
+  .gt-row>i{border-left:1px solid var(--line);grid-row:1}
+  .gt-row>i.we{background:var(--surface-2)}
+  .gt-row>i.today{background:var(--accent-soft);border-left:2px solid var(--accent)}
+  .gt-first{border-top:2px solid var(--line-strong)}
+  .gt-head{border-top:0;background:var(--surface-2);position:sticky;top:0;z-index:3}
+  .gt-head .gt-d{font-size:10.5px;text-align:center;color:var(--ink-3);padding:3px 0;border-left:1px solid var(--line);line-height:1.2}
+  .gt-head .gt-d small{display:block;font-size:9px;color:var(--ink-3)}
+  .gt-head .gt-d.we{color:var(--bad)}
+  .gt-head .gt-d.today{background:var(--accent);color:#fff;font-weight:700}
+  .gt-l{grid-row:1;padding:5px 8px;font-size:12px;display:flex;flex-direction:column;justify-content:center;position:sticky;left:0;background:var(--surface);z-index:2;border-right:1px solid var(--line)}
+  .gt-head .gt-l{background:var(--surface-2)}
+  .gt-l b{font-size:12.5px}
+  .gt-bar{grid-row:1;align-self:center;height:18px;margin:6px 2px;padding:0;border-radius:6px;border:1px solid var(--accent);background:var(--accent-soft);cursor:pointer;position:relative;z-index:1;min-width:0}
+  .gt-t{grid-row:1;align-self:center;margin:0;padding:0 6px;border:0;background:none;color:var(--ink);font:inherit;font-size:11.5px;line-height:1.3;text-align:left;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;z-index:1;min-width:0}
+  .gt-t.left{text-align:right;justify-self:end}
+  .gt-bar.over{background:var(--bad-soft);border-color:var(--bad)}
+  .gt-bar.doing{background:var(--accent)}
+  .gt-bar.nodue{border-style:dashed}
+  .gt-bar.sel{box-shadow:0 0 0 2px var(--navy)}
+  .td-cand{border-left:4px solid var(--warn)}
+  .td-c{display:flex;gap:10px;align-items:flex-start;justify-content:space-between;padding:8px 0;border-top:1px solid var(--line);font-size:12.5px}
+  .td-c>div:first-child{min-width:0;overflow-wrap:anywhere}
+  .pt2 .st-doing{border-left-color:var(--accent)}
+  .pt2 .st-doing .pt-b{background:var(--accent);border-color:var(--accent);color:#fff}
   .pa-day{font-size:12.5px;font-weight:700;color:var(--ink-2);margin:14px 0 6px;display:flex;gap:8px;align-items:center}
   .pa-day .n{font-family:var(--f-num);font-weight:600;color:var(--ink-3)}
   .pa-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
@@ -1482,7 +1510,7 @@ const paDayKey = ms => new Date(ms + 9 * 3600e3).toISOString().slice(0, 10);
 const paDayLabel = key => { const t = todayJst(); return key === t ? '今日 ' + tkMd(key) : key === addDaysYmd(t, -1) ? '昨日 ' + tkMd(key) : tkMd(key); };
 const paHm = at => new Date(at).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
 function paSwitch() {
-  return `<div class="vfilter"><button type="button" data-tview="tk" aria-pressed="${tasksView === 'tk'}">統括・スタッフのやること</button><button type="button" data-tview="parent" aria-pressed="${tasksView === 'parent'}">保護者LINE${paOpenCount() ? ' ' + paOpenCount() : ''}</button></div>`;
+  return `<div class="vfilter"><button type="button" data-tview="tk" aria-pressed="${tasksView === 'tk'}">統括・スタッフのやること${tdCands().length ? ' 候補' + tdCands().length : ''}</button><button type="button" data-tview="parent" aria-pressed="${tasksView === 'parent'}">保護者LINE${paOpenCount() ? ' ' + paOpenCount() : ''}</button></div>`;
 }
 function paTodo(p, t) {
   const uid = esc(p.id), tid = esc(t.id), over = !!(t.due && t.due < todayJst());
@@ -1573,7 +1601,21 @@ const tkKindLabel = k => (k === 'お叱り' ? '要改善' : k || '指示');
 const tkMd = d => (d ? d.slice(5).replace('-', '/') : '');
 const tkWhen = at => new Date(at).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 /* ---------- 統括・スタッフのやること: 1つの表に(統括グループの会話から拾ったもの+スタッフ用のやること) ---------- */
-let tdOpen = null; // 開いている行 'tk:ID' / 'st:ID'
+let tdOpen = null, tdView = 'gantt'; // tdOpen: 開いている項目 'tk:ID' / 'st:ID'。tdView: 'gantt'(担当者別の棒グラフ)か 'list'(一覧表)
+/* 担当者の名前は、LINEの表示名や呼び方がまちまちなので、ここで1つの名前にそろえる */
+const TD_MEMBERS = ['タクマ', 'ヤマグチ', 'kkk', 'ユキヤ', '吉田蒼真'];
+const TD_ALIAS = { '代表': 'タクマ', 'たくま': 'タクマ', 'yasuhiro yamaguchi': 'ヤマグチ', 'やん': 'ヤマグチ', '山口': 'ヤマグチ', '統括': 'ヤマグチ', '北川': 'ユキヤ', 'ゆきや': 'ユキヤ', '由樹也': 'ユキヤ', 'kkk': 'kkk', '事務員': 'kkk', '吉田': '吉田蒼真', '蒼真': '吉田蒼真', 'そうま': '吉田蒼真' };
+function tdOwner(n) {
+  const v = String(n || '').trim(); if (!v) return '';
+  if (TD_MEMBERS.includes(v)) return v;
+  const l = v.toLowerCase();
+  if (TD_ALIAS[l]) return TD_ALIAS[l];
+  const k = Object.keys(TD_ALIAS).find(x => l.includes(x)); if (k) return TD_ALIAS[k];
+  const m = TD_MEMBERS.find(x => v.includes(x)); return m || v;
+}
+const tdIdx = ymd => Math.round(Date.parse(ymd + 'T00:00:00Z') / 864e5);
+const tdJst = iso => new Date(Date.parse(iso) + 9 * 3600e3).toISOString().slice(0, 10);
+const tdCands = () => tkTasks.filter(t => t.cand && t.status === '未着手').sort((a, b) => String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
 function tdRows() {
   const today = todayJst(), week = addDaysYmd(today, 7), out = [];
   const add = (src, t) => {
@@ -1582,61 +1624,102 @@ function tdRows() {
     if (!isOpen) { cls = 'done'; label = t.status; rank = 5; }
     else if (over) { cls = 'open'; label = '期限切れ'; rank = 0; }
     else if (hot) { cls = 'open'; label = t.urgent ? '急ぎ' : '再確認'; rank = 0; }
+    else if (t.doing) { cls = 'doing'; label = '進行中'; rank = 1; }
     else if (src === 'st' && t.old) { cls = 'later'; label = '古い宿題'; rank = 4; }
     else if (due && due <= today) { cls = 'working'; label = '今日'; rank = 1; }
     else if (due && due <= week) { cls = 'working'; label = '今週'; rank = 2; }
     else { cls = 'later'; label = '未着手'; rank = 3; }
-    out.push({ src, t, key: src + ':' + t.id, isOpen, cls, label, rank, due });
+    const start = t.start || (t.createdAt ? tdJst(t.createdAt) : today);
+    out.push({ src, t, key: src + ':' + t.id, isOpen, cls, label, rank, due, start, owner: tdOwner(t.owner) || '担当未定', over: !!over });
   };
-  tkTasks.forEach(t => add('tk', t)); tasks.forEach(t => add('st', t));
+  tkTasks.filter(t => !t.cand).forEach(t => add('tk', t)); tasks.forEach(t => add('st', t)); // 候補(AIが拾っただけ)は、人が「管理する」と選ぶまで入れない
   const open = out.filter(r => r.isOpen).sort((a, b) => a.rank - b.rank || String(a.due || '9999').localeCompare(String(b.due || '9999')) || (a.t.no || 0) - (b.t.no || 0));
   const doneAll = out.filter(r => !r.isOpen).sort((a, b) => String(b.t.doneAt || '').localeCompare(String(a.t.doneAt || '')));
   const tkDone = doneAll.filter(r => r.src === 'tk'), hidden = Math.max(0, tkDone.length - 5);
   const done = [...tkDone.slice(0, 5), ...doneAll.filter(r => r.src === 'st').slice(0, 10)].sort((a, b) => String(b.t.doneAt || '').localeCompare(String(a.t.doneAt || '')));
   return { open, done, hidden };
 }
+/** 項目の詳細(内容の全文・元の発言・経過・操作ボタン) */
 function tdExtra(r) {
   const t = r.t, id = esc(t.id), tk = r.src === 'tk', over = r.label === '期限切れ';
-  const chips = tk ? `<div class="tk-meta"><span class="tk-chip kind">${esc(tkKindLabel(t.kind))}</span>${t.urgent ? '<span class="tk-chip bad">急ぎ</span>' : ''}${t.repeats ? `<span class="tk-chip bad">再確認 ${esc(t.repeats)}回</span>` : ''}${t.due ? `<span class="tk-chip${over ? ' warn' : ''}">期限 ${esc(tkMd(t.due))}</span>` : ''}</div>` : '';
+  const chips = tk ? `<div class="tk-meta"><span class="tk-chip kind">${esc(tkKindLabel(t.kind))}</span>${t.urgent ? '<span class="tk-chip bad">急ぎ</span>' : ''}${t.repeats ? `<span class="tk-chip bad">再確認 ${esc(t.repeats)}回</span>` : ''}<span class="tk-chip">担当 ${esc(r.owner)}</span><span class="tk-chip">${esc(tkMd(r.start))} → ${r.due ? esc(tkMd(r.due)) : '期限なし'}${over ? '(期限切れ)' : ''}</span>${t.from ? `<span class="tk-chip">依頼 ${esc(paWho(t.from))}</span>` : ''}</div>` : '';
   const srcL = !tk && t.source ? (t.source.label || (t.source.orderNo ? '指示#' + t.source.orderNo : '')) : '';
   const src = srcL ? `<p class="pk">出所: ${t.source.url ? `<a href="${esc(t.source.url)}" target="_blank" rel="noopener">${esc(srcL)}</a>` : esc(srcL)}</p>` : '';
   const quote = tk && t.quote ? `<p class="tk-quote">発言「${esc(t.quote)}」</p>` : '';
   const hs = (t.history || []);
-  const hist = hs.length ? `<details class="tk-hist" open><summary>経過 ${hs.length}件</summary><ol>${hs.map(h => `<li><span class="w">${esc(tkWhen(h.at))}${h.by && h.by !== '会話' ? ' ・ ' + esc(h.by) : ''}</span>${esc(h.note).replace(/\n/g, '<br>')}</li>`).join('')}</ol></details>` : '';
+  const hist = hs.length ? `<details class="tk-hist" open><summary>経過 ${hs.length}件</summary><ol>${hs.map(h => `<li><span class="w">${esc(tkWhen(h.at))}${h.by && h.by !== '会話' ? ' ・ ' + esc(paWho(h.by)) : ''}</span>${esc(h.note).replace(/\n/g, '<br>')}</li>`).join('')}</ol></details>` : '';
   const prep = !tk && t.prep ? `<details class="prep" open><summary>準備メモ</summary><p>${esc(t.prep).replace(/\n/g, '<br>')}</p></details>` : '';
-  const fin = !r.isOpen && (t.doneBy || t.evidence) ? `<p class="pk">${esc(t.status)}${t.doneBy ? '(' + esc(t.doneBy) + ')' : ''}${t.evidence ? ' — ' + esc(t.evidence) : ''}</p>` : '';
-  const acts = !r.isOpen ? '' : tk ? `<div class="tk-act"><button type="button" class="btn ghost" data-tkowner="${id}">担当を変える</button><button type="button" class="btn ghost" data-tkdue="${id}">期限を変える</button><button type="button" class="btn" data-tkline="${id}">統括グループにLINE送信</button></div>`
-    : `<div class="tk-act"><button type="button" class="btn ghost" data-towner="${id}">担当を変える</button><button type="button" class="btn ghost" data-tdue="${id}">期限を変える</button></div>`;
+  const fin = !r.isOpen && (t.doneBy || t.evidence) ? `<p class="pk">${esc(t.status)}${t.doneBy ? '(' + esc(paWho(t.doneBy)) + ')' : ''}${t.evidence ? ' — ' + esc(t.evidence) : ''}</p>` : '';
+  const set = tk ? 'data-tkset' : 'data-tset';
+  const main = !r.isOpen ? `<button type="button" class="btn ghost" ${set}="${id}" data-st="未着手">未完了に戻す</button>`
+    : `<button type="button" class="btn tk-done" ${set}="${id}" data-st="完了">完了</button>${tk ? (t.doing ? `<button type="button" class="btn ghost" data-tkdoing="${id}" data-on="0">進行中をやめる</button>` : `<button type="button" class="btn" data-tkdoing="${id}" data-on="1">進行中にする</button>`) : ''}<button type="button" class="btn ghost" ${set}="${id}" data-st="不要">不要</button>`;
+  const edit = !r.isOpen ? '' : tk ? `<button type="button" class="btn ghost" data-tkowner="${id}">担当を変える</button><button type="button" class="btn ghost" data-tkstart="${id}">開始日</button><button type="button" class="btn ghost" data-tkdue="${id}">期限</button><button type="button" class="btn ghost" data-tktext="${id}">内容を直す</button><button type="button" class="btn ghost" data-tkline="${id}">LINEで連絡</button>`
+    : `<button type="button" class="btn ghost" data-towner="${id}">担当を変える</button><button type="button" class="btn ghost" data-tdue="${id}">期限</button>`;
   const compose = tk && tkCompose && tkCompose.id === t.id ? `<div class="vform"><b>統括グループにLINEを送る</b><p class="pk">${tkCompose.busy === 'draft' ? '文案を作っています…' : '文案はAIが作りました。直してから送れます。送った内容は、この項目の「経過」に残ります。'}</p>
       <textarea id="tk-msg" rows="4" ${tkCompose.busy ? 'disabled' : ''} placeholder="送る文">${esc(tkCompose.text || '')}</textarea>
       <div class="actions"><button type="button" class="btn primary" data-tksendgo="${id}" ${tkCompose.busy ? 'disabled' : ''}>${tkCompose.busy === 'send' ? '送っています…' : '統括グループに送る'}</button><button type="button" class="btn ghost" data-tksendcancel="1" ${tkCompose.busy === 'send' ? 'disabled' : ''}>やめる</button></div></div>` : '';
-  return `<div class="pt-x">${chips}<p class="tk-t" style="font-size:13.5px">${esc(t.text)}</p>${quote}${src}${prep}${hist}${fin}${acts}${compose}</div>`;
+  return `<div class="pt-x">${chips}<p class="tk-t" style="font-size:13.5px">${esc(t.text)}</p>${quote}${src}${prep}${hist}${fin}<div class="tk-act">${main}<span class="sp"></span>${edit}</div>${compose}</div>`;
 }
 function tdRow(r) {
   const t = r.t, id = esc(t.id), tk = r.src === 'tk', isOpen = tdOpen === r.key || (tk && tkCompose && tkCompose.id === t.id);
   const kind = tk ? tkKindLabel(t.kind) + ' ' : '';
-  const acts = r.isOpen
-    ? `<button type="button" class="btn" ${tk ? `data-tkset="${id}"` : `data-tset="${id}"`} data-st="完了">完了</button><button type="button" class="btn ghost" ${tk ? `data-tkset="${id}"` : `data-tset="${id}"`} data-st="不要">不要</button>`
-    : `<button type="button" class="btn ghost" ${tk ? `data-tkset="${id}"` : `data-tset="${id}"`} data-st="未着手">戻す</button>`;
+  const set = tk ? `data-tkset="${id}"` : `data-tset="${id}"`;
+  const acts = r.isOpen ? `<button type="button" class="btn" ${set} data-st="完了">完了</button><button type="button" class="btn ghost" ${set} data-st="不要">不要</button>` : `<button type="button" class="btn ghost" ${set} data-st="未着手">戻す</button>`;
   const msg = (kind + t.text).replace(/\s+/g, ' ');
   return `<li class="pt-row st-${r.cls}"><div class="pt-line"><span class="pt-b">${esc(r.label)}</span>
       <button type="button" class="pt-main" data-topen="${esc(r.key)}" aria-expanded="${isOpen}" title="${esc(msg)}"><span style="color:var(--ink)">${esc(msg)}</span></button>
-      <span class="pt-who">${esc(t.owner || '担当未定')}</span><span class="pt-t${r.label === '期限切れ' ? ' late' : ''}">${r.due ? esc(tkMd(r.due)) : '期限なし'}</span><span class="pt-who pt-src">${tk ? '統括G' : 'スタッフ'}</span><span class="pt-a">${acts}</span></div>
+      <span class="pt-who">${esc(r.owner)}</span><span class="pt-t${r.over ? ' late' : ''}">${r.due ? esc(tkMd(r.due)) : '期限なし'}</span><span class="pt-who pt-src">${tk ? '統括G' : 'スタッフ'}</span><span class="pt-a">${acts}</span></div>
     ${isOpen ? tdExtra(r) : ''}</li>`;
+}
+/** 担当者別ガント: 行=担当者(その下に案件ごとの行)、横=日付。棒は 開始日 → 期限。棒をタップすると、下に詳細が開く */
+function tdGantt(open) {
+  const today = todayJst(), N = 28, W0 = addDaysYmd(today, -3), w0 = tdIdx(W0);
+  const days = Array.from({ length: N }, (_, i) => { const ymd = addDaysYmd(W0, i), dt = new Date(ymd + 'T00:00:00Z'); return { ymd, d: dt.getUTCDate(), m: dt.getUTCMonth() + 1, dow: dt.getUTCDay(), today: ymd === today }; });
+  const head = `<div class="gt-row gt-head"><div class="gt-l"></div>${days.map(x => `<div class="gt-d${x.today ? ' today' : ''}${x.dow === 0 || x.dow === 6 ? ' we' : ''}">${x.d === 1 || x.ymd === W0 ? `<small>${x.m}月</small>` : ''}${x.d}</div>`).join('')}</div>`;
+  const byOwner = {}; open.forEach(r => { (byOwner[r.owner] = byOwner[r.owner] || []).push(r); });
+  const names = [...TD_MEMBERS, ...Object.keys(byOwner).filter(n => !TD_MEMBERS.includes(n) && n !== '担当未定'), '担当未定'].filter((n, i, a) => a.indexOf(n) === i && (TD_MEMBERS.includes(n) || byOwner[n]));
+  const cells = days.map((x, i) => `<i style="grid-column:${i + 2}" class="${x.today ? 'today' : x.dow === 0 || x.dow === 6 ? 'we' : ''}"></i>`).join(''); // 列を決めて置く(棒が入っても、日付の列がずれないように)
+  const rows = names.map(n => {
+    const list = (byOwner[n] || []).slice().sort((a, b) => String(a.due || '9999').localeCompare(String(b.due || '9999')) || a.start.localeCompare(b.start));
+    if (!list.length) return `<div class="gt-row gt-first"><div class="gt-l"><b>${esc(n)}</b><span class="pk">なし</span></div>${cells}</div>`;
+    return list.map((r, i) => {
+      const e = r.due && r.due >= r.start ? r.due : (r.due ? r.start : addDaysYmd(r.start, 2));
+      const clamp = v => Math.max(0, Math.min(N - 1, v));
+      let c1 = tdIdx(r.start) - w0, c2 = tdIdx(e) - w0; const left = c1 < 0, right = c2 > N - 1;
+      if (c2 < 0) { c1 = 0; c2 = 0; } else if (c1 > N - 1) { c1 = N - 1; c2 = N - 1; } else { c1 = clamp(c1); c2 = clamp(c2); }
+      const cls = r.over ? 'over' : r.t.doing ? 'doing' : r.due ? '' : 'nodue';
+      const label = (left ? '◀ ' : '') + r.t.text + (r.due ? '' : '(期限なし)') + (right ? ' ▶' : ''), toLeft = N - 1 - c2 < 7 && c1 > 6; // 文字は、棒の右(右端に近ければ左)に出す
+      const tip = esc(r.t.text) + (r.due ? '(期限 ' + esc(tkMd(r.due)) + ')' : '(期限なし)');
+      return `<div class="gt-row${i === 0 ? ' gt-first' : ''}"><div class="gt-l">${i === 0 ? `<b>${esc(n)}</b><span class="pk">${list.length}件</span>` : ''}</div>${cells}
+        <button type="button" class="gt-bar ${cls}${tdOpen === r.key ? ' sel' : ''}" style="grid-column:${c1 + 2} / ${c2 + 3}" data-topen="${esc(r.key)}" title="${tip}" aria-label="${tip}"></button>
+        <button type="button" class="gt-t${toLeft ? ' left' : ''}" style="grid-column:${toLeft ? '2 / ' + (c1 + 2) : (c2 + 3) + ' / ' + (N + 2)}" data-topen="${esc(r.key)}" title="${tip}">${esc(label)}</button></div>`;
+    }).join('');
+  }).join('');
+  const sel = open.find(r => r.key === tdOpen);
+  return `<div class="gt-wrap"><div class="gt">${head}${rows}</div></div>${sel ? `<div class="vboard"><b>${esc(sel.owner)}: ${esc(sel.label)}</b>${tdExtra(sel)}</div>` : ''}`;
+}
+function tdCandHTML() {
+  const c = tdCands(); if (!c.length) return '';
+  return `<div class="vboard td-cand"><div class="tk-head"><b>候補 ${c.length}件</b><span class="pk">会話から、指示・依頼らしいものを拾いました。管理するものだけ選んでください(選ぶまで進捗管理には入りません)</span></div>
+    ${c.map(t => `<div class="td-c"><div><span class="tk-chip kind">${esc(tkKindLabel(t.kind))}</span> ${t.urgent ? '<span class="tk-chip bad">急ぎ</span> ' : ''}<b>${esc(t.text)}</b>
+      <div class="pk">${t.quote ? `発言「${esc(t.quote)}」 ・ ` : ''}担当(案): ${esc(tdOwner(t.owner) || '未定')} ・ 期限(案): ${t.due ? esc(tkMd(t.due)) : 'なし'} ・ ${esc(tkWhen(t.createdAt))}</div></div>
+      <div class="pt-a"><button type="button" class="btn" data-tkcand="${esc(t.id)}">管理する</button><button type="button" class="btn ghost" data-tkset="${esc(t.id)}" data-st="不要">不要</button></div></div>`).join('')}</div>`;
 }
 function todoTableHTML() {
   const { open, done, hidden } = tdRows(), list = [...open, ...done];
   const when = tkState && tkState.lastRunAt ? tkWhen(tkState.lastRunAt) : 'まだありません';
   const err = tkState && tkState.error ? `<div class="alertbox"><b>統括グループの会話の分析がうまくいっていません</b>${esc(tkState.error.message || '')}(${esc(tkWhen(tkState.error.at))})。次に成功すると、この表示は消えます。続くときは、画面を撮って連絡してください。</div>` : '';
   const nOver = open.filter(r => r.label === '期限切れ').length;
-  return `${err}<div class="vboard"><div class="tk-head"><b>やること</b><span class="pk">未完了 ${open.length}件${nOver ? ` ・ 期限切れ ${nOver}件` : ''} ・ 統括グループの分析 ${esc(when)}</span><span class="sp"></span><button type="button" class="btn ghost" id="tk-run">今すぐ分析</button></div>
-      <p class="pk">統括グループの会話から自動で整理したものと、スタッフ用のやることを、1つの表にしています。赤は期限切れ・急ぎ、黄は今週まで。行をタップすると詳細が開きます。LINEで「完了 12」と送っても完了になります。</p>
-      <details class="pt-add"><summary class="btn ghost" style="display:inline-block;cursor:pointer">＋ やることを足す</summary>
-        <div class="vform" style="margin-top:8px"><div class="cmd-mini" style="margin-top:0"><label for="task-text" class="sr">内容</label><textarea id="task-text" rows="2" placeholder="誰が・何を(例: 総合体育館へ11月の土日の空きを電話で確認)"></textarea></div>
-        <div class="meta"><label class="pk">担当 <input id="task-owner" placeholder="例: やん"></label><label class="pk">期限 <input type="date" id="task-due"></label></div>
-        <div class="actions" style="margin-top:0"><button type="button" class="btn primary" id="task-add">足す</button></div></div></details></div>
-    ${list.length ? `<ul class="pt pt2"><li class="pt-h"><span>状態</span><span>内容</span><span>担当</span><span>期限</span><span>出所</span><span></span></li>${list.map(tdRow).join('')}</ul>` : '<div class="empty"><b>やることはありません</b>統括グループの会話が分析されると、ここに並びます。</div>'}
-    ${hidden ? `<div class="tkpurge">統括グループの終わったもののうち、古い ${hidden}件は非表示です <button type="button" class="btn ghost" id="tk-purge">古い${hidden}件をまとめて削除</button></div>` : ''}`;
+  const form = `<details class="pt-add"><summary class="btn" style="display:inline-block;cursor:pointer">＋ 指示を出す</summary>
+    <div class="vform" style="margin-top:8px"><div class="cmd-mini" style="margin-top:0"><label for="tk-add-text" class="sr">内容</label><textarea id="tk-add-text" rows="2" placeholder="何を(例: 11月の遠征費の請求書を作って、保護者に送る)"></textarea></div>
+      <div class="meta"><label class="pk">担当 <select id="tk-add-owner"><option value="">担当未定</option>${TD_MEMBERS.map(m => `<option>${esc(m)}</option>`).join('')}</select></label><label class="pk">開始日 <input type="date" id="tk-add-start" value="${esc(todayJst())}"></label><label class="pk">期限 <input type="date" id="tk-add-due"></label></div>
+      <div class="actions" style="margin-top:0"><button type="button" class="btn primary" id="tk-add-go">登録する</button></div></div></details>`;
+  const view = `<div class="vfilter"><button type="button" data-tdview="gantt" aria-pressed="${tdView === 'gantt'}">担当者別(ガント)</button><button type="button" data-tdview="list" aria-pressed="${tdView === 'list'}">一覧表</button></div>`;
+  const body = tdView === 'gantt' ? tdGantt(open) : (list.length ? `<ul class="pt pt2"><li class="pt-h"><span>状態</span><span>内容</span><span>担当</span><span>期限</span><span>出所</span><span></span></li>${list.map(tdRow).join('')}</ul>` : '<div class="empty"><b>やることはありません</b>統括グループの会話が分析されると、候補が並びます。</div>');
+  return `${err}${tdCandHTML()}<div class="vboard"><div class="tk-head"><b>やること(進捗管理)</b><span class="pk">管理中 ${open.length}件${nOver ? ` ・ 期限切れ ${nOver}件` : ''} ・ 統括グループの分析 ${esc(when)}</span><span class="sp"></span><button type="button" class="btn ghost" id="tk-run">今すぐ分析</button></div>
+      <p class="pk">指示は、ここ(画面)で出すか、会話から拾った候補を「管理する」で選びます。LINEのトーク画面には何も出ません。終わったら「完了」(LINEで「完了 12」と送っても完了になります)。</p>${form}</div>
+    ${view}${body}
+    ${tdView === 'list' && hidden ? `<div class="tkpurge">統括グループの終わったもののうち、古い ${hidden}件は非表示です <button type="button" class="btn ghost" id="tk-purge">古い${hidden}件をまとめて削除</button></div>` : ''}`;
 }
 /** 成果物の「次にやること」の実行計画(採用すると、この印のとおりに動く) */
 function planTag(o, i) {
@@ -2236,11 +2319,41 @@ document.addEventListener('click', async e => {
     catch (err) { toast('分析できませんでした: ' + err.message); }
     btn.disabled = false; btn.textContent = '今すぐ分析する'; return;
   }
+  if (btn.dataset.tdview) { tdView = btn.dataset.tdview; renderPanel(); return; }
+  if (btn.dataset.tkcand) {
+    btn.disabled = true;
+    try { await call('aiTokatsuTasks')({ action: 'set', id: btn.dataset.tkcand, cand: false }); toast('管理する項目に入れました。担当や期限は、ガントの棒をタップして直せます'); }
+    catch (err) { btn.disabled = false; toast('できませんでした: ' + err.message); }
+    return;
+  }
+  if (btn.dataset.tkdoing) {
+    btn.disabled = true;
+    try { await call('aiTokatsuTasks')({ action: 'set', id: btn.dataset.tkdoing, doing: btn.dataset.on === '1' }); toast(btn.dataset.on === '1' ? '進行中にしました' : '進行中をやめました'); }
+    catch (err) { btn.disabled = false; toast('できませんでした: ' + err.message); }
+    return;
+  }
+  if (btn.dataset.tkstart || btn.dataset.tktext) {
+    const id = btn.dataset.tkstart || btn.dataset.tktext, t = tkTasks.find(x => x.id === id); if (!t) return;
+    let patch;
+    if (btn.dataset.tkstart) { const v = prompt('開始日(YYYY-MM-DD。ガントの棒の左端になります)', t.start || todayJst()); if (v === null) return; patch = { start: v.trim() }; }
+    else { const v = prompt('内容を直す', t.text || ''); if (v === null || !v.trim()) return; patch = { text: v.trim() }; }
+    btn.disabled = true;
+    try { await call('aiTokatsuTasks')({ action: 'set', id, ...patch }); toast('変更しました'); }
+    catch (err) { btn.disabled = false; toast('変更できませんでした: ' + err.message); }
+    return;
+  }
+  if (btn.id === 'tk-add-go') {
+    const ta = $('#tk-add-text'), text = ta.value.trim(); if (!text) { ta.focus(); return; }
+    btn.disabled = true;
+    try { await call('aiTokatsuTasks')({ action: 'add', text, owner: $('#tk-add-owner').value, start: $('#tk-add-start').value, due: $('#tk-add-due').value }); ta.value = ''; toast('登録しました。ガントに出ます'); }
+    catch (err) { toast('登録できませんでした: ' + err.message); }
+    btn.disabled = false; return;
+  }
   if (btn.dataset.tkset || btn.dataset.tkowner || btn.dataset.tkdue) {
     const id = btn.dataset.tkset || btn.dataset.tkowner || btn.dataset.tkdue, t = tkTasks.find(x => x.id === id); if (!t) return;
     let patch;
     if (btn.dataset.tkset) patch = { status: btn.dataset.st };
-    else if (btn.dataset.tkowner) { const v = prompt('担当(名前)', t.owner || ''); if (v === null) return; patch = { owner: v.trim() }; }
+    else if (btn.dataset.tkowner) { const v = prompt('担当(' + TD_MEMBERS.join(' / ') + ')', tdOwner(t.owner) || ''); if (v === null) return; patch = { owner: v.trim() }; }
     else { const v = prompt('期限(YYYY-MM-DD。空にすると期限なし)', t.due || todayJst()); if (v === null) return; patch = { due: v.trim() }; }
     btn.disabled = true;
     try { await call('aiTokatsuTasks')({ action: 'set', id, ...patch }); toast(btn.dataset.tkset ? `統括タスク${t.no}を「${btn.dataset.st}」にしました` : '変更しました'); }
