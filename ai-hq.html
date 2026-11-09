@@ -1032,7 +1032,7 @@ function actorOfTarget(t) { if (!t) return null; if (t.kind === 'team') return t
 let orders = [], decisions = [], logs = [], usage = null, apiKeyMeta = null;
 let decided = [], voices = [], voiceFilter = '対応が必要', voiceLink = null; // voiceLink: 次に出す指示と結びつける意見のID(1件、またはテーマの打ち手なら複数)
 let paThreadFull = null, tasksView = 'tk', paFilter = 'need', paList = [], paState = null, paOpen = null, paCompose = null; // 保護者対応。paCompose: 返信案の作成中 { uid, text, busy }
-let tkTasks = [], tkState = null, tkCompose = null; // tkCompose: LINE送信の作成中 { id, text, busy }
+let tkCfg = null, tkTasks = [], tkState = null, tkCompose = null; // tkCompose: LINE送信の作成中 { id, text, busy }
 let _tkx = 0; // 統括タスク(統括グループの会話から整理したもの)
 let tasks = []; // 「やること」台帳(承認・採用した案件の人の作業と、LINE・議事録の宿題)
 let knMemos = [], knState = null, knFilter = 'すべて'; // 社内メモ(スタッフ用LINEと議事録から毎晩整理したもの)
@@ -1590,7 +1590,7 @@ function parentsHTML() {
   const chip = (k, label) => `<button type="button" data-pfst="${k}" aria-pressed="${paFiltSt === k}">${label} ${k === 'all' ? paList.length : paCount(k)}</button>`;
   const bulk = paSel.size ? `<div class="pa-bulk"><b>${paSel.size}人を選択中</b><button type="button" class="btn" data-pbulk="要対応">要対応にする</button><button type="button" class="btn" data-pbulk="対応不要">対応不要にする</button><button type="button" class="btn" data-pbulk="対応済み">対応済みにする</button><button type="button" class="btn ghost" data-pbulk="未確認">未確認に戻す</button><button type="button" class="btn ghost" data-pselnone="1">選択をやめる</button></div>` : '';
   return `${err}<div class="vboard"><div class="tk-head"><b>保護者LINE</b><span class="pk">全${paList.length}人 ・ 未確認 ${paCount('new')} ・ 要対応 ${paCount('need')} ・ 対応中 ${paCount('working')}</span><span class="sp"></span><button type="button" class="btn ghost" data-pact="run">今すぐ分析</button></div>
-      <p class="pk">公式アカウントの友だち全員の一覧です。<b>要否は人が選びます</b>(システムは決めません)。新しいメッセージが届くと「未確認」に戻るので、見落としません。使い方: ①未確認の人を見て「要対応」か「不要」を選ぶ → ②要対応の人は「開始」→「LINE↗」で返信 → ③「済み」。複数人は、左のチェックでまとめて選べます。(AIの分析: ${esc(when)})</p></div>
+      <p class="pk">公式アカウントの友だち全員の一覧です。<b>要否は人が選びます</b>(システムは決めません)。新しいメッセージが届くと「未確認」に戻るので、見落としません。使い方: ①未確認の人を見て「要対応」か「不要」を選ぶ → ②要対応の人は「開始」→「LINE↗」で返信 → ③「済み」。複数人は、左のチェックでまとめて選べます。(AIの分析: ${esc(when)})</p>${notifyBoxHTML()}</div>
     <div class="pa-tools"><div class="vfilter">${chip('all', '全員')}${chip('new', '未確認')}${chip('need', '要対応')}${chip('working', '対応中')}${chip('done', '対応済み')}${chip('skip', '対応不要')}${chip('none', 'やり取りなし')}</div>
       <span class="pk">並び順: 最後にLINEが届いた順(新しいものが上)</span>
       <input type="search" id="pa-q" placeholder="名前・メッセージで探す" value="${esc(paQuery)}" autocomplete="off"><button type="button" class="btn ghost" data-pselall="1">表示中を全部選ぶ</button></div>
@@ -1705,6 +1705,11 @@ function tdCandHTML() {
       <div class="pk">${t.quote ? `発言「${esc(t.quote)}」 ・ ` : ''}担当(案): ${esc(tdOwner(t.owner) || '未定')} ・ 期限(案): ${t.due ? esc(tkMd(t.due)) : 'なし'} ・ ${esc(tkWhen(t.createdAt))}</div></div>
       <div class="pt-a"><button type="button" class="btn" data-tkcand="${esc(t.id)}">管理する</button><button type="button" class="btn ghost" data-tkset="${esc(t.id)}" data-st="不要">不要</button></div></div>`).join('')}</div>`;
 }
+/** 統括グループへの自動通知の、停止・再開(ホールドにしている間は送らない) */
+function notifyBoxHTML() {
+  const item = (key, label, when) => { const on = !(tkCfg && tkCfg[key] === false); return `<div class="nb-i"><span><b>${label}</b> <span class="pk">(${when})</span></span><span class="tk-chip${on ? '' : ' warn'}">${on ? '稼働中' : 'ホールド中(送りません)'}</span><button type="button" class="btn ${on ? 'ghost' : ''}" data-tknotify="${key}" data-on="${on ? '0' : '1'}">${on ? '止める' : '再開する'}</button></div>`; };
+  return `<details class="pt-add nb"><summary class="btn ghost" style="display:inline-block;cursor:pointer">統括LINEへの自動通知${(tkCfg && (tkCfg.weekly === false || tkCfg.parentRemind === false)) ? '(一部ホールド中)' : ''}</summary><div class="vform" style="margin-top:8px">${item('weekly', '統括タスクの週のまとめ', '毎週月曜 8:30')}${item('parentRemind', '保護者対応の未対応のお知らせ', '毎朝 9:00')}<p class="pk">止めている間は、LINEには何も送りません(画面の表示や記録は、これまでどおり動きます)。</p></div></details>`;
+}
 function todoTableHTML() {
   const { open, done, hidden } = tdRows(), list = [...open, ...done];
   const when = tkState && tkState.lastRunAt ? tkWhen(tkState.lastRunAt) : 'まだありません';
@@ -1717,7 +1722,7 @@ function todoTableHTML() {
   const view = `<div class="vfilter"><button type="button" data-tdview="gantt" aria-pressed="${tdView === 'gantt'}">担当者別(ガント)</button><button type="button" data-tdview="list" aria-pressed="${tdView === 'list'}">一覧表</button></div>`;
   const body = tdView === 'gantt' ? tdGantt(open) : (list.length ? `<ul class="pt pt2"><li class="pt-h"><span>状態</span><span>内容</span><span>担当</span><span>期限</span><span>出所</span><span></span></li>${list.map(tdRow).join('')}</ul>` : '<div class="empty"><b>やることはありません</b>統括グループの会話が分析されると、候補が並びます。</div>');
   return `${err}${tdCandHTML()}<div class="vboard"><div class="tk-head"><b>やること(進捗管理)</b><span class="pk">管理中 ${open.length}件${nOver ? ` ・ 期限切れ ${nOver}件` : ''} ・ 統括グループの分析 ${esc(when)}</span><span class="sp"></span><button type="button" class="btn ghost" id="tk-run">今すぐ分析</button></div>
-      <p class="pk">指示は、ここ(画面)で出すか、会話から拾った候補を「管理する」で選びます。LINEのトーク画面には何も出ません。終わったら「完了」(LINEで「完了 12」と送っても完了になります)。</p>${form}</div>
+      <p class="pk">指示は、ここ(画面)で出すか、会話から拾った候補を「管理する」で選びます。LINEのトーク画面には何も出ません。終わったら「完了」(LINEで「完了 12」と送っても完了になります)。</p>${form} ${notifyBoxHTML()}</div>
     ${view}${body}
     ${tdView === 'list' && hidden ? `<div class="tkpurge">統括グループの終わったもののうち、古い ${hidden}件は非表示です <button type="button" class="btn ghost" id="tk-purge">古い${hidden}件をまとめて削除</button></div>` : ''}`;
 }
@@ -2319,6 +2324,14 @@ document.addEventListener('click', async e => {
     catch (err) { toast('分析できませんでした: ' + err.message); }
     btn.disabled = false; btn.textContent = '今すぐ分析する'; return;
   }
+  if (btn.dataset.tknotify) {
+    const key = btn.dataset.tknotify, on = btn.dataset.on === '1';
+    if (!on && !confirm('この自動通知を止めます(ホールド)。再開するまで、統括グループには送りません。よろしいですか?')) return;
+    btn.disabled = true;
+    try { await call('aiTokatsuTasks')({ action: 'notify', [key]: on }); toast(on ? '再開しました' : 'ホールドにしました。再開するまで送りません'); }
+    catch (err) { btn.disabled = false; toast('変更できませんでした: ' + err.message); }
+    return;
+  }
   if (btn.dataset.tdview) { tdView = btn.dataset.tdview; renderPanel(); return; }
   if (btn.dataset.tkcand) {
     btn.disabled = true;
@@ -2632,6 +2645,7 @@ auth.onAuthStateChanged(async user => {
   db.doc('aiMeta/tokatsuTasks').onSnapshot(sn => { tkTasks = sn.exists ? sn.data().items || [] : []; if (panelTab === 'tasks') renderPanel(); }, e => console.error(e));
   db.collection('aiParents').onSnapshot(sn => { paList = sn.docs.map(d => ({ id: d.id, ...d.data() })); if (panelTab === 'tasks') renderPanel(); }, e => console.error(e));
   db.doc('aiMeta/parentState').onSnapshot(sn => { paState = sn.exists ? sn.data() : null; if (panelTab === 'tasks') renderPanel(); }, e => console.error(e));
+  db.doc('aiMeta/tokatsuConfig').onSnapshot(sn => { tkCfg = sn.exists ? sn.data() : null; if (panelTab === 'tasks') renderPanel(); }, e => console.error(e));
   db.doc('aiMeta/tokatsuState').onSnapshot(sn => { tkState = sn.exists ? sn.data() : null; if (panelTab === 'tasks') renderPanel(); }, e => console.error(e));
   db.doc('aiMeta/backlogReview').onSnapshot(sn => { backlog = sn.exists ? sn.data() : null; if (panelTab === 'decide') renderPanel(); }, e => console.error(e));
   db.doc('aiMeta/knowledgeState').onSnapshot(sn => { knState = sn.exists ? sn.data() : null; if (panelTab === 'log') renderPanel(); }, e => console.error(e));
