@@ -1624,7 +1624,7 @@ function parentsHTML() {
       <p class="pk">公式アカウントの友だち全員の一覧です。<b>要否は人が選びます</b>(システムは決めません)。新しいメッセージが届くと「未確認」に戻るので、見落としません。使い方: ①未確認の人を見て「要対応」か「不要」を選ぶ → ②要対応の人は「開始」→「LINE↗」で返信 → ③「済み」。複数人は、左のチェックでまとめて選べます。(AIの分析: ${esc(when)})</p>${notifyBoxHTML()}</div>
     <div class="pa-tools"><div class="vfilter">${chip('all', '全員')}${chip('new', '未確認')}${chip('need', '要対応')}${chip('working', '対応中')}${chip('done', '対応済み')}${chip('skip', '対応不要')}${chip('none', 'やり取りなし')}</div>
       <span class="pk">並び順: 最後にLINEが届いた順(新しいものが上)</span>
-      <input type="search" id="pa-q" placeholder="名前・メッセージで探す" value="${esc(paQuery)}" autocomplete="off"><button type="button" class="btn ghost" data-pselall="1">表示中を全部選ぶ</button></div>
+      <input type="search" id="pa-q" placeholder="名前・メッセージで探す" value="${esc(paQuery)}" autocomplete="off"><button type="button" class="btn ghost" data-pselall="1">表示中を全部選ぶ</button><span class="gx-flex"></span><button type="button" class="btn ghost" data-preset="1" title="AIが拾った未対応のやることを閉じ、全員の状態を未確認に戻します(履歴は消えません)">バックログをリセット</button></div>
     ${bulk}<div id="pa-tbl">${paTableInner()}</div>`;
 }
 const tkOpen = () => tkTasks.filter(t => t.status === '未着手');
@@ -1740,9 +1740,9 @@ function tdCandHTML() {
 }
 /** 統括グループへの自動通知の、停止・再開(ホールドにしている間は送らない) */
 function notifyBoxHTML() {
-  const item = (key, label, when) => { const on = !(tkCfg && tkCfg[key] === false); return `<div class="nb-i"><span><b>${label}</b> <span class="pk">(${when})</span></span><span class="tk-chip${on ? '' : ' warn'}">${on ? '稼働中' : 'ホールド中'}</span><button type="button" class="btn ${on ? 'ghost' : ''}" data-tknotify="${key}" data-on="${on ? '0' : '1'}">${on ? '止める' : '再開する'}</button></div>`; };
-  const hold = tkCfg && (tkCfg.weekly === false || tkCfg.parentRemind === false);
-  return `<details class="gx-pop nb"><summary class="btn ghost">統括LINE通知${hold ? ' <span class="tk-chip warn">一部ホールド</span>' : ''}</summary><div class="gx-card">${item('weekly', '統括タスクの週のまとめ', '毎週月曜 8:30')}${item('parentRemind', '保護者対応の未対応のお知らせ', '毎朝 9:00')}<p class="pk">止めている間は、LINEには何も送りません(画面の表示や記録は、これまでどおり動きます)。</p></div></details>`;
+  const item = (key, label, when) => { const on = !!(tkCfg && tkCfg[key] === true); return `<div class="nb-i"><span><b>${label}</b> <span class="pk">(${when})</span></span><span class="tk-chip${on ? '' : ' warn'}">${on ? '稼働中' : 'ホールド中'}</span><button type="button" class="btn ${on ? 'ghost' : ''}" data-tknotify="${key}" data-on="${on ? '0' : '1'}">${on ? '止める' : '再開する'}</button></div>`; };
+  const hold = !(tkCfg && tkCfg.weekly === true && tkCfg.parentRemind === true);
+  return `<details class="gx-pop nb"><summary class="btn ghost">統括LINE通知${hold ? ' <span class="tk-chip warn">ホールド中</span>' : ''}</summary><div class="gx-card">${item('weekly', '統括タスクの週のまとめ', '毎週月曜 8:30')}${item('parentRemind', '保護者対応の未対応のお知らせ', '毎朝 9:00')}<p class="pk">ホールド中は、LINEには何も送りません(画面の表示や記録は、これまでどおり動きます)。「再開する」を押したものだけ、送ります。</p></div></details>`;
 }
 function todoTableHTML() {
   const { open, done, hidden } = tdRows(), list = [...open, ...done];
@@ -2282,6 +2282,13 @@ document.addEventListener('click', async e => {
   if (btn.dataset.knf) { knFilter = btn.dataset.knf; renderPanel(); return; }
   if (btn.dataset.tview) { tasksView = btn.dataset.tview; renderPanel(); return; }
   if (btn.dataset.topen) { tdOpen = tdOpen === btn.dataset.topen ? null : btn.dataset.topen; renderPanel(); return; }
+  if (btn.dataset.preset) {
+    if (!confirm('保護者LINEのバックログをリセットします。\n\n・AIが拾った「未対応のやること」を、すべて閉じます(不要として記録)\n・全員の状態(要対応・対応中・対応済み・対応不要)を、「未確認」に戻します\n\nやり取りの履歴と、名前は消えません。よろしいですか?')) return;
+    btn.disabled = true;
+    try { const r = await call('aiParentOps')({ action: 'resetBacklog' }); toast(`リセットしました(${r.data.parents}人・やること ${r.data.todos}件を閉じ、${r.data.states}人を未確認に戻しました)`); }
+    catch (err) { btn.disabled = false; toast(/操作の種類/.test(String(err.message)) ? 'この操作には、バックエンドの更新(デプロイ)が必要です' : 'できませんでした: ' + err.message); }
+    return;
+  }
   if (btn.dataset.pfst) { paFiltSt = btn.dataset.pfst; renderPanel(); return; }
   if (btn.dataset.pselall) { paVisible().forEach(p => paSel.add(p.id)); renderPanel(); return; }
   if (btn.dataset.pselnone) { paSel.clear(); renderPanel(); return; }
