@@ -582,6 +582,8 @@
   .ro-diff td{font-size:11.5px}
   /* 申し込み */
   .rf-kpis{grid-template-columns:repeat(4,1fr)}
+  .ro-kpis5{grid-template-columns:repeat(5,1fr)}
+  .ro-kpis5 .ro-k b{font-size:38px}
   .rf-dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px}
   .rf-c{background:color-mix(in srgb,var(--c) calc(var(--v) * 38%),transparent)}
   .rf-list{list-style:none;margin:0;padding:0;display:grid}
@@ -589,7 +591,8 @@
   .rf-list li:first-child{border-top:0}
   .rf-t{font-size:11.5px;color:var(--ink-3);min-width:76px}
   .rf-d{flex:1 1 280px;font-size:12px;color:var(--ink-2);overflow-wrap:anywhere}
-  @media (max-width:760px){.rf-kpis{grid-template-columns:1fr 1fr}}
+  @media (max-width:760px){.rf-kpis,.ro-kpis5{grid-template-columns:1fr 1fr}}
+  @media (max-width:1100px){.ro-kpis5{grid-template-columns:repeat(3,1fr)}}
   .ro-two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   .ro-list{list-style:none;margin:0;padding:0;display:grid;gap:6px}
   .ro-list li{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px}
@@ -1903,6 +1906,17 @@ function roStepSVG(m) {
     ${m.diffs[i] === null ? '' : `<text x="${x(i) + cw / 2}" y="${H - 6}" text-anchor="middle" class="ro-df ${m.diffs[i] > 0 ? 'up' : m.diffs[i] < 0 ? 'dn' : ''}">${roSign(m.diffs[i])}</text>`}</g>`).join('');
   return `<svg viewBox="0 0 ${W} ${H}" class="ro-svg" role="img" aria-label="在籍塾生数の月ごとの推移(階段グラフ)">${grid}${cols}<path d="${area}" class="ro-area"/><path d="${path}" class="ro-line"/></svg>`;
 }
+/** 今月の動きを、入塾・復塾 / 退塾 / 休塾 / 体験 に分ける。退塾と休塾の区別は、塾生リストの「退会月」「休塾開始月」「復帰予定月」で決める(印が消えただけでは決めない) */
+function roKinds(m) {
+  const k = m.base, mv = roMoves(m.all, k), nm = v => String(v || '').replace(/\s/g, '');
+  const notes = roF.roster ? Object.fromEntries(roF.roster.filter(n => n.id).map(n => [n.id, n])) : null, byName = roF.roster ? Object.fromEntries(roF.roster.map(n => [nm(n.name), n])) : null;
+  const note = r => (notes && (notes[r.st.id] || byName[nm(r.st.name)])) || {};
+  const pause = [], leave = [], check = [];
+  mv.left.forEach(r => { if (!notes) { leave.push({ ...r, n: {} }); return; } const n = note(r); if (n.pause || n.resume) pause.push({ ...r, n }); else if (n.leave) leave.push({ ...r, n }); else check.push({ ...r, n }); });
+  const paused = notes ? m.all.filter(r => { const n = note(r); return n.pause && n.pause < k && (!n.resume || n.resume > k) && !roAct(r.st, k); }).map(r => ({ ...r, n: note(r) })) : [];
+  const trial = roF.rows ? roFModel(m).uniq.filter(r => r.type === '体験' && r.month === k).sort((a, b) => b.at.localeCompare(a.at)) : null;
+  return { k, joined: mv.joined, fresh: mv.joined.filter(r => !r.again), back: mv.joined.filter(r => r.again), pause, leave, check, paused, trial, ready: !!notes };
+}
 function roSumHTML(m) {
   const k = m.base, i = m.months.length - 1, total = m.totals[i], prevTotal = m.every.filter(r => (ro.school === 'all' || r.sid === ro.school) && roAct(r.st, roAdd(k, -1))).length, mv = roMoves(m.all, k);
   const dif = m.first && k > m.first ? total - prevTotal : null;
@@ -1911,13 +1925,21 @@ function roSumHTML(m) {
   const rows = m.bySchool.map(s => { const d = m.first && k > m.first ? s.counts[i] - (s.list.filter(r => roAct(r.st, roAdd(k, -1))).length) : null; return `<tr><th>${esc(s.name)}</th>${s.counts.map((c, j) => `<td class="num${m.months[j] === k ? ' now' : ''}">${c}</td>`).join('')}<td class="num ${d > 0 ? 'up' : d < 0 ? 'dn' : ''}">${d === null ? '—' : roSign(d)}</td></tr>`; }).join('');
   const foot = `<tr class="ro-sum"><th>合計</th>${m.totals.map((c, j) => `<td class="num${m.months[j] === k ? ' now' : ''}">${c}</td>`).join('')}<td class="num ${dif > 0 ? 'up' : dif < 0 ? 'dn' : ''}">${dif === null ? '—' : roSign(dif)}</td></tr>
     <tr class="ro-diff"><th>増減</th>${m.diffs.map(d => `<td class="num ${d > 0 ? 'up' : d < 0 ? 'dn' : ''}">${d === null ? '' : roSign(d)}</td>`).join('')}<td></td></tr>`;
-  return `<div class="ro-kpis"><div class="ro-k"><small>${esc(roMJa(k))}の在籍</small><b>${total}<i>人</i></b><span class="${dif > 0 ? 'up' : dif < 0 ? 'dn' : ''}">${dif === null ? '前月のデータなし' : '前月比 ' + roSign(dif)}</span></div>
-      <div class="ro-k"><small>入塾・復塾</small><b class="up">${mv.joined.length ? '+' + mv.joined.length : '0'}<i>人</i></b><span>${mv.joined.filter(r => !r.again).length}人が新規 ・ ${mv.joined.filter(r => r.again).length}人が復塾</span></div>
-      <div class="ro-k"><small>退塾・休塾</small><b class="dn">${mv.left.length ? '−' + mv.left.length : '0'}<i>人</i></b><span>前月に在籍していて、今月はいない人</span></div></div>
+  if (roF.rows === null && !roF.busy && !roF.err) roFLoad();
+  const kd = roKinds(m), kc = (label, n, tone, sub) => `<div class="ro-k"><small>${label}</small><b style="color:${tone}">${n}<i>${n === '…' || n === '—' ? '' : '人'}</i></b><span>${sub}</span></div>`;
+  return `<div class="ro-kpis ro-kpis5"><div class="ro-k"><small>${esc(roMJa(k))}の在籍</small><b>${total}<i>人</i></b><span class="${dif > 0 ? 'up' : dif < 0 ? 'dn' : ''}">${dif === null ? '前月のデータなし' : '前月比 ' + roSign(dif)}</span></div>
+      ${kc('入塾', kd.fresh.length, 'var(--ok)', kd.back.length ? 'ほか復塾 ' + kd.back.length + '人' : '新しく入った人')}
+      ${kc('退塾', kd.leave.length, 'var(--bad)', kd.ready ? '退会月が入っている人' : '(区分は更新後)')}
+      ${kc('休塾', kd.pause.length, 'var(--warn)', kd.paused.length ? '休塾中(継続) ' + kd.paused.length + '人' : kd.ready ? '今月から休塾した人' : '(区分は更新後)')}
+      ${kc('体験', kd.trial ? kd.trial.length : (roF.err ? '—' : '…'), 'var(--accent)', '入塾フォーム回答より')}</div>
+    ${kd.check.length ? `<div class="alertbox"><b>確認が必要: ${kd.check.length}人</b>前月にいたのに今月は印がなく、塾生リストに「退会月」「休塾開始月」の記載もありません。リストを確認してください: ${kd.check.map(r => esc(r.st.name) + '(' + esc(r.school) + ')').join('、')}</div>` : ''}
     <div class="ro-card"><h4>在籍数の推移</h4>${roStepSVG(m)}</div>
     <div class="ro-card"><h4>校舎ごとの人数</h4><div class="ro-scroll"><table class="ro-tbl">${head}${rows}${foot}</table></div></div>
-    <div class="ro-two"><div class="ro-card"><h4>${esc(roMJa(k))}に入った人(${mv.joined.length}人)</h4>${mv.joined.length ? `<ul class="ro-list">${mv.joined.map(r => pill(r, r.again ? '復塾' : '新規')).join('')}</ul>` : '<p class="pk">いません</p>'}</div>
-      <div class="ro-card"><h4>${esc(roMJa(k))}にいなくなった人(${mv.left.length}人)</h4>${mv.left.length ? `<ul class="ro-list">${mv.left.map(r => pill(r, '')).join('')}</ul>` : '<p class="pk">いません</p>'}</div></div>`;
+    <div class="ro-two">
+      <div class="ro-card"><h4><span class="rf-dot" style="background:var(--ok)"></span>入塾(${kd.fresh.length}人${kd.back.length ? ' + 復塾 ' + kd.back.length + '人' : ''})</h4>${kd.joined.length ? `<ul class="ro-list">${kd.joined.map(r => pill(r, r.again ? '復塾' : '新規')).join('')}</ul>` : '<p class="pk">いません</p>'}</div>
+      <div class="ro-card"><h4><span class="rf-dot" style="background:var(--bad)"></span>退塾(${kd.leave.length}人)</h4>${kd.leave.length ? `<ul class="ro-list">${kd.leave.map(r => `<li><b>${esc(r.st.name || '(名前なし)')}</b><span class="pk">${esc(r.school)}${roGrade(r.st) ? ' ・ ' + esc(roGrade(r.st)) : ''}${r.st.team ? ' ・ ' + esc(r.st.team) : ''}</span>${r.n && r.n.leave ? `<span class="tk-chip">最終在籍 ${esc(roMJa(r.n.leave))}</span>` : ''}</li>`).join('')}</ul>` : '<p class="pk">いません</p>'}${kd.ready ? '' : '<p class="pk">退塾と休塾の区別は、バックエンドの更新(デプロイ)後に出ます</p>'}</div>
+      <div class="ro-card"><h4><span class="rf-dot" style="background:var(--warn)"></span>休塾(今月から ${kd.pause.length}人 ・ 休塾中 ${kd.paused.length}人)</h4>${kd.pause.length || kd.paused.length ? `<ul class="ro-list">${kd.pause.concat(kd.paused).map((r, i) => `<li><b>${esc(r.st.name || '(名前なし)')}</b><span class="pk">${esc(r.school)}${roGrade(r.st) ? ' ・ ' + esc(roGrade(r.st)) : ''}</span><span class="tk-chip${i < kd.pause.length ? ' warn' : ''}">${i < kd.pause.length ? '今月から' : '休塾中'}</span>${r.n && r.n.resume ? `<span class="tk-chip">${esc(roMJa(r.n.resume))}に復帰予定</span>` : ''}</li>`).join('')}</ul>` : '<p class="pk">いません</p>'}</div>
+      <div class="ro-card"><h4><span class="rf-dot" style="background:var(--accent)"></span>体験(${kd.trial ? kd.trial.length : '…'}人)</h4>${kd.trial ? (kd.trial.length ? `<ul class="ro-list">${kd.trial.map(r => `<li><b>${esc(r.name)}</b><span class="pk">${esc(r.school)}${r.grade ? ' ・ ' + esc(r.grade) : ''}${r.team ? ' ・ ' + esc(r.team) : ''}</span><span class="tk-chip">${esc(new Date(Date.parse(r.at) + 9 * 3600e3).toISOString().slice(5, 10).replace('-', '/'))} 申込</span></li>`).join('')}</ul>` : '<p class="pk">いません</p>') : (roF.err ? `<p class="pk">読み込めませんでした: ${esc(roF.err)}</p>` : '<p class="pk">読み込んでいます…</p>')}</div></div>`;
 }
 function roStairHTML(m) {
   const q = ro.q.trim().toLowerCase(), k = m.base, last = m.months.length - 1;
@@ -1937,12 +1959,12 @@ function roStairHTML(m) {
     <div class="ro-card"><div class="ro-scroll"><table class="ro-tbl ro-stair"><colgroup><col style="width:190px"><col style="width:56px">${m.months.map(() => '<col>').join('')}</colgroup>${head}${tot}${groups || '<tr><td colspan="99" class="pk">該当する塾生がいません</td></tr>'}</table></div></div>`;
 }
 /* ---------- 申し込み(入塾フォーム回答シートの集計) ---------- */
-const roF = { rows: null, busy: false, err: '', loadedAt: 0 };
+const roF = { rows: null, roster: null, busy: false, err: '', loadedAt: 0 };
 const RF_TYPES = [['入塾', 'ok'], ['体験', 'accent'], ['退塾', 'bad'], ['休塾', 'warn']];
 async function roFLoad(force) {
   if (roF.busy || (!force && roF.loadedAt && Date.now() - roF.loadedAt < 120000)) return;
   roF.busy = true; roF.err = ''; if (panelTab === 'roster') renderPanel();
-  try { const r = await call('aiEnrollStats')({}); roF.rows = r.data.rows || []; roF.loadedAt = Date.now(); }
+  try { const r = await call('aiEnrollStats')({}); roF.rows = r.data.rows || []; roF.roster = r.data.roster || []; roF.loadedAt = Date.now(); }
   catch (e) { console.error(e); roF.err = /not-found|NOT_FOUND|internal/i.test(String(e.code || e.message)) ? 'バックエンドの更新(デプロイ)が必要です' : String(e.message || e); }
   roF.busy = false; if (panelTab === 'roster') renderPanel();
 }
