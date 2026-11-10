@@ -580,6 +580,16 @@
   .ro-tbl .now{background:color-mix(in srgb,var(--accent) 10%,transparent);font-weight:700}
   .ro-sum th,.ro-sum td{font-weight:700;border-top:1px solid var(--line-strong)}
   .ro-diff td{font-size:11.5px}
+  /* 申し込み */
+  .rf-kpis{grid-template-columns:repeat(4,1fr)}
+  .rf-dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px}
+  .rf-c{background:color-mix(in srgb,var(--c) calc(var(--v) * 38%),transparent)}
+  .rf-list{list-style:none;margin:0;padding:0;display:grid}
+  .rf-list li{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;padding:8px 0;border-top:1px solid var(--line);font-size:13px}
+  .rf-list li:first-child{border-top:0}
+  .rf-t{font-size:11.5px;color:var(--ink-3);min-width:76px}
+  .rf-d{flex:1 1 280px;font-size:12px;color:var(--ink-2);overflow-wrap:anywhere}
+  @media (max-width:760px){.rf-kpis{grid-template-columns:1fr 1fr}}
   .ro-two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   .ro-list{list-style:none;margin:0;padding:0;display:grid;gap:6px}
   .ro-list li{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px}
@@ -1870,8 +1880,8 @@ function roHeadHTML(m) {
   const chip = (id, label, n) => `<button type="button" data-ro="school" data-v="${esc(id)}" aria-pressed="${ro.school === id}">${esc(label)} ${n}</button>`;
   const now = k => m.every.filter(r => roAct(r.st, k)).length;
   const bySid = {}; m.every.forEach(r => { if (roAct(r.st, m.base)) bySid[r.sid] = (bySid[r.sid] || 0) + 1; });
-  return `<div class="ro-top"><div class="ro-title"><h3>名簿・階段図</h3><span class="ro-sub">タクマ塾CRMの塾生リストをもとに、10分ごとに更新</span></div>
-    <div class="ro-tools"><div class="gx-seg"><button type="button" data-ro="view" data-v="sum" aria-pressed="${ro.view === 'sum'}">サマリ</button><button type="button" data-ro="view" data-v="stair" aria-pressed="${ro.view === 'stair'}">階段図(名簿)</button></div>
+  return `<div class="ro-top"><div class="ro-title"><h3>名簿・階段図</h3><span class="ro-sub">${ro.view === 'form' ? 'タクマ塾CRMの「入塾フォーム回答」を集計' : 'タクマ塾CRMの塾生リストをもとに、10分ごとに更新'}</span></div>
+    <div class="ro-tools"><div class="gx-seg"><button type="button" data-ro="view" data-v="sum" aria-pressed="${ro.view === 'sum'}">サマリ</button><button type="button" data-ro="view" data-v="stair" aria-pressed="${ro.view === 'stair'}">階段図(名簿)</button><button type="button" data-ro="view" data-v="form" aria-pressed="${ro.view === 'form'}">申し込み</button></div>
       <div class="gx-nav"><button type="button" data-ro="nav" data-v="-1" aria-label="前の月">‹</button><span class="ro-mon">${esc(roMJa(m.base))}</span><button type="button" data-ro="nav" data-v="1" aria-label="次の月">›</button><button type="button" data-ro="nav" data-v="0">今月</button></div>
       <label class="pk">表示 <select id="ro-span"><option value="6"${ro.span === 6 ? ' selected' : ''}>6か月</option><option value="12"${ro.span === 12 ? ' selected' : ''}>12か月</option><option value="24"${ro.span === 24 ? ' selected' : ''}>24か月</option></select></label>
       <span class="gx-flex"></span><button type="button" class="btn ghost" data-ro="reload">${ro.busy ? '更新中…' : '最新に更新'}</button><button type="button" class="btn ghost" data-ro="print">印刷・PDF</button></div>
@@ -1926,11 +1936,55 @@ function roStairHTML(m) {
       <span class="pk ro-legend"><i class="ro-on"></i>在籍 <i class="ro-on in">＋</i>入塾・復塾 <i class="ro-off">×</i>退塾・休塾</span></div>
     <div class="ro-card"><div class="ro-scroll"><table class="ro-tbl ro-stair"><colgroup><col style="width:190px"><col style="width:56px">${m.months.map(() => '<col>').join('')}</colgroup>${head}${tot}${groups || '<tr><td colspan="99" class="pk">該当する塾生がいません</td></tr>'}</table></div></div>`;
 }
+/* ---------- 申し込み(入塾フォーム回答シートの集計) ---------- */
+const roF = { rows: null, busy: false, err: '', loadedAt: 0 };
+const RF_TYPES = [['入塾', 'ok'], ['体験', 'accent'], ['退塾', 'bad'], ['休塾', 'warn']];
+async function roFLoad(force) {
+  if (roF.busy || (!force && roF.loadedAt && Date.now() - roF.loadedAt < 120000)) return;
+  roF.busy = true; roF.err = ''; if (panelTab === 'roster') renderPanel();
+  try { const r = await call('aiEnrollStats')({}); roF.rows = r.data.rows || []; roF.loadedAt = Date.now(); }
+  catch (e) { console.error(e); roF.err = /not-found|NOT_FOUND|internal/i.test(String(e.code || e.message)) ? 'バックエンドの更新(デプロイ)が必要です' : String(e.message || e); }
+  roF.busy = false; if (panelTab === 'roster') renderPanel();
+}
+function roFModel(m) {
+  const sel = ro.school === 'all' ? null : (ro.schools || []).find(s => s.id === ro.school);
+  const rows = (roF.rows || []).filter(r => !sel || r.school === sel.name || r.school.replace(/[（(].*$/, '') === sel.name.replace(/[（(].*$/, ''));
+  const seen = new Set(), uniq = rows.filter(r => { const k = r.type + '|' + r.name.replace(/\s/g, '') + '|' + r.month; if (seen.has(k)) return false; seen.add(k); return true; }); // 同じ人の同じ月の同じ申し込みは1件
+  let first = ''; (roF.rows || []).forEach(r => { if (!first || r.month < first) first = r.month; });
+  const months = Array.from({ length: ro.span }, (_, i) => roAdd(m.base, i - ro.span + 1)).filter(k => !first || k >= first); if (!months.length) months.push(m.base);
+  const cnt = (type, k, list = uniq) => list.filter(r => r.type === type && r.month === k).length;
+  return { sel, rows, uniq, months, cnt, first };
+}
+function roFormHTML(m) {
+  if (roF.rows === null) { if (!roF.busy && !roF.err) roFLoad(); return roF.err ? `<div class="alertbox"><b>申し込みを読み込めませんでした</b>${esc(roF.err)}<br><button type="button" class="btn" data-ro="fload">もう一度</button></div>` : '<div class="empty"><b>入塾フォーム回答を読み込んでいます…</b></div>'; }
+  const f = roFModel(m), k = m.base, prev = roAdd(k, -1), tone = { ok: 'var(--ok)', accent: 'var(--accent)', bad: 'var(--bad)', warn: 'var(--warn)' };
+  const kpis = RF_TYPES.map(([t, c]) => { const n = f.cnt(t, k), p = f.cnt(t, prev), d = n - p; return `<div class="ro-k" style="--c:${tone[c]}"><small>${esc(roMJa(k))}の${t}</small><b style="color:${tone[c]}">${n}<i>人</i></b><span>前月 ${p}人 (${d > 0 ? '+' + d : d < 0 ? '−' + Math.abs(d) : '±0'})</span></div>`; }).join('');
+  const mx = Math.max(1, ...f.months.flatMap(x => RF_TYPES.map(([t]) => f.cnt(t, x))));
+  const trend = `<div class="ro-scroll"><table class="ro-tbl"><tr><th>種別</th>${f.months.map(x => `<th class="num${x === k ? ' now' : ''}">${Number(x.slice(5))}月</th>`).join('')}<th class="num">合計</th></tr>
+    ${RF_TYPES.map(([t, c]) => `<tr><th><span class="rf-dot" style="background:${tone[c]}"></span>${t}</th>${f.months.map(x => { const n = f.cnt(t, x); return `<td class="num rf-c${x === k ? ' now' : ''}" style="--c:${tone[c]};--v:${(n / mx).toFixed(2)}">${n || '<span class="pk">0</span>'}</td>`; }).join('')}<td class="num"><b>${f.months.reduce((a, x) => a + f.cnt(t, x), 0)}</b></td></tr>`).join('')}
+    <tr class="ro-sum"><th>入塾 − 退塾</th>${f.months.map(x => { const d = f.cnt('入塾', x) - f.cnt('退塾', x); return `<td class="num ${d > 0 ? 'up' : d < 0 ? 'dn' : ''}">${d > 0 ? '+' + d : d < 0 ? '−' + Math.abs(d) : '±0'}</td>`; }).join('')}<td></td></tr></table></div>`;
+  const schools = [...new Set([...(ro.schools || []).map(s => s.name), ...(roF.rows || []).map(r => r.school)])].filter(n => (roF.rows || []).some(r => r.school === n)).sort((a, b) => a.localeCompare(b, 'ja'));
+  const all = roF.rows || [], seen2 = new Set(), allU = all.filter(r => { const kk = r.type + '|' + r.name.replace(/\s/g, '') + '|' + r.month; if (seen2.has(kk)) return false; seen2.add(kk); return true; });
+  const inRange = r => f.months.includes(r.month);
+  const bySch = `<div class="ro-scroll"><table class="ro-tbl"><tr><th rowspan="2">校舎</th><th colspan="4" class="num now">${esc(roMJa(k))}</th><th colspan="4" class="num">表示期間の合計</th></tr><tr>${[0, 1].map(() => RF_TYPES.map(([t]) => `<th class="num">${t}</th>`).join('')).join('')}</tr>
+    ${schools.map(n => `<tr><th>${esc(n)}</th>${RF_TYPES.map(([t]) => { const v = allU.filter(r => r.school === n && r.type === t && r.month === k).length; return `<td class="num now">${v || '<span class="pk">0</span>'}</td>`; }).join('')}${RF_TYPES.map(([t]) => { const v = allU.filter(r => r.school === n && r.type === t && inRange(r)).length; return `<td class="num">${v || '<span class="pk">0</span>'}</td>`; }).join('')}</tr>`).join('')}
+    <tr class="ro-sum"><th>全校</th>${RF_TYPES.map(([t]) => `<td class="num now">${allU.filter(r => r.type === t && r.month === k).length}</td>`).join('')}${RF_TYPES.map(([t]) => `<td class="num">${allU.filter(r => r.type === t && inRange(r)).length}</td>`).join('')}</tr></table></div>`;
+  const list = f.rows.filter(r => r.month === k);
+  const md = iso => { const d = new Date(Date.parse(iso) + 9 * 3600e3); return (d.getUTCMonth() + 1) + '/' + d.getUTCDate() + ' ' + String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0'); };
+  const rowsHTML = list.map(r => { const c = RF_TYPES.find(x => x[0] === r.type)[1], detail = r.type === '退塾' ? [r.last, r.why].filter(Boolean).join(' ・ ') : r.type === '休塾' ? [r.pause, r.why].filter(Boolean).join(' ・ ') : '';
+    const st = r.type === '体験' ? '' : r.reflected ? '<span class="tk-chip">反映済み</span>' : '<span class="tk-chip warn">未反映</span>';
+    return `<li><span class="rf-t">${esc(md(r.at))}</span><span class="tk-chip" style="color:${tone[c]}">${r.type}</span><b>${esc(r.name)}</b><span class="pk">${esc(r.school)}${r.grade ? ' ・ ' + esc(r.grade) : ''}${r.team ? ' ・ ' + esc(r.team) : ''}</span>${detail ? `<span class="rf-d">${esc(detail)}</span>` : ''}${st}</li>`; }).join('');
+  return `<div class="ro-kpis rf-kpis">${kpis}</div>
+    <div class="ro-card"><h4>月ごとの申し込み数${f.sel ? '(' + esc(f.sel.name) + ')' : '(全校)'} <span class="pk">同じ人の同じ月の同じ申し込みは1人として数えます</span></h4>${trend}</div>
+    <div class="ro-card"><h4>校舎ごとの申し込み数</h4>${bySch}</div>
+    <div class="ro-card"><h4>${esc(roMJa(k))}の申し込み一覧(${list.length}件)${roF.busy ? ' <span class="pk">更新中…</span>' : ''}</h4>${list.length ? `<ul class="rf-list">${rowsHTML}</ul>` : '<p class="pk">この月の申し込みはありません</p>'}
+      <p class="pk">「未反映」は、フォームの回答が塾生リストに反映されていないもの(体験は反映の対象外です)。電話番号・メールアドレスは、ここには出しません。</p></div>`;
+}
 function rosterHTML() {
   if (!ro.schools && !ro.busy && !ro.err) roLoad();
   if (!ro.schools) return `<div class="ro-top"><div class="ro-title"><h3>名簿・階段図</h3></div></div>${ro.err ? `<div class="alertbox"><b>塾生リストを読み込めませんでした</b>${esc(ro.err)}<br><button type="button" class="btn" data-ro="reload">もう一度</button></div>` : '<div class="empty"><b>塾生リストを読み込んでいます…</b></div>'}`;
   const m = roModel();
-  return `${roHeadHTML(m)}${ro.err ? `<div class="alertbox"><b>最新に更新できませんでした</b>${esc(ro.err)}</div>` : ''}${ro.view === 'sum' ? roSumHTML(m) : roStairHTML(m)}<div class="gx-pad"></div>`;
+  return `${roHeadHTML(m)}${ro.err ? `<div class="alertbox"><b>最新に更新できませんでした</b>${esc(ro.err)}</div>` : ''}${ro.view === 'sum' ? roSumHTML(m) : ro.view === 'stair' ? roStairHTML(m) : roFormHTML(m)}<div class="gx-pad"></div>`;
 }
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-ro]'); if (!b) return;
@@ -1938,7 +1992,8 @@ document.addEventListener('click', e => {
   if (a === 'view') { ro.view = v; renderPanel(); }
   else if (a === 'school') { ro.school = v; renderPanel(); }
   else if (a === 'nav') { ro.month = v === '0' ? '' : roAdd(ro.month || roCur(), Number(v)); renderPanel(); }
-  else if (a === 'reload') roLoad(true);
+  else if (a === 'reload') { roLoad(true); if (ro.view === 'form') roFLoad(true); }
+  else if (a === 'fload') roFLoad(true);
   else if (a === 'print') window.print();
 });
 document.addEventListener('change', e => {
