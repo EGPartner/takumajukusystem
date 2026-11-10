@@ -548,6 +548,61 @@
   .td-c>div:first-child{min-width:0;overflow-wrap:anywhere}
   .pt2 .st-doing{border-left-color:var(--accent)}
   .pt2 .st-doing .pt-b{background:var(--accent);border-color:var(--accent);color:#fff}
+  /* 名簿・階段図 */
+  .ro-top{display:grid;gap:10px}
+  .ro-title{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}.ro-title h3{margin:0;font-size:20px}.ro-sub{font-size:12px;color:var(--ink-3)}
+  .ro-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .ro-mon{font-weight:700;font-size:14px;padding:0 10px;min-width:92px;text-align:center}
+  .ro-tools select,.ro-tools2 input[type=search]{font-size:12.5px;padding:5px 8px;border:1px solid var(--line-strong);border-radius:8px;background:var(--surface);color:var(--ink)}
+  .ro-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .ro-k{border:1px solid var(--line);border-radius:16px;background:var(--surface);padding:16px 18px;display:grid;gap:4px}
+  .ro-k small{font-size:12px;color:var(--ink-3)}
+  .ro-k b{font-family:var(--f-num);font-size:44px;line-height:1.05;font-weight:700;letter-spacing:-.02em}.ro-k b i{font-size:16px;font-style:normal;font-weight:600;margin-left:3px;color:var(--ink-3)}
+  .ro-k span{font-size:12.5px;color:var(--ink-3)}
+  .up{color:var(--ok)}.dn{color:var(--bad)}
+  .ro-k span.up,.ro-k b.up{color:var(--ok)}.ro-k span.dn,.ro-k b.dn{color:var(--bad)}
+  .ro-card{border:1px solid var(--line);border-radius:16px;background:var(--surface);padding:14px 16px;display:grid;gap:8px;align-content:start}
+  .ro-card h4{margin:0;font-size:13px;color:var(--ink-2)}
+  .ro-svg{width:100%;height:auto;max-height:300px}
+  .ro-gl{stroke:var(--line);stroke-width:1;stroke-dasharray:3 4}
+  .ro-ax{font-size:11px;fill:var(--ink-3)}.ro-yr{font-size:9.5px;fill:var(--ink-3)}
+  .ro-col{fill:transparent}.ro-col.cur{fill:color-mix(in srgb,var(--accent) 8%,transparent)}.ro-col.base{fill:color-mix(in srgb,var(--accent) 14%,transparent)}
+  .ro-area{fill:color-mix(in srgb,var(--accent) 16%,transparent);stroke:none}
+  .ro-line{fill:none;stroke:var(--accent);stroke-width:2.5;stroke-linejoin:round}
+  .ro-val{font-size:12.5px;font-weight:700;fill:var(--ink);font-family:var(--f-num)}
+  .ro-df{font-size:12px;font-weight:700;fill:var(--ink-3)}.ro-df.up{fill:var(--ok)}.ro-df.dn{fill:var(--bad)}
+  .ro-scroll{overflow-x:auto}
+  .ro-tbl{border-collapse:collapse;width:100%;font-size:12.5px}
+  .ro-tbl th,.ro-tbl td{padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+  .ro-tbl thead th,.ro-tbl tr:first-child th{font-size:11px;color:var(--ink-3);font-weight:600}
+  .ro-tbl th:first-child{text-align:left;position:sticky;left:0;background:var(--surface);z-index:1}
+  .ro-tbl .num,.ro-tbl .mo{text-align:center;font-family:var(--f-num)}
+  .ro-tbl .now{background:color-mix(in srgb,var(--accent) 10%,transparent);font-weight:700}
+  .ro-sum th,.ro-sum td{font-weight:700;border-top:1px solid var(--line-strong)}
+  .ro-diff td{font-size:11.5px}
+  .ro-two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .ro-list{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+  .ro-list li{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px}
+  .ro-tools2{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  .ro-legend i{margin:0 4px 0 10px}
+  .ro-stair{table-layout:fixed}.ro-stair .nm{overflow:hidden;text-overflow:ellipsis}.ro-stair .gr{font-size:11px;color:var(--ink-3);text-align:center}
+  .ro-stair .mo{padding:3px 2px}
+  .ro-stair th.mo{font-size:11px;color:var(--ink-3);line-height:1.15}.ro-stair th.mo small{display:block;font-size:9px}
+  .ro-stair th.mo.cur{color:var(--accent-ink);font-weight:700}
+  .ro-grp th,.ro-grp td{background:var(--surface-2);font-weight:700;font-size:12px}
+  .ro-grp th{position:sticky;left:0}
+  .ro-on{display:inline-grid;place-items:center;width:22px;height:20px;border-radius:5px;background:color-mix(in srgb,var(--accent) 55%,var(--surface));color:#fff;font-style:normal;font-size:11px;font-weight:700}
+  .ro-on.in{background:var(--accent)}
+  .ro-off{display:inline-grid;place-items:center;width:22px;height:20px;border-radius:5px;background:color-mix(in srgb,var(--bad) 14%,var(--surface));color:var(--bad);font-style:normal;font-size:11px;font-weight:700}
+  @media (max-width:760px){.ro-kpis,.ro-two{grid-template-columns:1fr}.ro-k b{font-size:36px}}
+  @media print{
+    body>*:not(#panel){display:none!important}
+    #panel{position:static!important;display:block!important;overflow:visible!important}
+    #panel .tabs,.ro-noprint,.gx-pad,.ro-tools{display:none!important}
+    #panel .pbody{overflow:visible!important;zoom:1!important;padding:0!important}
+    .ro-card,.ro-k{break-inside:avoid;border-color:#ccc}
+    body{background:#fff!important}
+  }
   .pa-day{font-size:12.5px;font-weight:700;color:var(--ink-2);margin:14px 0 6px;display:flex;gap:8px;align-items:center}
   .pa-day .n{font-family:var(--f-num);font-weight:600;color:var(--ink-3)}
   .pa-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
@@ -691,7 +746,7 @@
     .mic,.send{height:40px}
     .mic{width:40px}
     .route{max-height:42dvh;overflow:auto;box-shadow:none}
-    .mnav{display:grid!important;grid-template-columns:repeat(7,1fr);height:calc(58px + env(safe-area-inset-bottom,0px));padding:4px 4px env(safe-area-inset-bottom,0px);z-index:25;box-shadow:0 -6px 18px -14px rgba(0,0,0,.35)}
+    .mnav{display:grid!important;grid-template-columns:repeat(8,1fr);height:calc(58px + env(safe-area-inset-bottom,0px));padding:4px 4px env(safe-area-inset-bottom,0px);z-index:25;box-shadow:0 -6px 18px -14px rgba(0,0,0,.35)}
     .mnav button{padding:4px 0;font-size:11px;min-height:48px}
     .mnav button.on{color:var(--accent-ink);font-weight:700}
     .mnav button.on svg{stroke-width:2.3}
@@ -828,6 +883,7 @@
         <button type="button" role="tab" data-ptab="tasks" aria-selected="false">やること <span class="n" id="tab-t" hidden>0</span></button>
         <button type="button" role="tab" data-ptab="orders" aria-selected="false">指示</button>
         <button type="button" role="tab" data-ptab="sched" aria-selected="false">予定</button>
+        <button type="button" role="tab" data-ptab="roster" aria-selected="false">名簿</button>
         <button type="button" role="tab" data-ptab="voices" aria-selected="false">代表 <span class="n" id="tab-v" hidden>0</span></button>
         <button type="button" role="tab" data-ptab="log" aria-selected="false">記録</button>
         <button type="button" class="close" id="panel-close">× 閉じる</button>
@@ -854,6 +910,7 @@
   <button type="button" data-m="decide"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4 10-10"/></svg>決裁<span class="badge" id="m-badge" hidden>0</span></button>
   <button type="button" data-m="orders"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M4 12h10M4 18h7"/></svg>指示</button>
   <button type="button" data-m="sched"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>予定</button>
+  <button type="button" data-m="roster"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h4v-5h4v-5h4V5h4"/></svg>名簿</button>
   <button type="button" data-m="voices"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4l-5.2 2.7 1-5.8L3.5 9.2l5.9-.9z"/></svg>代表<span class="badge" id="m-voice" hidden>0</span></button>
   <button type="button" data-m="tasks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 12l3 3 5-6"/></svg>やること<span class="badge" id="m-task" hidden>0</span></button>
   <button type="button" data-m="log"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>記録</button>
@@ -1395,7 +1452,7 @@ function renderPanel() {
 function renderPanelInner() {
   document.querySelectorAll('[data-ptab]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.ptab === panelTab)));
   const P = $('#pbody');
-  P.classList.toggle('wide', panelTab === 'tasks'); // PCでは、やること・保護者LINEの表を広く・拡大なしで出す
+  P.classList.toggle('wide', panelTab === 'tasks' || panelTab === 'roster'); // PCでは、やること・保護者LINEの表を広く・拡大なしで出す
   if (panelTab === 'sum') {
     const bad = orders.filter(o => o.stage === 'error' || o.stage === 'paused_quota');
     const rows = ORG.depts.map(d => {
@@ -1452,6 +1509,8 @@ function renderPanelInner() {
     P.insertAdjacentHTML('beforeend', decidedHTML());
   } else if (panelTab === 'tasks') {
     P.innerHTML = paSwitch() + (tasksView === 'parent' ? parentsHTML() : todoTableHTML());
+  } else if (panelTab === 'roster') {
+    P.innerHTML = rosterHTML();
   } else if (panelTab === 'voices') {
     P.innerHTML = voicesHTML();
   } else if (panelTab === 'sched') {
@@ -1761,6 +1820,133 @@ function todoTableHTML() {
   return `${err}${top}${tdCandHTML()}${body}${help}
     ${tdView === 'list' && hidden ? `<div class="tkpurge">統括グループの終わったもののうち、古い ${hidden}件は非表示です <button type="button" class="btn ghost" id="tk-purge">古い${hidden}件をまとめて削除</button></div>` : ''}<div class="gx-pad"></div>`;
 }
+/* ---------- 名簿・階段図(タクマ塾CRMの塾生リストから) ----------
+   データ: academies/{校舎}/students の months('YYYY-MM': 'active')。シートが正本で、10分ごとにシステムへ同期されている。
+   在籍 = その月に 'active' がある。入塾・復塾 = 今月 active で前月 active でない / 退塾・休塾 = 前月 active で今月 active でない */
+const ro = { schools: null, stu: {}, loadedAt: 0, busy: false, err: '', view: 'sum', school: 'all', month: '', span: 12, left: false, q: '' };
+const roAdd = (key, n) => { const [y, m] = key.split('-').map(Number); const t = new Date(Date.UTC(y, m - 1 + n, 1)); return t.getUTCFullYear() + '-' + String(t.getUTCMonth() + 1).padStart(2, '0'); };
+const roMJa = key => { const [y, m] = key.split('-'); return y + '年' + Number(m) + '月'; };
+const roCur = () => todayJst().slice(0, 7);
+const roAct = (st, k) => !!(st.months && st.months[k] === 'active');
+const roSign = n => (n > 0 ? '+' + n : n < 0 ? '−' + Math.abs(n) : '±0');
+function roGrade(st) {
+  if (st.gradeRef === undefined || st.gradeRefFY === undefined) return '';
+  const now = new Date(Date.now() + 9 * 3600e3), fy = now.getUTCMonth() + 1 >= 4 ? now.getUTCFullYear() : now.getUTCFullYear() - 1, g = Number(st.gradeRef) + (fy - Number(st.gradeRefFY));
+  return g < 1 ? '未就学' : g <= 6 ? '小' + g : g <= 9 ? '中' + (g - 6) : g <= 12 ? '高' + (g - 9) : '卒業';
+}
+async function roLoad(force) {
+  if (ro.busy || (!force && ro.loadedAt && Date.now() - ro.loadedAt < 300000)) return;
+  ro.busy = true; ro.err = ''; if (panelTab === 'roster') renderPanel();
+  try {
+    const schools = (await db.collection('schools').get()).docs.map(d => ({ id: d.id, name: String(d.data().name || d.id).replace(/^タクマ塾\s*/, '') })).sort((a, b) => a.name.localeCompare(b.name, 'ja'));
+    const stu = {};
+    await Promise.all(schools.map(async s => { stu[s.id] = (await db.collection('academies').doc(s.id).collection('students').get()).docs.map(d => ({ id: d.id, ...d.data() })); }));
+    ro.schools = schools; ro.stu = stu; ro.loadedAt = Date.now();
+  } catch (e) { console.error(e); ro.err = String(e.message || e); }
+  ro.busy = false; if (panelTab === 'roster') renderPanel();
+}
+function roModel() {
+  const base = ro.month || roCur(), every = []; (ro.schools || []).forEach(s => (ro.stu[s.id] || []).forEach(st => every.push({ st, sid: s.id, school: s.name })));
+  let first = ''; every.forEach(r => Object.keys(r.st.months || {}).forEach(k => { if (r.st.months[k] === 'active' && (!first || k < first)) first = k; }));
+  const months = Array.from({ length: ro.span }, (_, i) => roAdd(base, i - ro.span + 1)).filter(k => !first || k >= first); // データの始まりより前の月は出さない
+  if (!months.length) months.push(base);
+  const schools = (ro.schools || []).filter(s => ro.school === 'all' || s.id === ro.school), all = every.filter(r => ro.school === 'all' || r.sid === ro.school);
+  const bySchool = schools.map(s => { const list = all.filter(r => r.sid === s.id); return { id: s.id, name: s.name, list, counts: months.map(k => list.filter(r => roAct(r.st, k)).length) }; });
+  const totals = months.map((k, i) => bySchool.reduce((a, s) => a + s.counts[i], 0));
+  const diffs = months.map((k, i) => (!first || k <= first ? null : (i ? totals[i] - totals[i - 1] : all.filter(r => roAct(r.st, k)).length - all.filter(r => roAct(r.st, roAdd(k, -1))).length)));
+  return { base, months, every, all, schools, bySchool, totals, diffs, first };
+}
+function roMoves(all, k) {
+  const prev = roAdd(k, -1), joined = [], left = [];
+  all.forEach(r => {
+    const now = roAct(r.st, k), before = roAct(r.st, prev);
+    if (now && !before) joined.push({ ...r, again: Object.keys(r.st.months || {}).some(m => m < k && r.st.months[m] === 'active') });
+    if (!now && before) left.push(r);
+  });
+  const by = (a, b) => a.school.localeCompare(b.school, 'ja') || String(a.st.name).localeCompare(String(b.st.name), 'ja');
+  return { joined: joined.sort(by), left: left.sort(by) };
+}
+function roHeadHTML(m) {
+  const chip = (id, label, n) => `<button type="button" data-ro="school" data-v="${esc(id)}" aria-pressed="${ro.school === id}">${esc(label)} ${n}</button>`;
+  const now = k => m.every.filter(r => roAct(r.st, k)).length;
+  const bySid = {}; m.every.forEach(r => { if (roAct(r.st, m.base)) bySid[r.sid] = (bySid[r.sid] || 0) + 1; });
+  return `<div class="ro-top"><div class="ro-title"><h3>名簿・階段図</h3><span class="ro-sub">タクマ塾CRMの塾生リストをもとに、10分ごとに更新</span></div>
+    <div class="ro-tools"><div class="gx-seg"><button type="button" data-ro="view" data-v="sum" aria-pressed="${ro.view === 'sum'}">サマリ</button><button type="button" data-ro="view" data-v="stair" aria-pressed="${ro.view === 'stair'}">階段図(名簿)</button></div>
+      <div class="gx-nav"><button type="button" data-ro="nav" data-v="-1" aria-label="前の月">‹</button><span class="ro-mon">${esc(roMJa(m.base))}</span><button type="button" data-ro="nav" data-v="1" aria-label="次の月">›</button><button type="button" data-ro="nav" data-v="0">今月</button></div>
+      <label class="pk">表示 <select id="ro-span"><option value="6"${ro.span === 6 ? ' selected' : ''}>6か月</option><option value="12"${ro.span === 12 ? ' selected' : ''}>12か月</option><option value="24"${ro.span === 24 ? ' selected' : ''}>24か月</option></select></label>
+      <span class="gx-flex"></span><button type="button" class="btn ghost" data-ro="reload">${ro.busy ? '更新中…' : '最新に更新'}</button><button type="button" class="btn ghost" data-ro="print">印刷・PDF</button></div>
+    <div class="vfilter ro-noprint">${chip('all', '全校', now(m.base))}${(ro.schools || []).map(s => chip(s.id, s.name, bySid[s.id] || 0)).join('')}</div></div>`;
+}
+/** 在籍数の推移(階段): 月ごとの人数を階段状に並べ、下に前月からの増減を出す */
+function roStepSVG(m) {
+  const n = m.months.length, W = 1000, H = 250, L = 38, R = 12, T = 28, B = 56, cw = (W - L - R) / n;
+  const lo = Math.max(0, Math.min(...m.totals) - Math.max(3, Math.round((Math.max(...m.totals) - Math.min(...m.totals)) * .35))), hi = Math.max(...m.totals) + 3, y = v => T + (H - T - B) * (1 - (v - lo) / Math.max(1, hi - lo));
+  const x = i => L + i * cw;
+  let path = '';
+  m.totals.forEach((v, i) => { path += (i ? ` V${y(v)}` : `M${x(i)},${y(v)}`) + ` H${x(i + 1)}`; });
+  const area = path + ` V${H - B} H${x(0)} Z`;
+  const grid = [0, .5, 1].map(f => { const v = Math.round(lo + (hi - lo) * f); return `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" class="ro-gl"/><text x="${L - 6}" y="${y(v) + 4}" text-anchor="end" class="ro-ax">${v}</text>`; }).join('');
+  const cur = roCur();
+  const cols = m.months.map((k, i) => `<g><rect x="${x(i)}" y="${T}" width="${cw}" height="${H - B - T}" class="ro-col${k === cur ? ' cur' : ''}${k === m.base ? ' base' : ''}"/>
+    <text x="${x(i) + cw / 2}" y="${y(m.totals[i]) - 8}" text-anchor="middle" class="ro-val">${m.totals[i]}</text>
+    <text x="${x(i) + cw / 2}" y="${H - B + 17}" text-anchor="middle" class="ro-ax">${Number(k.slice(5))}月${k.slice(5) === '01' || i === 0 ? '<tspan x="' + (x(i) + cw / 2) + '" dy="12" class="ro-yr">' + k.slice(0, 4) + '</tspan>' : ''}</text>
+    ${m.diffs[i] === null ? '' : `<text x="${x(i) + cw / 2}" y="${H - 6}" text-anchor="middle" class="ro-df ${m.diffs[i] > 0 ? 'up' : m.diffs[i] < 0 ? 'dn' : ''}">${roSign(m.diffs[i])}</text>`}</g>`).join('');
+  return `<svg viewBox="0 0 ${W} ${H}" class="ro-svg" role="img" aria-label="在籍塾生数の月ごとの推移(階段グラフ)">${grid}${cols}<path d="${area}" class="ro-area"/><path d="${path}" class="ro-line"/></svg>`;
+}
+function roSumHTML(m) {
+  const k = m.base, i = m.months.length - 1, total = m.totals[i], prevTotal = m.every.filter(r => (ro.school === 'all' || r.sid === ro.school) && roAct(r.st, roAdd(k, -1))).length, mv = roMoves(m.all, k);
+  const dif = m.first && k > m.first ? total - prevTotal : null;
+  const pill = (r, tag) => `<li><b>${esc(r.st.name || '(名前なし)')}</b><span class="pk">${esc(r.school)}${roGrade(r.st) ? ' ・ ' + esc(roGrade(r.st)) : ''}${r.st.team ? ' ・ ' + esc(r.st.team) : ''}</span>${tag ? `<span class="tk-chip${tag === '新規' ? ' kind' : ''}">${tag}</span>` : ''}</li>`;
+  const head = '<tr><th>校舎</th>' + m.months.map(x => `<th class="num${x === k ? ' now' : ''}">${Number(x.slice(5))}月</th>`).join('') + '<th class="num">前月比</th></tr>';
+  const rows = m.bySchool.map(s => { const d = m.first && k > m.first ? s.counts[i] - (s.list.filter(r => roAct(r.st, roAdd(k, -1))).length) : null; return `<tr><th>${esc(s.name)}</th>${s.counts.map((c, j) => `<td class="num${m.months[j] === k ? ' now' : ''}">${c}</td>`).join('')}<td class="num ${d > 0 ? 'up' : d < 0 ? 'dn' : ''}">${d === null ? '—' : roSign(d)}</td></tr>`; }).join('');
+  const foot = `<tr class="ro-sum"><th>合計</th>${m.totals.map((c, j) => `<td class="num${m.months[j] === k ? ' now' : ''}">${c}</td>`).join('')}<td class="num ${dif > 0 ? 'up' : dif < 0 ? 'dn' : ''}">${dif === null ? '—' : roSign(dif)}</td></tr>
+    <tr class="ro-diff"><th>増減</th>${m.diffs.map(d => `<td class="num ${d > 0 ? 'up' : d < 0 ? 'dn' : ''}">${d === null ? '' : roSign(d)}</td>`).join('')}<td></td></tr>`;
+  return `<div class="ro-kpis"><div class="ro-k"><small>${esc(roMJa(k))}の在籍</small><b>${total}<i>人</i></b><span class="${dif > 0 ? 'up' : dif < 0 ? 'dn' : ''}">${dif === null ? '前月のデータなし' : '前月比 ' + roSign(dif)}</span></div>
+      <div class="ro-k"><small>入塾・復塾</small><b class="up">${mv.joined.length ? '+' + mv.joined.length : '0'}<i>人</i></b><span>${mv.joined.filter(r => !r.again).length}人が新規 ・ ${mv.joined.filter(r => r.again).length}人が復塾</span></div>
+      <div class="ro-k"><small>退塾・休塾</small><b class="dn">${mv.left.length ? '−' + mv.left.length : '0'}<i>人</i></b><span>前月に在籍していて、今月はいない人</span></div></div>
+    <div class="ro-card"><h4>在籍数の推移</h4>${roStepSVG(m)}</div>
+    <div class="ro-card"><h4>校舎ごとの人数</h4><div class="ro-scroll"><table class="ro-tbl">${head}${rows}${foot}</table></div></div>
+    <div class="ro-two"><div class="ro-card"><h4>${esc(roMJa(k))}に入った人(${mv.joined.length}人)</h4>${mv.joined.length ? `<ul class="ro-list">${mv.joined.map(r => pill(r, r.again ? '復塾' : '新規')).join('')}</ul>` : '<p class="pk">いません</p>'}</div>
+      <div class="ro-card"><h4>${esc(roMJa(k))}にいなくなった人(${mv.left.length}人)</h4>${mv.left.length ? `<ul class="ro-list">${mv.left.map(r => pill(r, '')).join('')}</ul>` : '<p class="pk">いません</p>'}</div></div>`;
+}
+function roStairHTML(m) {
+  const q = ro.q.trim().toLowerCase(), k = m.base, last = m.months.length - 1;
+  const head = `<tr><th class="nm">名前</th><th>学年</th>${m.months.map(x => `<th class="mo${x === roCur() ? ' cur' : ''}${x === k ? ' now' : ''}">${x.slice(5) === '01' || x === m.months[0] ? `<small>${x.slice(2, 4)}年</small>` : '<small>&nbsp;</small>'}${Number(x.slice(5))}月</th>`).join('')}</tr>`;
+  const tot = `<tr class="ro-sum"><th class="nm">在籍数(合計)</th><th></th>${m.totals.map((c, j) => `<td class="mo">${c}</td>`).join('')}</tr><tr class="ro-diff"><th class="nm">前月からの増減</th><th></th>${m.diffs.map(d => `<td class="mo ${d > 0 ? 'up' : d < 0 ? 'dn' : ''}">${d === null ? '' : roSign(d)}</td>`).join('')}</tr>`;
+  let shown = 0;
+  const groups = m.bySchool.map(s => {
+    const list = s.list.filter(r => { const was = m.months.some(x => roAct(r.st, x)); const nowOn = roAct(r.st, k); return (was || nowOn) && (ro.left || nowOn || was) && (!q || String(r.st.name).toLowerCase().includes(q) || String(r.st.nameKana || '').toLowerCase().includes(q)); })
+      .filter(r => ro.left || roAct(r.st, k)).sort((a, b) => { const fa = Object.keys(a.st.months || {}).filter(x => a.st.months[x] === 'active').sort()[0] || '9', fb = Object.keys(b.st.months || {}).filter(x => b.st.months[x] === 'active').sort()[0] || '9'; return fa.localeCompare(fb) || String(a.st.name).localeCompare(String(b.st.name), 'ja'); });
+    shown += list.length;
+    if (!list.length && q) return '';
+    const rows = list.map(r => `<tr><th class="nm"><b>${esc(r.st.name || '(名前なし)')}</b>${roAct(r.st, k) ? '' : ' <span class="tk-chip warn">退塾・休塾</span>'}</th><td class="gr">${esc(roGrade(r.st))}</td>${m.months.map((x, j) => { const a = roAct(r.st, x), p = roAct(r.st, roAdd(x, -1)), known = m.first && x > m.first; return `<td class="mo${x === k ? ' now' : ''}">${a ? `<i class="ro-on${!p && known ? ' in' : ''}">${!p && known ? '＋' : ''}</i>` : (p && known && x <= roCur() ? '<i class="ro-off">×</i>' : '')}</td>`; }).join('')}</tr>`).join('');
+    return `<tr class="ro-grp"><th class="nm">${esc(s.name)} <span class="pk">${s.counts[last]}人</span></th><th></th>${s.counts.map((c, j) => `<td class="mo">${c}</td>`).join('')}</tr>${rows}`;
+  }).join('');
+  return `<div class="ro-tools2 ro-noprint"><input type="search" id="ro-q" placeholder="名前で探す" value="${esc(ro.q)}" autocomplete="off"><label class="pk"><input type="checkbox" data-ro="left" ${ro.left ? 'checked' : ''}> 退塾・休塾した人も表示</label>
+      <span class="pk ro-legend"><i class="ro-on"></i>在籍 <i class="ro-on in">＋</i>入塾・復塾 <i class="ro-off">×</i>退塾・休塾</span></div>
+    <div class="ro-card"><div class="ro-scroll"><table class="ro-tbl ro-stair"><colgroup><col style="width:190px"><col style="width:56px">${m.months.map(() => '<col>').join('')}</colgroup>${head}${tot}${groups || '<tr><td colspan="99" class="pk">該当する塾生がいません</td></tr>'}</table></div></div>`;
+}
+function rosterHTML() {
+  if (!ro.schools && !ro.busy && !ro.err) roLoad();
+  if (!ro.schools) return `<div class="ro-top"><div class="ro-title"><h3>名簿・階段図</h3></div></div>${ro.err ? `<div class="alertbox"><b>塾生リストを読み込めませんでした</b>${esc(ro.err)}<br><button type="button" class="btn" data-ro="reload">もう一度</button></div>` : '<div class="empty"><b>塾生リストを読み込んでいます…</b></div>'}`;
+  const m = roModel();
+  return `${roHeadHTML(m)}${ro.err ? `<div class="alertbox"><b>最新に更新できませんでした</b>${esc(ro.err)}</div>` : ''}${ro.view === 'sum' ? roSumHTML(m) : roStairHTML(m)}<div class="gx-pad"></div>`;
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-ro]'); if (!b) return;
+  const a = b.dataset.ro, v = b.dataset.v;
+  if (a === 'view') { ro.view = v; renderPanel(); }
+  else if (a === 'school') { ro.school = v; renderPanel(); }
+  else if (a === 'nav') { ro.month = v === '0' ? '' : roAdd(ro.month || roCur(), Number(v)); renderPanel(); }
+  else if (a === 'reload') roLoad(true);
+  else if (a === 'print') window.print();
+});
+document.addEventListener('change', e => {
+  if (e.target.id === 'ro-span') { ro.span = Number(e.target.value) || 12; renderPanel(); }
+  else if (e.target.dataset && e.target.dataset.ro === 'left') { ro.left = e.target.checked; renderPanel(); }
+});
+document.addEventListener('input', e => { if (e.target.id === 'ro-q') { ro.q = e.target.value; const keep = e.target.selectionStart; renderPanel(); const q = document.getElementById('ro-q'); if (q) { q.focus(); try { q.setSelectionRange(keep, keep); } catch (x) { /* 入力位置を戻せなくても続ける */ } } } });
+
 /** 成果物の「次にやること」の実行計画(採用すると、この印のとおりに動く) */
 function planTag(o, i) {
   const p = (o.plan || []).find(x => x.index === i); if (!p) return '';
@@ -2035,7 +2221,7 @@ document.addEventListener('click', async e => {
   ga.open = true; renderPanel();
 });
 
-const VIEW_TITLE = { decide: '決裁', tasks: 'やること', orders: '指示', sched: '予定', voices: '代表の意見', log: '記録' };
+const VIEW_TITLE = { decide: '決裁', tasks: 'やること', orders: '指示', sched: '予定', roster: '名簿',  voices: '代表の意見', log: '記録' };
 let inputMode = 'order';
 function setPlaceholder() { cmdText.placeholder = inputMode === 'consult' ? (isMobile() ? 'CXO秘書に相談' : 'CXO秘書に相談(例: 体験会からの入会率を上げるには?)') : isMobile() ? '業務命令を入力' : '業務命令を入力(例: 岩国の12月の会場を今週中に押さえて)'; }
 mq.addEventListener('change', setPlaceholder);
