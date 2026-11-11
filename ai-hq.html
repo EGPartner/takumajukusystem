@@ -548,6 +548,56 @@
   .td-c>div:first-child{min-width:0;overflow-wrap:anywhere}
   .pt2 .st-doing{border-left-color:var(--accent)}
   .pt2 .st-doing .pt-b{background:var(--accent);border-color:var(--accent);color:#fff}
+  /* やること(今週のリスト・案件) */
+  .tkw{margin:10px 0 4px}
+  .tkw-sec{margin:14px 0 4px}.tkw-sec h4{margin:0 0 6px;font-size:13px;display:flex;gap:8px;align-items:center}.tkw-sec h4 span{font-family:var(--f-num);font-size:12px;color:var(--ink-3);font-weight:600}
+  .tkw-sec.over h4{color:var(--bad)}
+  .tkl{list-style:none;margin:0;padding:0;border:1px solid var(--line);border-radius:14px;background:var(--surface);overflow:hidden}
+  .tkr{border-top:1px solid var(--line)}.tkr:first-child{border-top:0}
+  .tkr-l{display:flex;gap:12px;align-items:flex-start;padding:11px 14px}
+  .tkr-ck{flex:none;width:24px;height:24px;margin-top:1px;border-radius:50%;border:2px solid var(--line-strong);background:var(--surface);color:#fff;font-size:13px;line-height:1;cursor:pointer;display:grid;place-items:center;padding:0}
+  .tkr-ck:hover{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 18%,var(--surface))}
+  .tkr.fin .tkr-ck{background:var(--ok);border-color:var(--ok)}
+  .tkr.fin .tkr-t{color:var(--ink-3);text-decoration:line-through}
+  .tkr-m{all:unset;flex:1;min-width:0;cursor:pointer;display:grid;gap:3px}
+  .tkr-m:focus-visible{outline:2px solid var(--accent);border-radius:6px}
+  .tkr-t{font-size:14px;font-weight:600;line-height:1.5;overflow-wrap:anywhere;color:var(--ink)}
+  .tkr-s{font-size:12px;color:var(--ink-3);display:flex;flex-wrap:wrap;gap:0 2px;align-items:center}.tkr-s .late{color:var(--bad);font-weight:700}.tkr-s em{font-style:normal;color:var(--accent-ink);font-weight:600}.tkr-s .tk-chip{margin-left:6px}
+  .tkr.over .tkr-ck{border-color:var(--bad)}
+  .tkr .pt-x{border-top:1px dashed var(--line);margin:0 14px;padding:10px 0 14px}
+  .tk-mid{display:grid;gap:4px;font-size:12px;color:var(--ink-3)}.tk-mid select{font-size:13px;padding:6px 8px;max-width:360px}
+  .tkw-done{margin-top:16px}.tkw-done summary{cursor:pointer;font-size:12.5px;color:var(--ink-3);margin-bottom:8px}
+  .mx-chip{font-size:11px;font-weight:700;padding:1px 9px;border-radius:999px;background:var(--surface-2);color:var(--ink-2);white-space:nowrap}
+  .mx-chip.ok{background:color-mix(in srgb,var(--ok) 20%,var(--surface));color:var(--ok)}.mx-chip.late{background:var(--bad-soft);color:var(--bad)}.mx-chip.hold,.mx-chip.none{background:var(--surface-2);color:var(--ink-3)}.mx-chip.done{background:var(--ok);color:#fff}
+  .mx-pg{height:6px;border-radius:3px;background:var(--surface-2);overflow:hidden}.mx-pg i{display:block;height:100%;background:var(--accent);border-radius:3px}
+  .mg{border:1px solid var(--line);border-radius:16px;background:var(--surface);overflow:hidden}
+  .mg-grid{min-width:980px}
+  .mg-row{display:grid;grid-template-columns:200px repeat(var(--n),minmax(20px,1fr));min-height:64px;border-top:1px solid var(--line);position:relative;align-items:center}
+  .mg-row>i{grid-row:1;height:100%;border-left:1px solid color-mix(in srgb,var(--line) 50%,transparent)}
+  .mg-row>i.we{background:color-mix(in srgb,var(--ink) 3.5%,transparent)}.mg-row>i.today{background:color-mix(in srgb,var(--accent) 9%,transparent);box-shadow:inset 1.5px 0 0 var(--accent)}
+  .mg-row.sel{background:color-mix(in srgb,var(--accent) 5%,transparent)}
+  .mg-head{border-top:0;min-height:0;align-items:stretch}
+  .mg-day{grid-row:1;text-align:center;display:grid;justify-items:center;gap:1px;padding:6px 0;font-size:10px;color:var(--ink-3)}.mg-day small{font-size:9.5px;min-height:11px;white-space:nowrap}.mg-day b{font-size:11.5px;font-weight:600;color:var(--ink);width:20px;height:20px;line-height:20px;border-radius:50%}.mg-day.we b{color:var(--ink-3)}.mg-day.today b{background:var(--accent);color:#fff}
+  .mg-name{all:unset;grid-column:1;grid-row:1;position:sticky;left:0;z-index:3;background:var(--surface);align-self:stretch;display:grid;align-content:center;gap:4px;padding:0 12px 0 16px;border-right:1px solid var(--line);cursor:pointer;min-width:0}
+  .mg-head .mg-name{cursor:default}
+  .mg-name b{font-size:13.5px;font-weight:650;line-height:1.35;overflow-wrap:anywhere}.mg-name small{font-size:11px;color:var(--ink-3);display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  .mg-bar{grid-row:1;align-self:center;height:26px;margin:0 2px;padding:0 10px;border-radius:13px;border:1px solid color-mix(in srgb,var(--accent) 50%,transparent);background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 55%,var(--surface)) var(--p),color-mix(in srgb,var(--accent) 14%,var(--surface)) var(--p));color:var(--ink);font:inherit;font-size:12px;font-weight:700;text-align:left;cursor:pointer;white-space:nowrap;overflow:hidden;z-index:1}
+  .mg-bar.late{border-color:color-mix(in srgb,var(--bad) 60%,transparent);background:linear-gradient(90deg,color-mix(in srgb,var(--bad) 45%,var(--surface)) var(--p),color-mix(in srgb,var(--bad) 13%,var(--surface)) var(--p))}
+  .mg-bar.hold,.mg-bar.none{border-color:var(--line-strong);background:var(--surface-2);color:var(--ink-3)}
+  .mg-bar.nodue{border-style:dashed}
+  .mg-d{grid-row:1;align-self:center;justify-self:center;font-style:normal;font-size:12px;color:var(--ink);z-index:2;pointer-events:auto;text-shadow:0 0 3px var(--surface)}.mg-d.over{color:var(--bad)}
+  .mx-dbox,.mx-d{margin-top:12px}.mx-dbox{border:1px solid var(--line);border-radius:16px;background:var(--surface);padding:14px 16px}
+  .mx-d{display:grid;gap:10px}.mx-dh{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:15px}.mx-d .bad{color:var(--bad)}
+  .mx-form{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.mx-form input[data-f=text]{flex:1;min-width:180px}.mx-form input,.mx-form select,.mx-pull{font-size:13px;padding:6px 8px;border:1px solid var(--line-strong);border-radius:8px;background:var(--surface);color:var(--ink)}.mx-pull{max-width:100%}
+  .mc-list{display:grid;gap:12px}
+  .mc{border:1px solid var(--line);border-radius:16px;background:var(--surface);padding:14px;display:grid;gap:8px;border-left:4px solid var(--accent)}.mc.late{border-left-color:var(--bad)}.mc.hold,.mc.none{border-left-color:var(--line-strong)}
+  .mc-h{all:unset;cursor:pointer;display:flex;gap:10px;align-items:center;justify-content:space-between}.mc-t{font-size:15px;font-weight:700;line-height:1.4;overflow-wrap:anywhere}
+  .mc .mx-dh b,.mc .mx-dh .mx-chip,.mc .mx-d .mx-pg,.mc .mx-pg+p{display:none}
+  .mc .mx-d>.mx-pg+p{display:none}
+  .mx-form .btn{flex:none}
+  .mc-s{font-size:12px;color:var(--ink-3)}.mc-n{font-size:12.5px;color:var(--ink-2)}
+  .mx-c{display:none}
+  @media (max-width:719px){.mx-g{display:none!important}.mx-c{display:grid}.tkr-l{padding:12px}.tkr-ck{width:28px;height:28px}.tkr-t{font-size:14.5px}}
   /* 名簿・階段図 */
   .ro-top{display:grid;gap:10px}
   .ro-title{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}.ro-title h3{margin:0;font-size:20px}.ro-sub{font-size:12px;color:var(--ink-3)}
@@ -1705,7 +1755,7 @@ const tkKindLabel = k => (k === 'お叱り' ? '要改善' : k || '指示');
 const tkMd = d => (d ? d.slice(5).replace('-', '/') : '');
 const tkWhen = at => new Date(at).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 /* ---------- 統括・スタッフのやること: 1つの表に(統括グループの会話から拾ったもの+スタッフ用のやること) ---------- */
-let tdOpen = null, tdView = 'gantt'; // tdOpen: 開いている項目 'tk:ID' / 'st:ID'。tdView: 'gantt'(担当者別の棒グラフ)か 'list'(一覧表)
+let tdOpen = null, tdView = 'week'; // tdOpen: 開いている項目 'tk:ID' / 'st:ID'。tdView: 'gantt'(担当者別の棒グラフ)か 'list'(一覧表)
 /* 担当者の名前は、LINEの表示名や呼び方がまちまちなので、ここで1つの名前にそろえる */
 const TD_MEMBERS = ['タクマ', 'ヤマグチ', 'kkk', 'ユキヤ', '吉田蒼真'];
 const TD_ALIAS = { '代表': 'タクマ', 'たくま': 'タクマ', 'yasuhiro yamaguchi': 'ヤマグチ', 'やん': 'ヤマグチ', '山口': 'ヤマグチ', '統括': 'ヤマグチ', '北川': 'ユキヤ', 'ゆきや': 'ユキヤ', '由樹也': 'ユキヤ', 'kkk': 'kkk', '事務員': 'kkk', '吉田': '吉田蒼真', '蒼真': '吉田蒼真', 'そうま': '吉田蒼真' };
@@ -1720,23 +1770,24 @@ function tdOwner(n) {
 const tdIdx = ymd => Math.round(Date.parse(ymd + 'T00:00:00Z') / 864e5);
 const tdJst = iso => new Date(Date.parse(iso) + 9 * 3600e3).toISOString().slice(0, 10);
 const tdCands = () => tkTasks.filter(t => t.cand && t.status === '未着手').sort((a, b) => String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
+function tdMk(src, t) { // 1件ぶんの表示用の値(状態の名前・期限切れか・担当・開始日)
+  const today = todayJst(), week = addDaysYmd(today, 7);
+  const isOpen = t.status === '未着手', due = t.due || '', over = isOpen && due && due < today, hot = src === 'tk' && !!(t.urgent || t.repeats);
+  let cls, label, rank;
+  if (!isOpen) { cls = 'done'; label = t.status; rank = 5; }
+  else if (over) { cls = 'open'; label = '期限切れ'; rank = 0; }
+  else if (hot) { cls = 'open'; label = t.urgent ? '急ぎ' : '再確認'; rank = 0; }
+  else if (t.doing) { cls = 'doing'; label = '進行中'; rank = 1; }
+  else if (src === 'st' && t.old) { cls = 'later'; label = '古い宿題'; rank = 4; }
+  else if (due && due <= today) { cls = 'working'; label = '今日'; rank = 1; }
+  else if (due && due <= week) { cls = 'working'; label = '今週'; rank = 2; }
+  else { cls = 'later'; label = '未着手'; rank = 3; }
+  const start = t.start || (t.createdAt ? tdJst(t.createdAt) : today);
+  return { src, t, key: src + ':' + t.id, isOpen, cls, label, rank, due, start, owner: tdOwner(t.owner) || '担当未定', over: !!over };
+}
 function tdRows() {
-  const today = todayJst(), week = addDaysYmd(today, 7), out = [];
-  const add = (src, t) => {
-    const isOpen = t.status === '未着手', due = t.due || '', over = isOpen && due && due < today, hot = src === 'tk' && !!(t.urgent || t.repeats);
-    let cls, label, rank;
-    if (!isOpen) { cls = 'done'; label = t.status; rank = 5; }
-    else if (over) { cls = 'open'; label = '期限切れ'; rank = 0; }
-    else if (hot) { cls = 'open'; label = t.urgent ? '急ぎ' : '再確認'; rank = 0; }
-    else if (t.doing) { cls = 'doing'; label = '進行中'; rank = 1; }
-    else if (src === 'st' && t.old) { cls = 'later'; label = '古い宿題'; rank = 4; }
-    else if (due && due <= today) { cls = 'working'; label = '今日'; rank = 1; }
-    else if (due && due <= week) { cls = 'working'; label = '今週'; rank = 2; }
-    else { cls = 'later'; label = '未着手'; rank = 3; }
-    const start = t.start || (t.createdAt ? tdJst(t.createdAt) : today);
-    out.push({ src, t, key: src + ':' + t.id, isOpen, cls, label, rank, due, start, owner: tdOwner(t.owner) || '担当未定', over: !!over });
-  };
-  tkTasks.filter(t => !t.cand).forEach(t => add('tk', t)); tasks.forEach(t => add('st', t)); // 候補(AIが拾っただけ)は、人が「管理する」と選ぶまで入れない
+  const out = [];
+  tkTasks.filter(t => !t.cand).forEach(t => out.push(tdMk('tk', t))); tasks.forEach(t => out.push(tdMk('st', t))); // 候補(AIが拾っただけ)は、人が「管理する」と選ぶまで入れない
   const open = out.filter(r => r.isOpen).sort((a, b) => a.rank - b.rank || String(a.due || '9999').localeCompare(String(b.due || '9999')) || (a.t.no || 0) - (b.t.no || 0));
   const doneAll = out.filter(r => !r.isOpen).sort((a, b) => String(b.t.doneAt || '').localeCompare(String(a.t.doneAt || '')));
   const tkDone = doneAll.filter(r => r.src === 'tk'), hidden = Math.max(0, tkDone.length - 5);
@@ -1754,6 +1805,7 @@ function tdExtra(r) {
   const hist = hs.length ? `<details class="tk-hist" open><summary>経過 ${hs.length}件</summary><ol>${hs.map(h => `<li><span class="w">${esc(tkWhen(h.at))}${h.by && h.by !== '会話' ? ' ・ ' + esc(paWho(h.by)) : ''}</span>${esc(h.note).replace(/\n/g, '<br>')}</li>`).join('')}</ol></details>` : '';
   const prep = !tk && t.prep ? `<details class="prep" open><summary>準備メモ</summary><p>${esc(t.prep).replace(/\n/g, '<br>')}</p></details>` : '';
   const fin = !r.isOpen && (t.doneBy || t.evidence) ? `<p class="pk">${esc(t.status)}${t.doneBy ? '(' + esc(paWho(t.doneBy)) + ')' : ''}${t.evidence ? ' — ' + esc(t.evidence) : ''}</p>` : '';
+  const act = tkMissions.filter(m => m.status !== '完了'), midSel = tk && r.isOpen ? `<label class="tk-mid">案件 <select data-tkmid="${id}"><option value="">なし(単発のタスク)</option>${act.map(m => `<option value="${esc(m.id)}"${t.mid === m.id ? ' selected' : ''}>${esc(m.title)}</option>`).join('')}${t.mid && !act.some(m => m.id === t.mid) && mOf(t.mid) ? `<option value="${esc(t.mid)}" selected>${esc(mOf(t.mid).title)}</option>` : ''}<option value="__new">＋ 新しい案件にする…</option></select><span class="pk">複数のタスクがある1つのミッションは「案件」にすると、ガントで進み具合を見られます</span></label>` : '';
   const set = tk ? 'data-tkset' : 'data-tset';
   const main = !r.isOpen ? `<button type="button" class="btn ghost" ${set}="${id}" data-st="未着手">未完了に戻す</button>`
     : `<button type="button" class="btn tk-done" ${set}="${id}" data-st="完了">完了</button>${tk ? (t.doing ? `<button type="button" class="btn ghost" data-tkdoing="${id}" data-on="0">進行中をやめる</button>` : `<button type="button" class="btn" data-tkdoing="${id}" data-on="1">進行中にする</button>`) : ''}<button type="button" class="btn ghost" ${set}="${id}" data-st="不要">不要</button>`;
@@ -1762,47 +1814,98 @@ function tdExtra(r) {
   const compose = tk && tkCompose && tkCompose.id === t.id ? `<div class="vform"><b>統括グループにLINEを送る</b><p class="pk">${tkCompose.busy === 'draft' ? '文案を作っています…' : '文案はAIが作りました。直してから送れます。送った内容は、この項目の「経過」に残ります。'}</p>
       <textarea id="tk-msg" rows="4" ${tkCompose.busy ? 'disabled' : ''} placeholder="送る文">${esc(tkCompose.text || '')}</textarea>
       <div class="actions"><button type="button" class="btn primary" data-tksendgo="${id}" ${tkCompose.busy ? 'disabled' : ''}>${tkCompose.busy === 'send' ? '送っています…' : '統括グループに送る'}</button><button type="button" class="btn ghost" data-tksendcancel="1" ${tkCompose.busy === 'send' ? 'disabled' : ''}>やめる</button></div></div>` : '';
-  return `<div class="pt-x">${chips}<p class="tk-t" style="font-size:13.5px">${esc(t.text)}</p>${quote}${src}${prep}${hist}${fin}<div class="tk-act">${main}<span class="sp"></span>${edit}</div>${compose}</div>`;
+  return `<div class="pt-x">${chips}<p class="tk-t" style="font-size:13.5px">${esc(t.text)}</p>${quote}${src}${prep}${hist}${fin}${midSel}<div class="tk-act">${main}<span class="sp"></span>${edit}</div>${compose}</div>`;
 }
-function tdRow(r) {
+let tdOff = 0; // 案件のガント: 表示する日付の動かし方(日)。0=今日の1週間前から
+let tkMissions = [], tdWho = '', tdMOpen = null;
+const mOf = id => tkMissions.find(m => m.id === id);
+/** 案件の進み具合。人は入力せず、タスクの完了数と期限から計算する: 期限を過ぎた未完了のタスクがある(または案件の期限切れ)=遅れ / なければ順調 */
+function mStat(m) {
+  const today = todayJst(), steps = tkTasks.filter(t => t.mid === m.id && t.status !== '不要' && !t.cand);
+  const done = steps.filter(t => t.status === '完了').length, openS = steps.filter(t => t.status === '未着手');
+  const late = openS.filter(t => t.due && t.due < today), pct = steps.length ? Math.round(done / steps.length * 100) : 0;
+  let label, cls;
+  if (m.status === '完了') { label = '完了'; cls = 'done'; }
+  else if (m.status === '保留') { label = '保留'; cls = 'hold'; }
+  else if (late.length || (m.due && m.due < today)) { label = '遅れ'; cls = 'late'; }
+  else if (!steps.length) { label = 'タスクなし'; cls = 'none'; }
+  else { label = '順調'; cls = 'ok'; }
+  const next = openS.slice().sort((a, b) => String(a.due || '9999').localeCompare(String(b.due || '9999')))[0] || null;
+  const starts = steps.map(t => t.start || (t.createdAt ? tdJst(t.createdAt) : '')).filter(Boolean).sort(), dues = steps.map(t => t.due).filter(Boolean).sort();
+  const start = m.start || starts[0] || (m.createdAt ? tdJst(m.createdAt) : today), end = m.due || dues[dues.length - 1] || '';
+  return { steps, openS, done, pct, label, cls, late, next, start, end };
+}
+/** やること1件(1行)。左の丸で完了、本文をタップで詳細 */
+function tkRow(r) {
   const t = r.t, id = esc(t.id), tk = r.src === 'tk', isOpen = tdOpen === r.key || (tk && tkCompose && tkCompose.id === t.id);
-  const kind = tk ? tkKindLabel(t.kind) + ' ' : '';
-  const set = tk ? `data-tkset="${id}"` : `data-tset="${id}"`;
-  const acts = r.isOpen ? `<button type="button" class="btn" ${set} data-st="完了">完了</button><button type="button" class="btn ghost" ${set} data-st="不要">不要</button>` : `<button type="button" class="btn ghost" ${set} data-st="未着手">戻す</button>`;
-  const msg = (kind + t.text).replace(/\s+/g, ' ');
-  return `<li class="pt-row st-${r.cls}"><div class="pt-line"><span class="pt-b">${esc(r.label)}</span>
-      <button type="button" class="pt-main" data-topen="${esc(r.key)}" aria-expanded="${isOpen}" title="${esc(msg)}"><span style="color:var(--ink)">${esc(msg)}</span></button>
-      <span class="pt-who">${esc(r.owner)}</span><span class="pt-t${r.over ? ' late' : ''}">${r.due ? esc(tkMd(r.due)) : '期限なし'}</span><span class="pt-who pt-src">${tk ? '統括G' : 'スタッフ'}</span><span class="pt-a">${acts}</span></div>
-    ${isOpen ? tdExtra(r) : ''}</li>`;
+  const set = tk ? `data-tkset="${id}"` : `data-tset="${id}"`, m = tk && t.mid ? mOf(t.mid) : null;
+  const flag = r.label === '急ぎ' || r.label === '再確認' ? `<span class="tk-chip bad">${r.label}</span>` : '';
+  return `<li class="tkr${r.isOpen ? '' : ' fin'}${r.over ? ' over' : ''}"><div class="tkr-l"><button type="button" class="tkr-ck" ${set} data-st="${r.isOpen ? '完了' : '未着手'}" aria-label="${r.isOpen ? '完了にする' : '未完了に戻す'}">${r.isOpen ? '' : '✓'}</button>
+    <button type="button" class="tkr-m" data-topen="${esc(r.key)}" aria-expanded="${isOpen}"><span class="tkr-t">${esc((tk && t.kind && t.kind !== '指示' ? tkKindLabel(t.kind) + ' ' : '') + t.text)}</span>
+      <span class="tkr-s">${esc(r.owner)} ・ <span class="${r.over ? 'late' : ''}">${r.due ? '期限 ' + esc(tkMd(r.due)) : '期限なし'}</span>${t.doing ? ' ・ 進行中' : ''}${m ? ` ・ <em>${esc(m.title)}</em>` : ''}${flag}</span></button></div>${isOpen ? tdExtra(r) : ''}</li>`;
 }
-/** 担当者別ガント: 行=担当者、横=日付。棒は 開始日 → 期限。棒の中に内容を出す(短い棒は、右に出す)。棒をタップすると、下に詳細が開く */
-let tdOff = 0; // 表示する日付の動かし方(日)。0=今日の3日前から
-function tdGantt(open) {
-  const today = todayJst(), N = 28, W0 = addDaysYmd(today, -3 + tdOff), w0 = tdIdx(W0), WD = '日月火水木金土';
-  const days = Array.from({ length: N }, (_, i) => { const ymd = addDaysYmd(W0, i), dt = new Date(ymd + 'T00:00:00Z'); return { ymd, d: dt.getUTCDate(), m: dt.getUTCMonth() + 1, dow: dt.getUTCDay(), today: ymd === today }; });
-  const head = `<div class="gx-row gx-head"><div class="gx-name"></div>${days.map((x, i) => `<div class="gx-day${x.today ? ' today' : ''}${x.dow === 0 || x.dow === 6 ? ' we' : ''}" style="grid-column:${i + 2}">${x.d === 1 || i === 0 ? `<small>${x.m}月</small>` : '<small>&nbsp;</small>'}<span>${WD[x.dow]}</span><b>${x.d}</b></div>`).join('')}</div>`;
+/** 今週: 期限ごとに区切った1本のリスト(単発のタスクも、案件のタスクも、ここで漏れなく見る) */
+function weekHTML() {
+  const { open, done } = tdRows(), today = todayJst(), week = addDaysYmd(today, 7);
+  const mine = open.filter(r => !tdWho || r.owner === tdWho);
+  const cnt = {}; open.forEach(r => { cnt[r.owner] = (cnt[r.owner] || 0) + 1; });
+  const who = [...new Set([...TD_MEMBERS, ...Object.keys(cnt)])].filter(n => TD_MEMBERS.includes(n) || cnt[n]);
+  const chips = `<div class="vfilter tkw"><button type="button" data-tdwho="" aria-pressed="${tdWho === ''}">全員 ${open.length}</button>${who.map(n => `<button type="button" data-tdwho="${esc(n)}" aria-pressed="${tdWho === n}">${esc(n)} ${cnt[n] || 0}</button>`).join('')}</div>`;
+  const B = [['over', '期限切れ', r => r.over], ['today', '今日', r => !r.over && r.due && r.due <= today], ['week', '今週(7日以内)', r => !r.over && r.due > today && r.due <= week], ['later', 'それ以降', r => r.due > week], ['none', '期限なし', r => !r.due]];
+  const sec = B.map(([k, name, f]) => { const l = mine.filter(f).sort((a, b) => String(a.due || '9999').localeCompare(String(b.due || '9999')) || (a.t.no || 0) - (b.t.no || 0)); return l.length ? `<div class="tkw-sec ${k}"><h4>${name} <span>${l.length}</span></h4><ul class="tkl">${l.map(tkRow).join('')}</ul></div>` : ''; }).join('');
+  const dn = done.filter(r => !tdWho || r.owner === tdWho);
+  return chips + (sec || '<div class="empty"><b>やることはありません</b>「＋ 指示を出す」で登録するか、会話から拾った候補を「管理する」にすると、ここに並びます。</div>')
+    + (dn.length ? `<details class="tkw-done"><summary>最近終わったもの ${dn.length}件</summary><ul class="tkl">${dn.map(tkRow).join('')}</ul></details>` : '');
+}
+/** 案件の詳細: 進み具合・タスク・追加・編集 */
+function mDetail(m) {
+  const S = mStat(m), id = esc(m.id), who = TD_MEMBERS;
+  const steps = S.steps.slice().sort((a, b) => (a.status === '未着手' ? 0 : 1) - (b.status === '未着手' ? 0 : 1) || String(a.due || '9999').localeCompare(String(b.due || '9999')));
+  const pool = tkTasks.filter(t => !t.cand && t.status === '未着手' && !t.mid);
+  const st = m.status === '進行中' ? `<button type="button" class="btn tk-done" data-mset="${id}" data-k="status" data-v="完了">案件を完了にする</button><button type="button" class="btn ghost" data-mset="${id}" data-k="status" data-v="保留">保留</button>` : `<button type="button" class="btn" data-mset="${id}" data-k="status" data-v="進行中">進行中に戻す</button>`;
+  return `<div class="mx-d"><div class="mx-dh"><b>${esc(m.title)}</b><span class="mx-chip ${S.cls}">${S.label}</span><span class="pk">担当 ${esc(tdOwner(m.owner) || '未定')} ・ ${esc(tkMd(S.start))} → ${S.end ? esc(tkMd(S.end)) : '期限なし'}</span></div>
+    <div class="mx-pg"><i style="width:${S.pct}%"></i></div><p class="pk">${S.done}/${S.steps.length}件 完了${S.late.length ? ` ・ <b class="bad">期限切れ ${S.late.length}件</b>` : ''}</p>
+    ${steps.length ? `<ul class="tkl">${steps.map(t => tkRow(tdMk('tk', t))).join('')}</ul>` : '<p class="pk">この案件のタスクはまだありません。下から足してください。</p>'}
+    <div class="mx-form"><input data-f="text" placeholder="この案件のタスクを追加(例: 会場を押さえる)" aria-label="タスクの内容"><select data-f="owner" aria-label="担当"><option value="">担当未定</option>${who.map(n => `<option>${esc(n)}</option>`).join('')}</select><input type="date" data-f="due" aria-label="期限"><button type="button" class="btn primary" data-mstepgo="${id}">追加</button></div>
+    ${pool.length ? `<select class="mx-pull" data-mpull="${id}" aria-label="単発のタスクを案件に入れる"><option value="">いまある単発のタスクを、この案件に入れる…</option>${pool.map(t => `<option value="${esc(t.id)}">${esc(t.text.slice(0, 40))}${t.due ? '(' + esc(tkMd(t.due)) + ')' : ''}</option>`).join('')}</select>` : ''}
+    <div class="tk-act">${st}<span class="sp"></span><button type="button" class="btn ghost" data-mset="${id}" data-k="title">名前</button><button type="button" class="btn ghost" data-mset="${id}" data-k="owner">担当</button><button type="button" class="btn ghost" data-mset="${id}" data-k="start">開始日</button><button type="button" class="btn ghost" data-mset="${id}" data-k="due">期限</button><button type="button" class="btn ghost" data-mdel="${id}">案件をやめる</button></div></div>`;
+}
+/** 案件のガント(PC): 1案件=1行。棒は 開始→期限、色は進み具合、棒の中は完了の割合。◆は未完了タスクの期限 */
+function mGantt(list) {
+  const today = todayJst(), N = 42, W0 = addDaysYmd(today, -7 + tdOff), w0 = tdIdx(W0), WD = '日月火水木金土';
+  const days = Array.from({ length: N }, (_, i) => { const ymd = addDaysYmd(W0, i), dt = new Date(ymd + 'T00:00:00Z'); return { d: dt.getUTCDate(), m: dt.getUTCMonth() + 1, dow: dt.getUTCDay(), today: ymd === today }; });
+  const head = `<div class="mg-row mg-head"><div class="mg-name"></div>${days.map((x, i) => `<div class="mg-day${x.today ? ' today' : ''}${x.dow === 0 || x.dow === 6 ? ' we' : ''}" style="grid-column:${i + 2}"><small>${x.d === 1 || i === 0 ? x.m + '月' : '&nbsp;'}</small><b>${x.d}</b></div>`).join('')}</div>`;
   const cells = days.map((x, i) => `<i style="grid-column:${i + 2}" class="${x.today ? 'today' : x.dow === 0 || x.dow === 6 ? 'we' : ''}"></i>`).join('');
-  const byOwner = {}; open.forEach(r => { (byOwner[r.owner] = byOwner[r.owner] || []).push(r); });
-  const names = [...TD_MEMBERS, ...Object.keys(byOwner).filter(n => !TD_MEMBERS.includes(n) && n !== '担当未定'), '担当未定'].filter((n, i, a) => a.indexOf(n) === i && (TD_MEMBERS.includes(n) || byOwner[n]));
-  const lane = (n, list) => {
-    const who = `<div class="gx-name"><span class="gx-av">${esc([...n][0])}</span><span><b>${esc(n)}</b><small>${list.length ? list.length + '件' : 'なし'}</small></span></div>`;
-    if (!list.length) return `<div class="gx-row gx-first gx-empty">${who}${cells}</div>`;
-    return list.map((r, i) => {
-      const e = r.due && r.due >= r.start ? r.due : (r.due ? r.start : addDaysYmd(r.start, 2));
-      const clamp = v => Math.max(0, Math.min(N - 1, v));
-      let c1 = tdIdx(r.start) - w0, c2 = tdIdx(e) - w0; const left = c1 < 0, right = c2 > N - 1;
-      if (c2 < 0) { c1 = 0; c2 = 0; } else if (c1 > N - 1) { c1 = N - 1; c2 = N - 1; } else { c1 = clamp(c1); c2 = clamp(c2); }
-      const cls = r.over ? 'over' : r.t.doing ? 'doing' : r.due ? '' : 'nodue', span = c2 - c1 + 1;
-      const label = (left ? '◀ ' : '') + r.t.text + (r.due ? '' : '(期限なし)') + (right ? ' ▶' : ''), inside = span >= 5;
-      const toLeft = !inside && N - 1 - c2 < 8 && c1 > 8, tip = esc(r.t.text) + (r.due ? '(期限 ' + esc(tkMd(r.due)) + ')' : '(期限なし)');
-      return `<div class="gx-row${i === 0 ? ' gx-first' : ''}">${i === 0 ? who : '<div class="gx-name"></div>'}${cells}
-        <button type="button" class="gx-bar ${cls}${tdOpen === r.key ? ' sel' : ''}" style="grid-column:${c1 + 2} / ${c2 + 3}" data-topen="${esc(r.key)}" title="${tip}">${inside ? esc(label) : ''}</button>
-        ${inside ? '' : `<button type="button" class="gx-out${toLeft ? ' left' : ''}" style="grid-column:${toLeft ? '2 / ' + (c1 + 2) : (c2 + 3) + ' / ' + (N + 2)}" data-topen="${esc(r.key)}" title="${tip}">${esc(label)}</button>`}</div>`;
-    }).join('');
-  };
-  const rows = names.map(n => lane(n, (byOwner[n] || []).slice().sort((a, b) => String(a.due || '9999').localeCompare(String(b.due || '9999')) || a.start.localeCompare(b.start)))).join('');
-  const sel = open.find(r => r.key === tdOpen);
-  return `<div class="gx"><div class="gx-scroll"><div class="gx-grid">${head}${rows}</div></div></div>${sel ? `<div class="gx-detail"><div class="gx-dh"><span class="gx-av">${esc([...sel.owner][0])}</span><b>${esc(sel.owner)}</b><span class="tk-chip${sel.over ? ' bad' : ''}">${esc(sel.label)}</span></div>${tdExtra(sel)}</div>` : ''}`;
+  const clamp = v => Math.max(0, Math.min(N - 1, v));
+  const rows = list.map(m => {
+    const S = mStat(m), e = S.end && S.end >= S.start ? S.end : addDaysYmd(S.start, 13);
+    let c1 = tdIdx(S.start) - w0, c2 = tdIdx(e) - w0; const left = c1 < 0, right = c2 > N - 1;
+    if (c2 < 0) { c1 = 0; c2 = 0; } else if (c1 > N - 1) { c1 = N - 1; c2 = N - 1; } else { c1 = clamp(c1); c2 = clamp(c2); }
+    const dots = S.openS.filter(t => t.due).map(t => ({ c: tdIdx(t.due) - w0, t })).filter(x => x.c >= 0 && x.c < N).map(x => `<i class="mg-d${x.t.due < today ? ' over' : ''}" style="grid-column:${x.c + 2}" title="${esc(x.t.text)}(${esc(tkMd(x.t.due))})">◆</i>`).join('');
+    return `<div class="mg-row${tdMOpen === m.id ? ' sel' : ''}">
+      <button type="button" class="mg-name" data-mopen="${esc(m.id)}"><b>${esc(m.title)}</b><small><span class="mx-chip ${S.cls}">${S.label}</span> ${S.done}/${S.steps.length} ・ ${esc(tdOwner(m.owner) || '担当未定')}</small></button>${cells}
+      <button type="button" class="mg-bar ${S.cls}${S.end ? '' : ' nodue'}" style="grid-column:${c1 + 2} / ${c2 + 3};--p:${S.pct}%" data-mopen="${esc(m.id)}" title="${esc(m.title)} ${S.pct}%">${left ? '◀ ' : ''}${S.pct}%${right ? ' ▶' : ''}</button>${dots}</div>`;
+  }).join('');
+  return `<div class="mg"><div class="gx-scroll"><div class="mg-grid" style="--n:${N}">${head}${rows}</div></div></div>`;
+}
+/** 案件のカード(スマホ): 1案件=1枚。縦に積むだけで、横にスクロールしない */
+function mCards(list) {
+  return `<div class="mc-list">${list.map(m => {
+    const S = mStat(m), op = tdMOpen === m.id;
+    return `<article class="mc ${S.cls}"><button type="button" class="mc-h" data-mopen="${esc(m.id)}" aria-expanded="${op}"><span class="mc-t">${esc(m.title)}</span><span class="mx-chip ${S.cls}">${S.label}</span></button>
+      <div class="mx-pg"><i style="width:${S.pct}%"></i></div>
+      <div class="mc-s">${S.done}/${S.steps.length}件 完了 ・ ${esc(tdOwner(m.owner) || '担当未定')} ・ ${S.end ? '期限 ' + esc(tkMd(S.end)) : '期限なし'}</div>
+      ${S.next && !op ? `<div class="mc-n">次: ${esc(S.next.text)}${S.next.due ? '(' + esc(tkMd(S.next.due)) + ')' : ''}</div>` : ''}${op ? mDetail(m) : ''}</article>`;
+  }).join('')}</div>`;
+}
+function missionsHTML() {
+  const act = tkMissions.filter(m => m.status !== '完了').sort((a, b) => (mStat(a).cls === 'late' ? 0 : 1) - (mStat(b).cls === 'late' ? 0 : 1) || String(mStat(a).end || '9999').localeCompare(String(mStat(b).end || '9999')));
+  const fin = tkMissions.filter(m => m.status === '完了');
+  if (!tkMissions.length) return '<div class="empty"><b>案件はまだありません</b>案件は、複数のタスクを抱えた1つのミッション(例: 12月の遠征の準備)です。「＋ 案件をつくる」で作るか、タスクの詳細の「案件」から作れます。1回で終わるタスクは、案件にせず「今週」で管理します。</div>';
+  const sel = tkMissions.find(m => m.id === tdMOpen);
+  return (act.length ? mGantt(act).replace('class="mg"', 'class="mg mx-g"') + mCards(act).replace('class="mc-list"', 'class="mc-list mx-c"') : '<p class="pk">進行中の案件はありません</p>')
+    + (sel ? `<div class="mx-g mx-dbox">${mDetail(sel)}</div>` : '')
+    + (fin.length ? `<details class="tkw-done"><summary>終わった案件 ${fin.length}件</summary><ul class="tkl">${fin.map(m => `<li class="tkr fin"><div class="tkr-l"><button type="button" class="tkr-ck" data-mset="${esc(m.id)}" data-k="status" data-v="進行中" aria-label="進行中に戻す">✓</button><span class="tkr-m"><span class="tkr-t">${esc(m.title)}</span><span class="tkr-s">${mStat(m).done}/${mStat(m).steps.length}件 完了</span></span></div></li>`).join('')}</ul></details>` : '');
 }
 function tdCandHTML() {
   const c = tdCands(); if (!c.length) return '';
@@ -1818,21 +1921,25 @@ function notifyBoxHTML() {
   return `<details class="gx-pop nb"><summary class="btn ghost">統括LINE通知${hold ? ' <span class="tk-chip warn">ホールド中</span>' : ''}</summary><div class="gx-card">${item('weekly', '統括タスクの週のまとめ', '毎週月曜 8:30')}${item('parentRemind', '保護者対応の未対応のお知らせ', '毎朝 9:00')}<p class="pk">ホールド中は、LINEには何も送りません(画面の表示や記録は、これまでどおり動きます)。「再開する」を押したものだけ、送ります。</p></div></details>`;
 }
 function todoTableHTML() {
-  const { open, done, hidden } = tdRows(), list = [...open, ...done];
+  const { open, hidden } = tdRows();
   const when = tkState && tkState.lastRunAt ? tkWhen(tkState.lastRunAt) : 'まだありません';
   const err = tkState && tkState.error ? `<div class="alertbox"><b>統括グループの会話の分析がうまくいっていません</b>${esc(tkState.error.message || '')}(${esc(tkWhen(tkState.error.at))})。次に成功すると、この表示は消えます。続くときは、画面を撮って連絡してください。</div>` : '';
-  const nOver = open.filter(r => r.label === '期限切れ').length;
+  const nOver = open.filter(r => r.label === '期限切れ').length, nLate = tkMissions.filter(m => m.status === '進行中' && mStat(m).cls === 'late').length, nAct = tkMissions.filter(m => m.status !== '完了').length;
+  const owners = `<option value="">担当未定</option>${TD_MEMBERS.map(m => `<option>${esc(m)}</option>`).join('')}`;
   const form = `<details class="gx-pop"><summary class="btn primary">＋ 指示を出す</summary>
     <div class="gx-card"><textarea id="tk-add-text" rows="2" placeholder="何を(例: 11月の遠征費の請求書を作って、保護者に送る)" aria-label="内容"></textarea>
-      <div class="gx-fields"><label>担当 <select id="tk-add-owner"><option value="">担当未定</option>${TD_MEMBERS.map(m => `<option>${esc(m)}</option>`).join('')}</select></label><label>開始日 <input type="date" id="tk-add-start" value="${esc(todayJst())}"></label><label>期限 <input type="date" id="tk-add-due"></label><button type="button" class="btn primary" id="tk-add-go">登録する</button></div></div></details>`;
-  const top = `<div class="gx-top"><div class="gx-title"><h3>やること</h3><span class="gx-sub">管理中 <b>${open.length}</b>${nOver ? ` ・ <em class="bad">期限切れ ${nOver}</em>` : ''}</span></div>
-    <div class="gx-tools"><div class="gx-seg"><button type="button" data-tdview="gantt" aria-pressed="${tdView === 'gantt'}">ガント</button><button type="button" data-tdview="list" aria-pressed="${tdView === 'list'}">一覧</button></div>
-      ${tdView === 'gantt' ? `<div class="gx-nav"><button type="button" data-tdnav="-7" aria-label="1週間前">‹</button><button type="button" data-tdnav="0">今日</button><button type="button" data-tdnav="7" aria-label="1週間後">›</button></div>` : ''}
-      <span class="gx-flex"></span><button type="button" class="btn ghost" id="tk-run" title="統括グループの会話から、候補を拾い直します(前回: ${esc(when)})">今すぐ分析</button>${notifyBoxHTML()}${form}</div></div>`;
-  const help = `<details class="gx-help"><summary>使い方</summary><p class="pk">指示は、＋指示を出す で登録するか、会話から拾った「候補」を「管理する」で選びます。LINEのトーク画面には、何も出ません。棒をタップすると、詳細・完了・担当や期限の変更が開きます。LINEで「完了 12」と送っても完了になります。</p></details>`;
-  const body = tdView === 'gantt' ? tdGantt(open) : (list.length ? `<ul class="pt pt2"><li class="pt-h"><span>状態</span><span>内容</span><span>担当</span><span>期限</span><span>出所</span><span></span></li>${list.map(tdRow).join('')}</ul>` : '<div class="empty"><b>やることはありません</b>統括グループの会話が分析されると、候補が並びます。</div>');
-  return `${err}${top}${tdCandHTML()}${body}${help}
-    ${tdView === 'list' && hidden ? `<div class="tkpurge">統括グループの終わったもののうち、古い ${hidden}件は非表示です <button type="button" class="btn ghost" id="tk-purge">古い${hidden}件をまとめて削除</button></div>` : ''}<div class="gx-pad"></div>`;
+      <div class="gx-fields"><label>担当 <select id="tk-add-owner">${owners}</select></label><label>開始日 <input type="date" id="tk-add-start" value="${esc(todayJst())}"></label><label>期限 <input type="date" id="tk-add-due"></label><button type="button" class="btn primary" id="tk-add-go">登録する</button></div></div></details>`;
+  const mform = `<details class="gx-pop"><summary class="btn">＋ 案件をつくる</summary>
+    <div class="gx-card"><input id="mx-add-title" placeholder="案件の名前(例: 12月 福井遠征の準備)" aria-label="案件の名前" style="width:100%;font-size:13px;padding:6px 8px">
+      <div class="gx-fields"><label>責任者 <select id="mx-add-owner">${owners}</select></label><label>開始日 <input type="date" id="mx-add-start" value="${esc(todayJst())}"></label><label>期限 <input type="date" id="mx-add-due"></label><button type="button" class="btn primary" id="mx-add-go">つくる</button></div>
+      <p class="pk">つくったあと、案件の中にタスクを足していきます。</p></div></details>`;
+  const top = `<div class="gx-top"><div class="gx-title"><h3>やること</h3><span class="gx-sub">管理中 <b>${open.length}</b>${nOver ? ` ・ <em class="bad">期限切れ ${nOver}</em>` : ''} ・ 案件 <b>${nAct}</b>${nLate ? ` <em class="bad">(遅れ ${nLate})</em>` : ''}</span></div>
+    <div class="gx-tools"><div class="gx-seg"><button type="button" data-tdview="week" aria-pressed="${tdView !== 'mission'}">今週</button><button type="button" data-tdview="mission" aria-pressed="${tdView === 'mission'}">案件</button></div>
+      ${tdView === 'mission' ? `<div class="gx-nav mx-g"><button type="button" data-tdnav="-14" aria-label="2週間前">‹</button><button type="button" data-tdnav="0">今日</button><button type="button" data-tdnav="14" aria-label="2週間後">›</button></div>` : ''}
+      <span class="gx-flex"></span>${tdView === 'mission' ? mform : form}<button type="button" class="btn ghost" id="tk-run" title="統括グループの会話から、候補を拾い直します(前回: ${esc(when)})">今すぐ分析</button>${notifyBoxHTML()}</div></div>`;
+  const help = `<details class="gx-help"><summary>使い方</summary><p class="pk"><b>今週</b>: 1回で終わるタスクも、案件のタスクも、期限ごとに1本のリストで見ます。左の丸を押すと完了です。<b>案件</b>: 複数のタスクを抱えた1つのミッションだけを、ガントで見ます(進み具合は、タスクの完了数と期限から自動で出ます)。タスクを案件に入れるには、タスクをタップして「案件」を選びます。LINEのトーク画面には、何も出ません。</p></details>`;
+  return `${err}${top}${tdView === 'mission' ? '' : tdCandHTML()}${tdView === 'mission' ? missionsHTML() : weekHTML()}${help}
+    ${hidden ? `<div class="tkpurge">統括グループの終わったもののうち、古い ${hidden}件は非表示です <button type="button" class="btn ghost" id="tk-purge">古い${hidden}件をまとめて削除</button></div>` : ''}<div class="gx-pad"></div>`;
 }
 /* ---------- 名簿・階段図(タクマ塾CRMの塾生リストから) ----------
    データ: academies/{校舎}/students の months('YYYY-MM': 'active')。シートが正本で、10分ごとにシステムへ同期されている。
@@ -2053,7 +2160,24 @@ document.addEventListener('click', e => {
   else if (a === 'fload') roFLoad(true);
   else if (a === 'print') window.print();
 });
-document.addEventListener('change', e => {
+document.addEventListener("change", async e => {
+  if (e.target.dataset && e.target.dataset.tkmid) { // タスクを案件に入れる・外す・新しい案件にする
+    const sel = e.target, id = sel.dataset.tkmid, t = tkTasks.find(x => x.id === id); let mid = sel.value;
+    sel.disabled = true;
+    try {
+      if (mid === '__new') {
+        const title = prompt('新しい案件の名前(例: 12月 福井遠征の準備)', ''); if (!title || !title.trim()) { sel.disabled = false; renderPanel(); return; }
+        const r = await call('aiTokatsuTasks')({ action: 'mAdd', title: title.trim(), owner: tdOwner(t && t.owner), ids: [id] }); tdMOpen = r.data.id || null; toast('案件をつくり、このタスクを入れました');
+      } else { await call('aiTokatsuTasks')({ action: 'set', id, mid }); toast(mid ? '案件に入れました' : '単発のタスクに戻しました'); }
+    } catch (err) { toast('できませんでした: ' + err.message); sel.disabled = false; }
+    return;
+  }
+  if (e.target.dataset && e.target.dataset.mpull) { // 単発のタスクを、この案件に入れる
+    const id = e.target.value; if (!id) return; e.target.disabled = true;
+    try { await call('aiTokatsuTasks')({ action: 'set', id, mid: e.target.dataset.mpull }); toast('案件に入れました'); }
+    catch (err) { toast('できませんでした: ' + err.message); e.target.disabled = false; }
+    return;
+  }
   if (e.target.id === 'ro-span') { ro.span = e.target.value === 'fy' ? 'fy' : (Number(e.target.value) || 12); renderPanel(); }
   else if (e.target.dataset && e.target.dataset.ro === 'left') { ro.left = e.target.checked; renderPanel(); }
   else if (e.target.dataset && e.target.dataset.ro === 'ab') { ro.ab = e.target.checked; renderPanel(); }
@@ -2674,10 +2798,45 @@ document.addEventListener('click', async e => {
     return;
   }
   if (btn.dataset.tdview) { tdView = btn.dataset.tdview; renderPanel(); return; }
+  if (btn.dataset.tdwho !== undefined) { tdWho = btn.dataset.tdwho; renderPanel(); return; }
+  if (btn.dataset.mopen) { tdMOpen = tdMOpen === btn.dataset.mopen ? null : btn.dataset.mopen; renderPanel(); return; }
+  if (btn.id === 'mx-add-go') {
+    const title = $('#mx-add-title').value.trim(); if (!title) { $('#mx-add-title').focus(); return; }
+    btn.disabled = true;
+    try { const r = await call('aiTokatsuTasks')({ action: 'mAdd', title, owner: $('#mx-add-owner').value, start: $('#mx-add-start').value, due: $('#mx-add-due').value }); tdMOpen = r.data.id || null; $('#mx-add-title').value = ''; toast('案件をつくりました。中にタスクを足してください'); }
+    catch (err) { toast('つくれませんでした: ' + err.message); }
+    btn.disabled = false; return;
+  }
+  if (btn.dataset.mstepgo) {
+    const f = btn.closest('.mx-form'), text = f.querySelector('[data-f=text]').value.trim(); if (!text) { f.querySelector('[data-f=text]').focus(); return; }
+    btn.disabled = true;
+    try { await call('aiTokatsuTasks')({ action: 'add', text, owner: f.querySelector('[data-f=owner]').value, due: f.querySelector('[data-f=due]').value, start: todayJst(), mid: btn.dataset.mstepgo }); toast('案件にタスクを足しました'); }
+    catch (err) { toast('足せませんでした: ' + err.message); }
+    btn.disabled = false; return;
+  }
+  if (btn.dataset.mset) {
+    const m = mOf(btn.dataset.mset); if (!m) return; const k = btn.dataset.k; let patch;
+    if (k === 'status') patch = { status: btn.dataset.v };
+    else if (k === 'title') { const v = prompt('案件の名前', m.title || ''); if (v === null || !v.trim()) return; patch = { title: v.trim() }; }
+    else if (k === 'owner') { const v = prompt('責任者(' + TD_MEMBERS.join(' / ') + ')', tdOwner(m.owner) || ''); if (v === null) return; patch = { owner: v.trim() }; }
+    else if (k === 'start') { const v = prompt('開始日(YYYY-MM-DD)', m.start || mStat(m).start); if (v === null) return; patch = { start: v.trim() }; }
+    else { const v = prompt('期限(YYYY-MM-DD。空にすると期限なし)', m.due || ''); if (v === null) return; patch = { due: v.trim() }; }
+    btn.disabled = true;
+    try { await call('aiTokatsuTasks')({ action: 'mSet', id: m.id, ...patch }); toast('変更しました'); }
+    catch (err) { btn.disabled = false; toast('変更できませんでした: ' + err.message); }
+    return;
+  }
+  if (btn.dataset.mdel) {
+    const m = mOf(btn.dataset.mdel); if (!m || !confirm(`案件「${m.title}」をやめますか?\n中のタスクは消えず、単発のタスクに戻ります。`)) return;
+    btn.disabled = true;
+    try { await call('aiTokatsuTasks')({ action: 'mDel', id: m.id }); if (tdMOpen === m.id) tdMOpen = null; toast('案件をやめました(タスクは単発に戻しました)'); }
+    catch (err) { btn.disabled = false; toast('できませんでした: ' + err.message); }
+    return;
+  }
   if (btn.dataset.tdnav !== undefined) { tdOff = btn.dataset.tdnav === '0' ? 0 : tdOff + Number(btn.dataset.tdnav); renderPanel(); return; }
   if (btn.dataset.tkcand) {
     btn.disabled = true;
-    try { await call('aiTokatsuTasks')({ action: 'set', id: btn.dataset.tkcand, cand: false }); toast('管理する項目に入れました。担当や期限は、ガントの棒をタップして直せます'); }
+    try { await call('aiTokatsuTasks')({ action: 'set', id: btn.dataset.tkcand, cand: false }); toast('管理する項目に入れました。担当や期限は、「今週」の項目をタップして直せます'); }
     catch (err) { btn.disabled = false; toast('できませんでした: ' + err.message); }
     return;
   }
@@ -2690,7 +2849,7 @@ document.addEventListener('click', async e => {
   if (btn.dataset.tkstart || btn.dataset.tktext) {
     const id = btn.dataset.tkstart || btn.dataset.tktext, t = tkTasks.find(x => x.id === id); if (!t) return;
     let patch;
-    if (btn.dataset.tkstart) { const v = prompt('開始日(YYYY-MM-DD。ガントの棒の左端になります)', t.start || todayJst()); if (v === null) return; patch = { start: v.trim() }; }
+    if (btn.dataset.tkstart) { const v = prompt('開始日(YYYY-MM-DD)', t.start || todayJst()); if (v === null) return; patch = { start: v.trim() }; }
     else { const v = prompt('内容を直す', t.text || ''); if (v === null || !v.trim()) return; patch = { text: v.trim() }; }
     btn.disabled = true;
     try { await call('aiTokatsuTasks')({ action: 'set', id, ...patch }); toast('変更しました'); }
@@ -2700,7 +2859,7 @@ document.addEventListener('click', async e => {
   if (btn.id === 'tk-add-go') {
     const ta = $('#tk-add-text'), text = ta.value.trim(); if (!text) { ta.focus(); return; }
     btn.disabled = true;
-    try { await call('aiTokatsuTasks')({ action: 'add', text, owner: $('#tk-add-owner').value, start: $('#tk-add-start').value, due: $('#tk-add-due').value }); ta.value = ''; toast('登録しました。ガントに出ます'); }
+    try { await call('aiTokatsuTasks')({ action: 'add', text, owner: $('#tk-add-owner').value, start: $('#tk-add-start').value, due: $('#tk-add-due').value }); ta.value = ''; toast('登録しました。「今週」に並びます'); }
     catch (err) { toast('登録できませんでした: ' + err.message); }
     btn.disabled = false; return;
   }
@@ -2984,7 +3143,7 @@ auth.onAuthStateChanged(async user => {
   const knParts = {};
   [0, 1].forEach(off => db.doc('aiMeta/kn_' + ym(off)).onSnapshot(sn => { knParts[off] = sn.exists ? sn.data().items || [] : []; knMemos = [...(knParts[1] || []), ...(knParts[0] || [])]; if (panelTab === 'log') renderPanel(); }, e => console.error(e)));
   db.doc('aiMeta/tasks').onSnapshot(sn => { tasks = sn.exists ? sn.data().items || [] : []; renderCounts(); if (panelTab === 'tasks' || panelTab === 'sum') renderPanel(); }, e => console.error(e));
-  db.doc('aiMeta/tokatsuTasks').onSnapshot(sn => { tkTasks = sn.exists ? sn.data().items || [] : []; if (panelTab === 'tasks') renderPanel(); }, e => console.error(e));
+  db.doc('aiMeta/tokatsuTasks').onSnapshot(sn => { tkTasks = sn.exists ? sn.data().items || [] : []; tkMissions = sn.exists ? sn.data().missions || [] : []; if (panelTab === 'tasks') renderPanel(); }, e => console.error(e));
   db.collection('aiParents').onSnapshot(sn => { paList = sn.docs.map(d => ({ id: d.id, ...d.data() })); if (panelTab === 'tasks') renderPanel(); }, e => console.error(e));
   db.doc('aiMeta/parentState').onSnapshot(sn => { paState = sn.exists ? sn.data() : null; if (panelTab === 'tasks') renderPanel(); }, e => console.error(e));
   db.doc('aiMeta/tokatsuConfig').onSnapshot(sn => { tkCfg = sn.exists ? sn.data() : null; if (panelTab === 'tasks') renderPanel(); }, e => console.error(e));
