@@ -1968,7 +1968,7 @@ function roSumHTML(m) {
       ${kc('体験', kd.trial ? kd.trial.length : (roF.err ? '—' : '…'), 'var(--accent)', '入塾フォーム回答より')}</div>
     ${kd.check.length ? `<div class="alertbox"><b>確認が必要: ${kd.check.length}人</b>前月にいたのに今月は印がなく、塾生リストに「退会月」「休塾開始月」の記載もありません。リストを確認してください: ${kd.check.map(r => esc(r.st.name) + '(' + esc(r.school) + ')').join('、')}</div>` : ''}
     <div class="ro-card"><h4>在籍数の推移</h4>${roStepSVG(m)}</div>
-    <div class="ro-card"><h4>校舎ごとの人数</h4><div class="ro-scroll"><table class="ro-tbl">${head}${rows}${foot}</table></div></div>
+    ${ro.school === 'all' ? `<div class="ro-card"><h4>校舎ごとの人数</h4><div class="ro-scroll"><table class="ro-tbl">${head}${rows}${foot}</table></div></div>` : ''}
     ${roAbsCard(m)}
     <div class="ro-two">
       <div class="ro-card"><h4><span class="rf-dot" style="background:var(--ok)"></span>入塾(${kd.fresh.length}人${kd.back.length ? ' + 復塾 ' + kd.back.length + '人' : ''})</h4>${kd.joined.length ? `<ul class="ro-list">${kd.joined.map(r => pill(r, r.again ? '復塾' : '新規')).join('')}</ul>` : '<p class="pk">いません</p>'}</div>
