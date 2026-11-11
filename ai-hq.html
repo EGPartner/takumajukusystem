@@ -1858,15 +1858,20 @@ async function roLoad(force) {
   } catch (e) { console.error(e); ro.err = String(e.message || e); }
   ro.busy = false; if (panelTab === 'roster') renderPanel();
 }
+function roSpan(base) { // 表示する月の並び。年度(4月〜3月)か、基準月までの直近N か月
+  if (ro.span === 'fy') { const y = Number(base.slice(0, 4)), mo = Number(base.slice(5)), sy = mo >= 4 ? y : y - 1; return Array.from({ length: 12 }, (_, i) => roAdd(sy + '-04', i)); }
+  return Array.from({ length: ro.span }, (_, i) => roAdd(base, i - ro.span + 1));
+}
 function roModel() {
   const base = ro.month || roCur(), every = []; (ro.schools || []).forEach(s => (ro.stu[s.id] || []).forEach(st => every.push({ st, sid: s.id, school: s.name })));
   let first = ''; every.forEach(r => Object.keys(r.st.months || {}).forEach(k => { if (r.st.months[k] === 'active' && (!first || k < first)) first = k; }));
-  const months = Array.from({ length: ro.span }, (_, i) => roAdd(base, i - ro.span + 1)).filter(k => !first || k >= first); // データの始まりより前の月は出さない
+  const fy = ro.span === 'fy', live = k => !fy || ((!first || k >= first) && k <= roCur()); // 年度表示では、データのない月(始まる前・まだ来ていない月)は空欄にする
+  const months = fy ? roSpan(base) : roSpan(base).filter(k => !first || k >= first); // 通常表示は、データの始まりより前の月は出さない
   if (!months.length) months.push(base);
   const schools = (ro.schools || []).filter(s => ro.school === 'all' || s.id === ro.school), all = every.filter(r => ro.school === 'all' || r.sid === ro.school);
-  const bySchool = schools.map(s => { const list = all.filter(r => r.sid === s.id); return { id: s.id, name: s.name, list, counts: months.map(k => list.filter(r => roAct(r.st, k)).length) }; });
-  const totals = months.map((k, i) => bySchool.reduce((a, s) => a + s.counts[i], 0));
-  const diffs = months.map((k, i) => (!first || k <= first ? null : (i ? totals[i] - totals[i - 1] : all.filter(r => roAct(r.st, k)).length - all.filter(r => roAct(r.st, roAdd(k, -1))).length)));
+  const bySchool = schools.map(s => { const list = all.filter(r => r.sid === s.id); return { id: s.id, name: s.name, list, counts: months.map(k => live(k) ? list.filter(r => roAct(r.st, k)).length : null) }; });
+  const totals = months.map((k, i) => live(k) ? bySchool.reduce((a, s) => a + s.counts[i], 0) : null);
+  const diffs = months.map(k => (!first || k <= first || !live(k) ? null : all.filter(r => roAct(r.st, k)).length - all.filter(r => roAct(r.st, roAdd(k, -1))).length));
   return { base, months, every, all, schools, bySchool, totals, diffs, first };
 }
 function roMoves(all, k) {
@@ -1886,22 +1891,22 @@ function roHeadHTML(m) {
   return `<div class="ro-top"><div class="ro-title"><h3>名簿・階段図</h3><span class="ro-sub">${ro.view === 'form' ? 'タクマ塾CRMの「入塾フォーム回答」を集計' : 'タクマ塾CRMの塾生リストをもとに、10分ごとに更新'}</span></div>
     <div class="ro-tools"><div class="gx-seg"><button type="button" data-ro="view" data-v="sum" aria-pressed="${ro.view === 'sum'}">サマリ</button><button type="button" data-ro="view" data-v="stair" aria-pressed="${ro.view === 'stair'}">階段図(名簿)</button><button type="button" data-ro="view" data-v="form" aria-pressed="${ro.view === 'form'}">申し込み</button></div>
       <div class="gx-nav"><button type="button" data-ro="nav" data-v="-1" aria-label="前の月">‹</button><span class="ro-mon">${esc(roMJa(m.base))}</span><button type="button" data-ro="nav" data-v="1" aria-label="次の月">›</button><button type="button" data-ro="nav" data-v="0">今月</button></div>
-      <label class="pk">表示 <select id="ro-span"><option value="6"${ro.span === 6 ? ' selected' : ''}>6か月</option><option value="12"${ro.span === 12 ? ' selected' : ''}>12か月</option><option value="24"${ro.span === 24 ? ' selected' : ''}>24か月</option></select></label>
+      <label class="pk">表示 <select id="ro-span"><option value="6"${ro.span === 6 ? ' selected' : ''}>6か月</option><option value="12"${ro.span === 12 ? ' selected' : ''}>12か月</option><option value="24"${ro.span === 24 ? ' selected' : ''}>24か月</option><option value="fy"${ro.span === 'fy' ? ' selected' : ''}>年度(4月〜3月)</option></select></label>
       <span class="gx-flex"></span><button type="button" class="btn ghost" data-ro="reload">${ro.busy ? '更新中…' : '最新に更新'}</button><button type="button" class="btn ghost" data-ro="print">印刷・PDF</button></div>
     <div class="vfilter ro-noprint">${chip('all', '全校', now(m.base))}${(ro.schools || []).map(s => chip(s.id, s.name, bySid[s.id] || 0)).join('')}</div></div>`;
 }
 /** 在籍数の推移(階段): 月ごとの人数を階段状に並べ、下に前月からの増減を出す */
 function roStepSVG(m) {
   const n = m.months.length, W = 1000, H = 250, L = 38, R = 12, T = 28, B = 56, cw = (W - L - R) / n;
-  const lo = Math.max(0, Math.min(...m.totals) - Math.max(3, Math.round((Math.max(...m.totals) - Math.min(...m.totals)) * .35))), hi = Math.max(...m.totals) + 3, y = v => T + (H - T - B) * (1 - (v - lo) / Math.max(1, hi - lo));
+  const vals = m.totals.filter(v => v !== null), vmin = vals.length ? Math.min(...vals) : 0, vmax = vals.length ? Math.max(...vals) : 0, lo = Math.max(0, vmin - Math.max(3, Math.round((vmax - vmin) * .35))), hi = vmax + 3, y = v => T + (H - T - B) * (1 - (v - lo) / Math.max(1, hi - lo));
   const x = i => L + i * cw;
-  let path = '';
-  m.totals.forEach((v, i) => { path += (i ? ` V${y(v)}` : `M${x(i)},${y(v)}`) + ` H${x(i + 1)}`; });
-  const area = path + ` V${H - B} H${x(0)} Z`;
+  let path = '', i0 = -1, i1 = -1;
+  m.totals.forEach((v, i) => { if (v === null) return; if (i0 < 0) i0 = i; i1 = i; path += (i === i0 ? `M${x(i)},${y(v)}` : ` V${y(v)}`) + ` H${x(i + 1)}`; });
+  const area = i0 < 0 ? '' : path + ` V${H - B} H${x(i0)} Z`;
   const grid = [0, .5, 1].map(f => { const v = Math.round(lo + (hi - lo) * f); return `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" class="ro-gl"/><text x="${L - 6}" y="${y(v) + 4}" text-anchor="end" class="ro-ax">${v}</text>`; }).join('');
   const cur = roCur();
   const cols = m.months.map((k, i) => `<g><rect x="${x(i)}" y="${T}" width="${cw}" height="${H - B - T}" class="ro-col${k === cur ? ' cur' : ''}${k === m.base ? ' base' : ''}"/>
-    <text x="${x(i) + cw / 2}" y="${y(m.totals[i]) - 8}" text-anchor="middle" class="ro-val">${m.totals[i]}</text>
+    ${m.totals[i] === null ? '' : `<text x="${x(i) + cw / 2}" y="${y(m.totals[i]) - 8}" text-anchor="middle" class="ro-val">${m.totals[i]}</text>`}
     <text x="${x(i) + cw / 2}" y="${H - B + 17}" text-anchor="middle" class="ro-ax">${Number(k.slice(5))}月${k.slice(5) === '01' || i === 0 ? '<tspan x="' + (x(i) + cw / 2) + '" dy="12" class="ro-yr">' + k.slice(0, 4) + '</tspan>' : ''}</text>
     ${m.diffs[i] === null ? '' : `<text x="${x(i) + cw / 2}" y="${H - 6}" text-anchor="middle" class="ro-df ${m.diffs[i] > 0 ? 'up' : m.diffs[i] < 0 ? 'dn' : ''}">${roSign(m.diffs[i])}</text>`}</g>`).join('');
   return `<svg viewBox="0 0 ${W} ${H}" class="ro-svg" role="img" aria-label="在籍塾生数の月ごとの推移(階段グラフ)">${grid}${cols}<path d="${area}" class="ro-area"/><path d="${path}" class="ro-line"/></svg>`;
@@ -1918,12 +1923,12 @@ function roKinds(m) {
   return { k, joined: mv.joined, fresh: mv.joined.filter(r => !r.again), back: mv.joined.filter(r => r.again), pause, leave, check, paused, trial, ready: !!notes };
 }
 function roSumHTML(m) {
-  const k = m.base, i = m.months.length - 1, total = m.totals[i], prevTotal = m.every.filter(r => (ro.school === 'all' || r.sid === ro.school) && roAct(r.st, roAdd(k, -1))).length, mv = roMoves(m.all, k);
+  const k = m.base, total = m.all.filter(r => roAct(r.st, k)).length, prevTotal = m.every.filter(r => (ro.school === 'all' || r.sid === ro.school) && roAct(r.st, roAdd(k, -1))).length, mv = roMoves(m.all, k);
   const dif = m.first && k > m.first ? total - prevTotal : null;
   const pill = (r, tag) => `<li><b>${esc(r.st.name || '(名前なし)')}</b><span class="pk">${esc(r.school)}${roGrade(r.st) ? ' ・ ' + esc(roGrade(r.st)) : ''}${r.st.team ? ' ・ ' + esc(r.st.team) : ''}</span>${tag ? `<span class="tk-chip${tag === '新規' ? ' kind' : ''}">${tag}</span>` : ''}</li>`;
   const head = '<tr><th>校舎</th>' + m.months.map(x => `<th class="num${x === k ? ' now' : ''}">${Number(x.slice(5))}月</th>`).join('') + '<th class="num">前月比</th></tr>';
-  const rows = m.bySchool.map(s => { const d = m.first && k > m.first ? s.counts[i] - (s.list.filter(r => roAct(r.st, roAdd(k, -1))).length) : null; return `<tr><th>${esc(s.name)}</th>${s.counts.map((c, j) => `<td class="num${m.months[j] === k ? ' now' : ''}">${c}</td>`).join('')}<td class="num ${d > 0 ? 'up' : d < 0 ? 'dn' : ''}">${d === null ? '—' : roSign(d)}</td></tr>`; }).join('');
-  const foot = `<tr class="ro-sum"><th>合計</th>${m.totals.map((c, j) => `<td class="num${m.months[j] === k ? ' now' : ''}">${c}</td>`).join('')}<td class="num ${dif > 0 ? 'up' : dif < 0 ? 'dn' : ''}">${dif === null ? '—' : roSign(dif)}</td></tr>
+  const rows = m.bySchool.map(s => { const d = m.first && k > m.first ? s.list.filter(r => roAct(r.st, k)).length - (s.list.filter(r => roAct(r.st, roAdd(k, -1))).length) : null; return `<tr><th>${esc(s.name)}</th>${s.counts.map((c, j) => `<td class="num${m.months[j] === k ? ' now' : ''}">${c === null ? '' : c}</td>`).join('')}<td class="num ${d > 0 ? 'up' : d < 0 ? 'dn' : ''}">${d === null ? '—' : roSign(d)}</td></tr>`; }).join('');
+  const foot = `<tr class="ro-sum"><th>合計</th>${m.totals.map((c, j) => `<td class="num${m.months[j] === k ? ' now' : ''}">${c === null ? '' : c}</td>`).join('')}<td class="num ${dif > 0 ? 'up' : dif < 0 ? 'dn' : ''}">${dif === null ? '—' : roSign(dif)}</td></tr>
     <tr class="ro-diff"><th>増減</th>${m.diffs.map(d => `<td class="num ${d > 0 ? 'up' : d < 0 ? 'dn' : ''}">${d === null ? '' : roSign(d)}</td>`).join('')}<td></td></tr>`;
   if (roF.rows === null && !roF.busy && !roF.err) roFLoad();
   const kd = roKinds(m), kc = (label, n, tone, sub) => `<div class="ro-k"><small>${label}</small><b style="color:${tone}">${n}<i>${n === '…' || n === '—' ? '' : '人'}</i></b><span>${sub}</span></div>`;
@@ -1942,9 +1947,9 @@ function roSumHTML(m) {
       <div class="ro-card"><h4><span class="rf-dot" style="background:var(--accent)"></span>体験(${kd.trial ? kd.trial.length : '…'}人)</h4>${kd.trial ? (kd.trial.length ? `<ul class="ro-list">${kd.trial.map(r => `<li><b>${esc(r.name)}</b><span class="pk">${esc(r.school)}${r.grade ? ' ・ ' + esc(r.grade) : ''}${r.team ? ' ・ ' + esc(r.team) : ''}</span><span class="tk-chip">${esc(new Date(Date.parse(r.at) + 9 * 3600e3).toISOString().slice(5, 10).replace('-', '/'))} 申込</span></li>`).join('')}</ul>` : '<p class="pk">いません</p>') : (roF.err ? `<p class="pk">読み込めませんでした: ${esc(roF.err)}</p>` : '<p class="pk">読み込んでいます…</p>')}</div></div>`;
 }
 function roStairHTML(m) {
-  const q = ro.q.trim().toLowerCase(), k = m.base, last = m.months.length - 1;
+  const q = ro.q.trim().toLowerCase(), k = m.base;
   const head = `<tr><th class="nm">名前</th><th>学年</th>${m.months.map(x => `<th class="mo${x === roCur() ? ' cur' : ''}${x === k ? ' now' : ''}">${x.slice(5) === '01' || x === m.months[0] ? `<small>${x.slice(2, 4)}年</small>` : '<small>&nbsp;</small>'}${Number(x.slice(5))}月</th>`).join('')}</tr>`;
-  const tot = `<tr class="ro-sum"><th class="nm">在籍数(合計)</th><th></th>${m.totals.map((c, j) => `<td class="mo">${c}</td>`).join('')}</tr><tr class="ro-diff"><th class="nm">前月からの増減</th><th></th>${m.diffs.map(d => `<td class="mo ${d > 0 ? 'up' : d < 0 ? 'dn' : ''}">${d === null ? '' : roSign(d)}</td>`).join('')}</tr>`;
+  const tot = `<tr class="ro-sum"><th class="nm">在籍数(合計)</th><th></th>${m.totals.map((c, j) => `<td class="mo">${c === null ? '' : c}</td>`).join('')}</tr><tr class="ro-diff"><th class="nm">前月からの増減</th><th></th>${m.diffs.map(d => `<td class="mo ${d > 0 ? 'up' : d < 0 ? 'dn' : ''}">${d === null ? '' : roSign(d)}</td>`).join('')}</tr>`;
   let shown = 0;
   const groups = m.bySchool.map(s => {
     const list = s.list.filter(r => { const was = m.months.some(x => roAct(r.st, x)); const nowOn = roAct(r.st, k); return (was || nowOn) && (ro.left || nowOn || was) && (!q || String(r.st.name).toLowerCase().includes(q) || String(r.st.nameKana || '').toLowerCase().includes(q)); })
@@ -1952,7 +1957,7 @@ function roStairHTML(m) {
     shown += list.length;
     if (!list.length && q) return '';
     const rows = list.map(r => `<tr><th class="nm"><b>${esc(r.st.name || '(名前なし)')}</b>${roAct(r.st, k) ? '' : ' <span class="tk-chip warn">退塾・休塾</span>'}</th><td class="gr">${esc(roGrade(r.st))}</td>${m.months.map((x, j) => { const a = roAct(r.st, x), p = roAct(r.st, roAdd(x, -1)), known = m.first && x > m.first; return `<td class="mo${x === k ? ' now' : ''}">${a ? `<i class="ro-on${!p && known ? ' in' : ''}">${!p && known ? '＋' : ''}</i>` : (p && known && x <= roCur() ? '<i class="ro-off">×</i>' : '')}</td>`; }).join('')}</tr>`).join('');
-    return `<tr class="ro-grp"><th class="nm">${esc(s.name)} <span class="pk">${s.counts[last]}人</span></th><th></th>${s.counts.map((c, j) => `<td class="mo">${c}</td>`).join('')}</tr>${rows}`;
+    return `<tr class="ro-grp"><th class="nm">${esc(s.name)} <span class="pk">${s.list.filter(r => roAct(r.st, k)).length}人</span></th><th></th>${s.counts.map((c, j) => `<td class="mo">${c === null ? '' : c}</td>`).join('')}</tr>${rows}`;
   }).join('');
   return `<div class="ro-tools2 ro-noprint"><input type="search" id="ro-q" placeholder="名前で探す" value="${esc(ro.q)}" autocomplete="off"><label class="pk"><input type="checkbox" data-ro="left" ${ro.left ? 'checked' : ''}> 退塾・休塾した人も表示</label>
       <span class="pk ro-legend"><i class="ro-on"></i>在籍 <i class="ro-on in">＋</i>入塾・復塾 <i class="ro-off">×</i>退塾・休塾</span></div>
@@ -1973,7 +1978,7 @@ function roFModel(m) {
   const rows = (roF.rows || []).filter(r => !sel || r.school === sel.name || r.school.replace(/[（(].*$/, '') === sel.name.replace(/[（(].*$/, ''));
   const seen = new Set(), uniq = rows.filter(r => { const k = r.type + '|' + r.name.replace(/\s/g, '') + '|' + r.month; if (seen.has(k)) return false; seen.add(k); return true; }); // 同じ人の同じ月の同じ申し込みは1件
   let first = ''; (roF.rows || []).forEach(r => { if (!first || r.month < first) first = r.month; });
-  const months = Array.from({ length: ro.span }, (_, i) => roAdd(m.base, i - ro.span + 1)).filter(k => !first || k >= first); if (!months.length) months.push(m.base);
+  const months = ro.span === 'fy' ? roSpan(m.base) : roSpan(m.base).filter(k => !first || k >= first); if (!months.length) months.push(m.base);
   const cnt = (type, k, list = uniq) => list.filter(r => r.type === type && r.month === k).length;
   return { sel, rows, uniq, months, cnt, first };
 }
@@ -2019,7 +2024,7 @@ document.addEventListener('click', e => {
   else if (a === 'print') window.print();
 });
 document.addEventListener('change', e => {
-  if (e.target.id === 'ro-span') { ro.span = Number(e.target.value) || 12; renderPanel(); }
+  if (e.target.id === 'ro-span') { ro.span = e.target.value === 'fy' ? 'fy' : (Number(e.target.value) || 12); renderPanel(); }
   else if (e.target.dataset && e.target.dataset.ro === 'left') { ro.left = e.target.checked; renderPanel(); }
 });
 document.addEventListener('input', e => { if (e.target.id === 'ro-q') { ro.q = e.target.value; const keep = e.target.selectionStart; renderPanel(); const q = document.getElementById('ro-q'); if (q) { q.focus(); try { q.setSelectionRange(keep, keep); } catch (x) { /* 入力位置を戻せなくても続ける */ } } } });
