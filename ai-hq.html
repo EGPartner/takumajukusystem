@@ -606,6 +606,7 @@
   .ro-grp th{position:sticky;left:0}
   .ro-on{display:inline-grid;place-items:center;width:22px;height:20px;border-radius:5px;background:color-mix(in srgb,var(--accent) 55%,var(--surface));color:#fff;font-style:normal;font-size:11px;font-weight:700}
   .ro-on.in{background:var(--accent)}
+  .ro-ab{display:inline-grid;place-items:center;min-width:16px;height:16px;margin-left:3px;padding:0 4px;border-radius:8px;background:color-mix(in srgb,var(--warn) 30%,var(--surface));color:var(--warn);font-size:10px;font-weight:700;vertical-align:middle}
   .ro-off{display:inline-grid;place-items:center;width:22px;height:20px;border-radius:5px;background:color-mix(in srgb,var(--bad) 14%,var(--surface));color:var(--bad);font-style:normal;font-size:11px;font-weight:700}
   @media (max-width:760px){.ro-kpis,.ro-two{grid-template-columns:1fr}.ro-k b{font-size:36px}}
   @media print{
@@ -1836,7 +1837,7 @@ function todoTableHTML() {
 /* ---------- 名簿・階段図(タクマ塾CRMの塾生リストから) ----------
    データ: academies/{校舎}/students の months('YYYY-MM': 'active')。シートが正本で、10分ごとにシステムへ同期されている。
    在籍 = その月に 'active' がある。入塾・復塾 = 今月 active で前月 active でない / 退塾・休塾 = 前月 active で今月 active でない */
-const ro = { schools: null, stu: {}, loadedAt: 0, busy: false, err: '', view: 'sum', school: 'all', month: '', span: 12, left: false, q: '' };
+const ro = { schools: null, stu: {}, loadedAt: 0, busy: false, err: '', view: 'sum', school: 'all', month: '', span: 12, left: false, q: '', abs: {}, ab: true };
 const roAdd = (key, n) => { const [y, m] = key.split('-').map(Number); const t = new Date(Date.UTC(y, m - 1 + n, 1)); return t.getUTCFullYear() + '-' + String(t.getUTCMonth() + 1).padStart(2, '0'); };
 const roMJa = key => { const [y, m] = key.split('-'); return y + '年' + Number(m) + '月'; };
 const roCur = () => todayJst().slice(0, 7);
@@ -1854,9 +1855,24 @@ async function roLoad(force) {
     const schools = (await db.collection('schools').get()).docs.map(d => ({ id: d.id, name: String(d.data().name || d.id).replace(/^タクマ塾\s*/, '') })).sort((a, b) => a.name.localeCompare(b.name, 'ja'));
     const stu = {};
     await Promise.all(schools.map(async s => { stu[s.id] = (await db.collection('academies').doc(s.id).collection('students').get()).docs.map(d => ({ id: d.id, ...d.data() })); }));
-    ro.schools = schools; ro.stu = stu; ro.loadedAt = Date.now();
+    const abs = {}; // 保護者メニューの「欠席連絡」(academies/{校舎}/absenceReports)。読めなくても名簿は出す
+    await Promise.all(schools.map(async s => { try { abs[s.id] = (await db.collection('academies').doc(s.id).collection('absenceReports').get()).docs.map(d => d.data()).filter(a => /^\d{4}-\d{2}-\d{2}/.test(String(a.absenceDate || ''))); } catch (e) { abs[s.id] = null; } }));
+    ro.schools = schools; ro.stu = stu; ro.abs = abs; ro.loadedAt = Date.now();
   } catch (e) { console.error(e); ro.err = String(e.message || e); }
   ro.busy = false; if (panelTab === 'roster') renderPanel();
+}
+/** 欠席連絡を、名簿の選手に結びつける(名前の空白・中黒を無視して校舎内で照合。一致しないものは unmatched に残す) */
+const roNk = v => String(v || '').replace(/[\s\u3000・･.]/g, '');
+function roAbsModel(all) {
+  const byKey = {}, unmatched = [], reasons = {}; let n = 0;
+  const ok = Object.values(ro.abs || {}).some(v => v);
+  (ro.schools || []).forEach(s => (ro.abs[s.id] || []).forEach(a => {
+    const mine = all.find(r => r.sid === s.id && roNk(r.st.name) === roNk(a.studentName)) || all.find(r => roNk(r.st.name) === roNk(a.studentName));
+    if (!mine) { if (ro.school === 'all' || ro.school === s.id) unmatched.push({ ...a, school: s.name }); return; }
+    const key = mine.sid + '|' + mine.st.id, mo = String(a.absenceDate).slice(0, 7);
+    ((byKey[key] = byKey[key] || {})[mo] = byKey[key][mo] || []).push(a); n++;
+  }));
+  return { byKey, unmatched, ok, n, get: (r, mo) => ((byKey[r.sid + '|' + r.st.id] || {})[mo] || []), reasons };
 }
 function roSpan(base) { // 表示する月の並び。年度(4月〜3月)か、基準月までの直近N か月
   if (ro.span === 'fy') { const y = Number(base.slice(0, 4)), mo = Number(base.slice(5)), sy = mo >= 4 ? y : y - 1; return Array.from({ length: 12 }, (_, i) => roAdd(sy + '-04', i)); }
@@ -1872,7 +1888,7 @@ function roModel() {
   const bySchool = schools.map(s => { const list = all.filter(r => r.sid === s.id); return { id: s.id, name: s.name, list, counts: months.map(k => live(k) ? list.filter(r => roAct(r.st, k)).length : null) }; });
   const totals = months.map((k, i) => live(k) ? bySchool.reduce((a, s) => a + s.counts[i], 0) : null);
   const diffs = months.map(k => (!first || k <= first || !live(k) ? null : all.filter(r => roAct(r.st, k)).length - all.filter(r => roAct(r.st, roAdd(k, -1))).length));
-  return { base, months, every, all, schools, bySchool, totals, diffs, first };
+  return { base, months, every, all, schools, bySchool, totals, diffs, first, ab: roAbsModel(all) };
 }
 function roMoves(all, k) {
   const prev = roAdd(k, -1), joined = [], left = [];
@@ -1922,6 +1938,19 @@ function roKinds(m) {
   const trial = roF.rows ? roFModel(m).uniq.filter(r => r.type === '体験' && r.month === k).sort((a, b) => b.at.localeCompare(a.at)) : null;
   return { k, joined: mv.joined, fresh: mv.joined.filter(r => !r.again), back: mv.joined.filter(r => r.again), pause, leave, check, paused, trial, ready: !!notes };
 }
+function roAbsCard(m) {
+  const k = m.base, a = m.ab;
+  if (!a.ok) return '<div class="ro-card"><h4>欠席連絡</h4><p class="pk">欠席連絡を読み込めませんでした(権限か、通信の問題です)</p></div>';
+  const inMonth = (r, mo) => a.get(r, mo), list = m.all.map(r => ({ r, n: inMonth(r, k) })).filter(x => x.n.length).sort((x, y) => y.n.length - x.n.length || String(x.r.st.name).localeCompare(String(y.r.st.name), 'ja'));
+  const total = list.reduce((s, x) => s + x.n.length, 0), prev = m.all.reduce((s, r) => s + inMonth(r, roAdd(k, -1)).length, 0);
+  const rs = {}; list.forEach(x => x.n.forEach(o => { rs[o.reason || '(理由なし)'] = (rs[o.reason || '(理由なし)'] || 0) + 1; }));
+  const un = a.unmatched.filter(o => String(o.absenceDate).slice(0, 7) === k);
+  return `<div class="ro-card"><h4>${esc(roMJa(k))}の欠席連絡(${total}件 ・ ${list.length}人) <span class="pk">前月 ${prev}件</span></h4>
+    ${list.length ? `<div class="ro-chips">${Object.entries(rs).sort((x, y) => y[1] - x[1]).map(([t, n]) => `<span class="tk-chip">${esc(t)} ${n}</span>`).join(' ')}</div>
+    <ul class="ro-list">${list.map(x => `<li><b>${esc(x.r.st.name)}</b><span class="pk">${esc(x.r.school)}${roGrade(x.r.st) ? ' ・ ' + esc(roGrade(x.r.st)) : ''}</span><span class="tk-chip warn">${x.n.length}回</span><span class="pk">${esc(x.n.map(o => o.absenceDate.slice(5).replace('-', '/') + (o.reason ? '(' + o.reason + ')' : '')).join('、'))}</span></li>`).join('')}</ul>` : '<p class="pk">この月の欠席連絡はありません</p>'}
+    ${un.length ? `<p class="pk">名簿の選手と結びつかなかった連絡 ${un.length}件: ${un.map(o => esc(o.studentName) + '(' + esc(o.school) + ' ' + esc(o.absenceDate.slice(5).replace('-', '/')) + ')').join('、')} ← 名前の書き方が名簿と違う可能性があります</p>` : ''}
+    <p class="pk">出席率は、練習の回数がシステムにまだないため、出していません。</p></div>`;
+}
 function roSumHTML(m) {
   const k = m.base, total = m.all.filter(r => roAct(r.st, k)).length, prevTotal = m.every.filter(r => (ro.school === 'all' || r.sid === ro.school) && roAct(r.st, roAdd(k, -1))).length, mv = roMoves(m.all, k);
   const dif = m.first && k > m.first ? total - prevTotal : null;
@@ -1940,6 +1969,7 @@ function roSumHTML(m) {
     ${kd.check.length ? `<div class="alertbox"><b>確認が必要: ${kd.check.length}人</b>前月にいたのに今月は印がなく、塾生リストに「退会月」「休塾開始月」の記載もありません。リストを確認してください: ${kd.check.map(r => esc(r.st.name) + '(' + esc(r.school) + ')').join('、')}</div>` : ''}
     <div class="ro-card"><h4>在籍数の推移</h4>${roStepSVG(m)}</div>
     <div class="ro-card"><h4>校舎ごとの人数</h4><div class="ro-scroll"><table class="ro-tbl">${head}${rows}${foot}</table></div></div>
+    ${roAbsCard(m)}
     <div class="ro-two">
       <div class="ro-card"><h4><span class="rf-dot" style="background:var(--ok)"></span>入塾(${kd.fresh.length}人${kd.back.length ? ' + 復塾 ' + kd.back.length + '人' : ''})</h4>${kd.joined.length ? `<ul class="ro-list">${kd.joined.map(r => pill(r, r.again ? '復塾' : '新規')).join('')}</ul>` : '<p class="pk">いません</p>'}</div>
       <div class="ro-card"><h4><span class="rf-dot" style="background:var(--bad)"></span>退塾(${kd.leave.length}人)</h4>${kd.leave.length ? `<ul class="ro-list">${kd.leave.map(r => `<li><b>${esc(r.st.name || '(名前なし)')}</b><span class="pk">${esc(r.school)}${roGrade(r.st) ? ' ・ ' + esc(roGrade(r.st)) : ''}${r.st.team ? ' ・ ' + esc(r.st.team) : ''}</span>${r.n && r.n.leave ? `<span class="tk-chip">最終在籍 ${esc(roMJa(r.n.leave))}</span>` : ''}</li>`).join('')}</ul>` : '<p class="pk">いません</p>'}${kd.ready ? '' : '<p class="pk">退塾と休塾の区別は、バックエンドの更新(デプロイ)後に出ます</p>'}</div>
@@ -1956,11 +1986,11 @@ function roStairHTML(m) {
       .filter(r => ro.left || roAct(r.st, k)).sort((a, b) => { const fa = Object.keys(a.st.months || {}).filter(x => a.st.months[x] === 'active').sort()[0] || '9', fb = Object.keys(b.st.months || {}).filter(x => b.st.months[x] === 'active').sort()[0] || '9'; return fa.localeCompare(fb) || String(a.st.name).localeCompare(String(b.st.name), 'ja'); });
     shown += list.length;
     if (!list.length && q) return '';
-    const rows = list.map(r => `<tr><th class="nm"><b>${esc(r.st.name || '(名前なし)')}</b>${roAct(r.st, k) ? '' : ' <span class="tk-chip warn">退塾・休塾</span>'}</th><td class="gr">${esc(roGrade(r.st))}</td>${m.months.map((x, j) => { const a = roAct(r.st, x), p = roAct(r.st, roAdd(x, -1)), known = m.first && x > m.first; return `<td class="mo${x === k ? ' now' : ''}">${a ? `<i class="ro-on${!p && known ? ' in' : ''}">${!p && known ? '＋' : ''}</i>` : (p && known && x <= roCur() ? '<i class="ro-off">×</i>' : '')}</td>`; }).join('')}</tr>`).join('');
+    const rows = list.map(r => `<tr><th class="nm"><b>${esc(r.st.name || '(名前なし)')}</b>${roAct(r.st, k) ? '' : ' <span class="tk-chip warn">退塾・休塾</span>'}${ro.ab ? (() => { const t = m.months.reduce((a, x) => a + m.ab.get(r, x).length, 0); return t ? ` <span class="pk">欠席${t}</span>` : ''; })() : ''}</th><td class="gr">${esc(roGrade(r.st))}</td>${m.months.map((x, j) => { const a = roAct(r.st, x), p = roAct(r.st, roAdd(x, -1)), known = m.first && x > m.first; return `<td class="mo${x === k ? ' now' : ''}">${a ? `<i class="ro-on${!p && known ? ' in' : ''}">${!p && known ? '＋' : ''}</i>` : (p && known && x <= roCur() ? '<i class="ro-off">×</i>' : '')}${ro.ab && m.ab.get(r, x).length ? `<b class="ro-ab" title="${esc(m.ab.get(r, x).map(a => a.absenceDate.slice(5).replace('-', '/') + ' ' + (a.reason || '')).join('\n'))}">${m.ab.get(r, x).length}</b>` : ''}</td>`; }).join('')}</tr>`).join('');
     return `<tr class="ro-grp"><th class="nm">${esc(s.name)} <span class="pk">${s.list.filter(r => roAct(r.st, k)).length}人</span></th><th></th>${s.counts.map((c, j) => `<td class="mo">${c === null ? '' : c}</td>`).join('')}</tr>${rows}`;
   }).join('');
   return `<div class="ro-tools2 ro-noprint"><input type="search" id="ro-q" placeholder="名前で探す" value="${esc(ro.q)}" autocomplete="off"><label class="pk"><input type="checkbox" data-ro="left" ${ro.left ? 'checked' : ''}> 退塾・休塾した人も表示</label>
-      <span class="pk ro-legend"><i class="ro-on"></i>在籍 <i class="ro-on in">＋</i>入塾・復塾 <i class="ro-off">×</i>退塾・休塾</span></div>
+      <label class="pk"><input type="checkbox" data-ro="ab" ${ro.ab ? 'checked' : ''}> 欠席連絡も表示</label><span class="pk ro-legend"><i class="ro-on"></i>在籍 <i class="ro-on in">＋</i>入塾・復塾 <i class="ro-off">×</i>退塾・休塾</span></div>
     <div class="ro-card"><div class="ro-scroll"><table class="ro-tbl ro-stair"><colgroup><col style="width:190px"><col style="width:56px">${m.months.map(() => '<col>').join('')}</colgroup>${head}${tot}${groups || '<tr><td colspan="99" class="pk">該当する塾生がいません</td></tr>'}</table></div></div>`;
 }
 /* ---------- 申し込み(入塾フォーム回答シートの集計) ---------- */
@@ -2026,6 +2056,7 @@ document.addEventListener('click', e => {
 document.addEventListener('change', e => {
   if (e.target.id === 'ro-span') { ro.span = e.target.value === 'fy' ? 'fy' : (Number(e.target.value) || 12); renderPanel(); }
   else if (e.target.dataset && e.target.dataset.ro === 'left') { ro.left = e.target.checked; renderPanel(); }
+  else if (e.target.dataset && e.target.dataset.ro === 'ab') { ro.ab = e.target.checked; renderPanel(); }
 });
 document.addEventListener('input', e => { if (e.target.id === 'ro-q') { ro.q = e.target.value; const keep = e.target.selectionStart; renderPanel(); const q = document.getElementById('ro-q'); if (q) { q.focus(); try { q.setSelectionRange(keep, keep); } catch (x) { /* 入力位置を戻せなくても続ける */ } } } });
 
