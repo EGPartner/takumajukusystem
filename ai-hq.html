@@ -548,6 +548,15 @@
   .td-c>div:first-child{min-width:0;overflow-wrap:anywhere}
   .pt2 .st-doing{border-left-color:var(--accent)}
   .pt2 .st-doing .pt-b{background:var(--accent);border-color:var(--accent);color:#fff}
+  /* LINEで共有(窓口は1つ) */
+  .lsh{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.45);display:grid;place-items:center;padding:16px}
+  .lsh-box{width:min(560px,100%);max-height:92vh;overflow:auto;background:var(--surface);border:1px solid var(--line-strong);border-radius:18px;box-shadow:0 20px 50px rgba(0,0,0,.35);padding:18px;display:grid;gap:12px}
+  .lsh-h{display:flex;justify-content:space-between;align-items:center;font-size:16px}.lsh-x{border:0;background:none;font-size:22px;color:var(--ink-3);cursor:pointer;line-height:1}
+  .lsh-to{display:flex;gap:6px;background:var(--surface-2);border-radius:12px;padding:4px}
+  .lsh-to button{flex:1;border:0;background:none;padding:9px 6px;border-radius:9px;font-size:13.5px;font-weight:650;color:var(--ink-3);cursor:pointer}.lsh-to button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.15)}
+  .lsh textarea{width:100%;font-size:14px;line-height:1.6;padding:10px;border:1px solid var(--line-strong);border-radius:10px;background:var(--surface);color:var(--ink);resize:vertical}
+  .lsh-a{display:flex;gap:8px}.lsh-a .btn.primary{flex:1;padding:11px}.lsh-err{margin:0;color:var(--bad);font-size:13px}
+  @media (max-width:719px){.lsh{place-items:end center;padding:0}.lsh-box{border-radius:18px 18px 0 0;max-height:94vh}}
   /* やること(今週のリスト・案件) */
   .tkw{margin:10px 0 4px}
   .tkw-sec{margin:14px 0 4px}.tkw-sec h4{margin:0 0 6px;font-size:13px;display:flex;gap:8px;align-items:center}.tkw-sec h4 span{font-family:var(--f-num);font-size:12px;color:var(--ink-3);font-weight:600}
@@ -1597,7 +1606,7 @@ const blTodo = () => (backlog && backlog.items || []).filter(i => !i.applied && 
 /** 決裁を社長用LINEグループに共有するボタン(共有済みなら日時も出す) */
 function shareRow(d) {
   const at = d.sharedAt ? new Date(d.sharedAt).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
-  return `<div class="share-row"><button type="button" class="btn ghost" data-share="${esc(d.id)}">${at ? 'もう一度' : ''}社長用LINEに共有</button>${at ? `<span class="pk">共有済み(${esc(at)})</span>` : ''}</div>`;
+  return `<div class="share-row"><button type="button" class="btn ghost" data-lsh="d:${esc(d.id)}">LINEで共有</button>${at ? `<span class="pk">共有済み(${esc(at)})</span>` : ''}</div>`;
 }
 function recRow(ref) {
   const it = blItem(ref); if (!it) return '';
@@ -1809,11 +1818,9 @@ function tdExtra(r) {
   const set = tk ? 'data-tkset' : 'data-tset';
   const main = !r.isOpen ? `<button type="button" class="btn ghost" ${set}="${id}" data-st="未着手">未完了に戻す</button>`
     : `<button type="button" class="btn tk-done" ${set}="${id}" data-st="完了">完了</button>${tk ? (t.doing ? `<button type="button" class="btn ghost" data-tkdoing="${id}" data-on="0">進行中をやめる</button>` : `<button type="button" class="btn" data-tkdoing="${id}" data-on="1">進行中にする</button>`) : ''}<button type="button" class="btn ghost" ${set}="${id}" data-st="不要">不要</button>`;
-  const edit = !r.isOpen ? '' : tk ? `<button type="button" class="btn ghost" data-tkowner="${id}">担当を変える</button><button type="button" class="btn ghost" data-tkstart="${id}">開始日</button><button type="button" class="btn ghost" data-tkdue="${id}">期限</button><button type="button" class="btn ghost" data-tktext="${id}">内容を直す</button><button type="button" class="btn ghost" data-tkline="${id}">LINEで連絡</button>`
+  const edit = !r.isOpen ? '' : tk ? `<button type="button" class="btn ghost" data-tkowner="${id}">担当を変える</button><button type="button" class="btn ghost" data-tkstart="${id}">開始日</button><button type="button" class="btn ghost" data-tkdue="${id}">期限</button><button type="button" class="btn ghost" data-tktext="${id}">内容を直す</button><button type="button" class="btn ghost" data-lsh="t:${id}">LINEで共有</button>`
     : `<button type="button" class="btn ghost" data-towner="${id}">担当を変える</button><button type="button" class="btn ghost" data-tdue="${id}">期限</button>`;
-  const compose = tk && tkCompose && tkCompose.id === t.id ? `<div class="vform"><b>統括グループにLINEを送る</b><p class="pk">${tkCompose.busy === 'draft' ? '文案を作っています…' : '文案はAIが作りました。直してから送れます。送った内容は、この項目の「経過」に残ります。'}</p>
-      <textarea id="tk-msg" rows="4" ${tkCompose.busy ? 'disabled' : ''} placeholder="送る文">${esc(tkCompose.text || '')}</textarea>
-      <div class="actions"><button type="button" class="btn primary" data-tksendgo="${id}" ${tkCompose.busy ? 'disabled' : ''}>${tkCompose.busy === 'send' ? '送っています…' : '統括グループに送る'}</button><button type="button" class="btn ghost" data-tksendcancel="1" ${tkCompose.busy === 'send' ? 'disabled' : ''}>やめる</button></div></div>` : '';
+  const compose = '';
   return `<div class="pt-x">${chips}<p class="tk-t" style="font-size:13.5px">${esc(t.text)}</p>${quote}${src}${prep}${hist}${fin}${midSel}<div class="tk-act">${main}<span class="sp"></span>${edit}</div>${compose}</div>`;
 }
 let tdOff = 0; // 案件のガント: 表示する日付の動かし方(日)。0=今日の1週間前から
@@ -2509,9 +2516,10 @@ function deliverableHTML(o, inline) {
   const isReq = c => /要確認/.test(String(c));
   const cols = (d.table && d.table.columns) || [];
   return `
+    ${o.id ? `<div class="share-row"><button type="button" class="btn ghost" data-lsh="o:${esc(o.id)}">LINEで共有</button></div>` : ''}
     <p class="v-sum">${esc(d.summary)}</p>
     ${cols.length ? `<div class="v-table"><table><thead><tr>${cols.map(c => `<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>${(d.table.rows || []).map(r => `<tr>${(r.cells || r).map((c, k) => `<td data-label="${esc(cols[k] || '')}" class="${isReq(c) ? 'req' : ''}">${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>` : ''}
-    ${(d.sections || []).map((s, i) => `<section><h4>${esc(s.heading)}</h4><p>${esc(s.body).replace(/\n/g, '<br>')}</p>${o.id ? `<button type="button" class="btn ghost send-staff" data-send-staff="${esc(o.id)}" data-si="${i}">スタッフ用LINEに送る</button>` : ''}</section>`).join('')}
+    ${(d.sections || []).map((s, i) => `<section><h4>${esc(s.heading)}</h4><p>${esc(s.body).replace(/\n/g, '<br>')}</p></section>`).join('')}
     ${sheetEditsHTML(o)}
     ${(d.unverified || []).length ? `<section class="v-warn"><h4>確認が必要なこと</h4><ul>${d.unverified.map(x => `<li>${esc(x)}</li>`).join('')}</ul></section>` : ''}
     ${(d.next || []).length ? `<section><h4>次にやること</h4>${!o.followedUp && (o.plan || []).length ? '<p class="pk">採用すると、右の印のとおりに自動で動きます(人の作業は「やること」に担当・期限つきで入ります)。</p>' : ''}<ul class="next-list">${d.next.map((x, i) => { const fus = (o.followUps || []).filter(f => f.index === i), fu = fus[fus.length - 1]; const go = `<button type="button" class="btn next-go" data-next="${i}" data-oid="${o.id}">指示する</button>`;
@@ -3096,6 +3104,61 @@ function hidePop() { const p = document.getElementById('pop'); if (p) p.remove()
 function setZoom(on) { document.querySelector('.stage-wrap').classList.toggle('zoom', on); $('#m-zoom-l').textContent = on ? '全体' : '拡大'; try { localStorage.setItem('aihq-zoom', on ? '1' : '0'); } catch (e) {} }
 $('#m-zoom').addEventListener('click', () => setZoom(!document.querySelector('.stage-wrap').classList.contains('zoom')));
 document.querySelectorAll('[data-m]').forEach(b => b.addEventListener('click', () => { const t = b.dataset.m; if (isMobile()) return setMobileView(t); if (!$('#panel').hidden && panelTab === t) closePanel(); else openPanel(t); }));
+/* ---------- LINEで共有(窓口は1つ): 送り先を選んで、文面を直して、送る ---------- */
+const lsh = { open: false, kind: '', id: '', to: 'staff', text: '', busy: '', err: '' };
+const LSH_TO = [['staff', 'スタッフ', 'スタッフ用LINEグループ'], ['tokatsu', '統括グループ', '統括LINEグループ'], ['report', '社長', '社長用LINEグループ']];
+function lshBuild(kind, id) {
+  const hq = 'https://egpartner.github.io/takumajukusystem/ai-hq.html';
+  if (kind === 'o') { const o = orders.find(x => x.id === id), d = o && o.deliverable; if (!d) return ''; return [`【指示#${o.no || ''}】${(o.text || '').slice(0, 60)}`, d.summary, ...(d.sections || []).map(x => `■${x.heading}\n${x.body}`)].filter(Boolean).join('\n\n'); }
+  if (kind === 'd') {
+    const d = decisions.find(x => x.id === id); if (!d) return '';
+    const cut = (v, n) => { const x = String(v || '').replace(/\s+/g, ' ').trim(); return x.length > n ? x.slice(0, n) + '…' : x; };
+    const L = d.type === 'adoption' ? [`【決裁の共有】採用の決裁 ・ 指示#${d.orderNo || ''}`, `■ ${d.title}`, `要約: ${cut(d.summary, 200)}`, (d.audit || []).length ? `監査役: ${d.audit.map(x => cut(x, 80)).join(' / ')}` : '', d.risk ? `危うさ: ${d.risk}` : '']
+      : [`【決裁の共有】方針の決裁 ・ 指示#${d.orderNo || ''}${d.round > 1 ? '(第' + d.round + '案)' : ''}`, `■ ${d.title}`, `推奨: ${cut(d.recommendation, 200)}`, (d.options || []).length ? '選択肢:\n' + d.options.map((x, i) => `${'ABC'[i] || '・'}. ${cut(x, 80)}`).join('\n') : '', d.dissent ? `反対意見: ${cut(d.dissent, 150)}` : ''];
+    if (d.cxo && d.cxo.advice) L.push(`CXO秘書: ${cut(d.cxo.advice, 120)}${d.cxo.lawyer ? '(弁護士への確認を推奨)' : ''}`);
+    L.push(`決裁はAI本部で: ${hq}`); return L.filter(Boolean).join('\n');
+  }
+  return '';
+}
+function lshRender() {
+  let el = document.getElementById('lsh');
+  if (!lsh.open) { if (el) el.remove(); return; }
+  if (!el) { el = document.createElement('div'); el.id = 'lsh'; el.className = 'lsh'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', 'LINEで共有'); document.body.appendChild(el); }
+  const to = LSH_TO.find(x => x[0] === lsh.to), busy = !!lsh.busy;
+  el.innerHTML = `<div class="lsh-box"><div class="lsh-h"><b>LINEで共有</b><button type="button" class="lsh-x" data-lsh-close="1" aria-label="閉じる">×</button></div>
+    <div class="lsh-to" role="group" aria-label="送り先">${LSH_TO.map(([k, n]) => `<button type="button" data-lsh-to="${k}" aria-pressed="${lsh.to === k}"${busy ? ' disabled' : ''}>${n}</button>`).join('')}</div>
+    <p class="pk">${esc(to[2])}に送ります。文面は直せます。${lsh.kind === 't' ? '送った内容は、そのやることの「経過」に残ります。' : ''}</p>
+    <textarea id="lsh-text" rows="10" ${busy ? 'disabled' : ''} placeholder="${lsh.busy === 'draft' ? '文案を作っています…' : '送る文'}">${esc(lsh.text)}</textarea>
+    ${lsh.err ? `<p class="lsh-err">${esc(lsh.err)}</p>` : ''}
+    <div class="lsh-a"><button type="button" class="btn primary" id="lsh-send"${busy || !lsh.text.trim() ? ' disabled' : ''}>${lsh.busy === 'send' ? '送っています…' : esc(to[1]) + 'に送る'}</button><button type="button" class="btn ghost" data-lsh-close="1">やめる</button></div></div>`;
+}
+async function lshOpen(kind, id) {
+  Object.assign(lsh, { open: true, kind, id, to: kind === 'd' ? 'report' : kind === 't' ? 'tokatsu' : 'staff', text: lshBuild(kind, id), busy: '', err: '' });
+  lshRender();
+  if (kind === 't') { // やること: 統括グループに送る文案はAIが作る
+    lsh.busy = 'draft'; lshRender();
+    try { const r = await call('aiTokatsuTasks')({ action: 'draft', id }); if (lsh.open && lsh.id === id) lsh.text = r.data.message || ''; }
+    catch (e) { lsh.err = '文案を作れませんでした。自分で書いて送れます(' + (e.message || '') + ')'; }
+    if (lsh.open && lsh.id === id) { lsh.busy = ''; lshRender(); const t = document.getElementById('lsh-text'); if (t) t.focus(); }
+  }
+}
+document.addEventListener('click', async e => {
+  const b = e.target.closest('[data-lsh],[data-lsh-to],[data-lsh-close],#lsh-send'); 
+  if (!b) { if (lsh.open && e.target.id === 'lsh') { lsh.open = false; lshRender(); } return; }
+  if (b.dataset.lsh) { const [k, ...r] = b.dataset.lsh.split(':'); lshOpen(k, r.join(':')); return; }
+  if (b.dataset.lshClose) { lsh.open = false; lshRender(); return; }
+  if (b.dataset.lshTo) { const t = document.getElementById('lsh-text'); if (t) lsh.text = t.value; lsh.to = b.dataset.lshTo; lsh.err = ''; lshRender(); return; }
+  if (b.id === 'lsh-send') {
+    const t = document.getElementById('lsh-text'); lsh.text = t ? t.value : lsh.text; const text = lsh.text.trim(); if (!text) return;
+    const to = LSH_TO.find(x => x[0] === lsh.to); lsh.busy = 'send'; lsh.err = ''; lshRender();
+    try {
+      if (lsh.to === 'tokatsu') await call('aiTokatsuTasks')({ action: 'send', id: lsh.kind === 't' ? lsh.id : '', text });
+      else await call('aiBacklog')({ action: 'sendLine', to: lsh.to, text, decisionId: lsh.kind === 'd' ? lsh.id : '' });
+      toast(to[2] + 'に送りました'); lsh.open = false; lsh.busy = ''; lshRender();
+    } catch (err) { lsh.busy = ''; lsh.err = '送れませんでした: ' + (err.message || err); lshRender(); }
+  }
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && lsh.open) { lsh.open = false; lshRender(); } });
 const THEMES = [['', '自動'], ['light', 'ライト'], ['dark', 'ダーク']];
 let themeIdx = 0;
 try { themeIdx = Math.max(0, THEMES.findIndex(x => x[0] === (localStorage.getItem('aihq-theme') || ''))); } catch (e) {}
