@@ -378,6 +378,7 @@
   .tkc .tk-t{font-size:14.5px;font-weight:700;line-height:1.55;overflow-wrap:anywhere;margin:0}
   .tk-meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
   .tk-chip{font-size:11.5px;font-weight:700;padding:2px 9px;border-radius:999px;background:var(--surface-2);color:var(--ink-2);border:1px solid var(--line);white-space:nowrap}
+  .plk-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.plk-r{border-top:1px solid var(--line);padding:10px 0;display:grid;gap:6px}.plk-p{font-weight:700}.plk-one{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}.plk-one small{display:block}
   .tk-chip.kind{background:var(--accent-soft);color:var(--accent-ink);border-color:transparent}
   .tk-chip.bad{background:var(--bad-soft);color:var(--bad);border-color:transparent}
   .tk-chip.warn{background:var(--warn-soft);color:var(--warn);border-color:transparent}
@@ -1649,7 +1650,7 @@ const tasksDue = () => tasksOpen().filter(t => !t.old && t.due && t.due <= today
 const PLAN_LABEL = { ai: 'AIの係が作る', research: 'AIの係が調べる', human: '人の作業', ask: '統括の判断', send_staff: 'スタッフ用LINEに送る', reset_password: 'パスワードの再設定メールを送る', send_person: '本人にLINEで送る' };
 /** 統括タスク: 統括グループのLINEの会話から拾った、全員の「やること」 */
 /* ---------- 保護者対応(公式LINEの1対1) ---------- */
-const paName = p => p.name || p.lineName || '名前未設定';
+const paName = p => (p.name || p.lineName || '名前未設定') + ((p.children || []).length ? `(${p.children.map(c => c.name).join('・')})` : '');
 const paOpenTodos = p => (p.todos || []).filter(t => t.status === '未対応');
 // 1人の保護者の状態。要否と進み具合は、すべて「人が選んだもの」だけで決まる(AIや時刻では決めない)。
 //   new=未確認(選ばれていない、または選んだ後に新しい受信が届いた) / need=要対応 / working=対応中 / done=対応済み / skip=対応不要 / none=やり取りなし
@@ -1675,14 +1676,20 @@ const paHm = at => new Date(at).toLocaleTimeString('ja-JP', { hour: '2-digit', m
 function paSwitch() {
   return `<div class="vfilter"><button type="button" data-tview="tk" aria-pressed="${tasksView === 'tk'}">統括・スタッフのやること${tdCands().length ? ' 候補' + tdCands().length : ''}</button><button type="button" data-tview="parent" aria-pressed="${tasksView === 'parent'}">保護者LINE${paOpenCount() ? ' ' + paOpenCount() : ''}</button></div>`;
 }
+/** AIが読み取った項目(子ども・金額・対象月・品目・サイズ・数)。読み取りなので、確認は元の発言と照らして行う */
+function paInfo(t) {
+  const i = t.info; if (!i) return '';
+  const parts = [i.child && `子: ${i.child}`, i.amount && `金額: ${Number(i.amount).toLocaleString('ja-JP')}円`, i.period && `対象: ${i.period}`, i.item && `品目: ${i.item}`, i.size && `サイズ: ${i.size}`, i.qty && `数: ${i.qty}`].filter(Boolean);
+  return parts.length ? `<p class="pk">${parts.map(esc).join(' ・ ')}(AIの読み取り)</p>` : '';
+}
 function paTodo(p, t) {
   const uid = esc(p.id), tid = esc(t.id), over = !!(t.due && t.due < todayJst());
   const h = Math.floor((Date.now() - Date.parse(t.createdAt)) / 3600e3);
   const wait = h >= 24 ? `<span class="tk-chip bad">${Math.floor(h / 24)}日経過</span>` : h >= 1 ? `<span class="tk-chip">${h}時間経過</span>` : '';
   const due = t.due ? `<span class="tk-chip${over ? ' warn' : ''}">期限 ${esc(tkMd(t.due))}${over ? '(期限切れ)' : ''}</span>` : '';
   const hist = (t.history || []).length ? `<details class="tk-hist"><summary>経過 ${t.history.length}件</summary><ol>${t.history.map(x => `<li><span class="w">${esc(tkWhen(x.at))}${x.by ? ' ・ ' + esc(x.by) : ''}</span>${esc(x.note)}</li>`).join('')}</ol></details>` : '';
-  return `<li class="pa-todo"><div class="tk-meta"><span class="tk-chip kind">${esc(t.kind)}</span>${t.urgent ? '<span class="tk-chip bad">急ぎ</span>' : ''}${wait}${due}</div>
-    <p class="tk-t">${esc(t.text)}</p>${t.quote ? `<p class="tk-quote">発言「${esc(t.quote)}」</p>` : ''}${hist}
+  return `<li class="pa-todo"><div class="tk-meta"><span class="tk-chip kind">${esc(t.kind)}</span>${t.needsHuman ? '<span class="tk-chip warn">人が確認</span>' : ''}${t.urgent ? '<span class="tk-chip bad">急ぎ</span>' : ''}${wait}${due}</div>
+    <p class="tk-t">${esc(t.text)}</p>${paInfo(t)}${t.quote ? `<p class="tk-quote">発言「${esc(t.quote)}」</p>` : ''}${hist}
     <div class="tk-act"><button type="button" class="btn tk-done" data-pact="done" data-uid="${uid}" data-tid="${tid}">対応済み</button><button type="button" class="btn ghost" data-pact="due" data-uid="${uid}" data-tid="${tid}">期限</button><span class="sp"></span><button type="button" class="btn ghost" data-pact="none" data-uid="${uid}" data-tid="${tid}">不要</button></div></li>`;
 }
 /** この人とのやり取りの記録(新しい順)。左=保護者のメッセージ(日ごと)、右=管理者の対応(誰が・いつ・開始/済み・メモ) */
@@ -1747,6 +1754,15 @@ function paTableInner() {
   const list = paVisible();
   return list.length ? `<ul class="pt pt3"><li class="pt-h"><span></span><span>状態</span><span class="m"><span>名前</span><span class="mh"><em>日付</em><em>時刻</em><em>本文</em></span></span><span>最終受信</span><span>選んだ人</span><span></span></li>${list.map(paRow).join('')}</ul>` : '<div class="empty"><b>該当する保護者はいません</b>条件を変えてください。</div>';
 }
+/* ---------- 保護者と塾生の結びつけ(候補は名前の一致だけ。確定は人が押す) ---------- */
+let plk = { open: false, busy: false, list: null, skip: new Set(), msg: '' };
+function plkHTML() {
+  const unlinked = paList.filter(p => !(p.children || []).length).length;
+  const head = `<div class="plk-h"><b>塾生との結びつけ</b><span class="pk">結びつけ済み ${paList.length - unlinked}人 / 未 ${unlinked}人</span><span class="sp"></span><button type="button" class="btn ghost" data-plk="find"${plk.busy ? ' disabled' : ''}>${plk.busy ? '調べています…' : plk.list ? '調べ直す' : '候補を探す'}</button></div>`;
+  if (!plk.list) return `<div class="vboard plk">${head}<p class="pk">保護者のメッセージに出てくる子どもの名前を、塾生リストと照らして候補を出します(AIは使いません)。<b>確定は、人が「この子で確定」を押したときだけ</b>です。結びつくと、保護者の名前の横に子どもの名前が出ます。${esc(plk.msg)}</p></div>`;
+  const rows = plk.list.filter(x => !plk.skip.has(x.uid)).map(x => `<div class="plk-r"><div class="plk-p">${esc(x.name || '(名前なし)')}</div><div class="plk-c">${x.candidates.map(c => `<div class="plk-one"><span><b>${esc(c.name)}</b> ${esc(c.school)} ${esc(c.grade)}${c.dup ? ' <span class="tk-chip warn">同じ名前が複数</span>' : ''}<small class="pk"> 根拠「…${esc(c.evidence)}…」</small></span><button type="button" class="btn" data-plk="ok" data-uid="${esc(x.uid)}" data-sid="${esc(c.id)}">この子で確定</button></div>`).join('')}<button type="button" class="btn ghost" data-plk="no" data-uid="${esc(x.uid)}">違う・あとで</button></div></div>`).join('');
+  return `<div class="vboard plk">${head}<p class="pk">${plk.list.length ? '候補が ' + plk.list.filter(x => !plk.skip.has(x.uid)).length + '人分あります。根拠の発言を見て、合っているときだけ確定してください。' : '新しい候補はありません。'}${esc(plk.msg)}</p>${rows}</div>`;
+}
 function parentsHTML() {
   const when = paState && paState.lastRunAt ? tkWhen(paState.lastRunAt) : 'まだありません';
   const err = paState && paState.error ? `<div class="alertbox"><b>保護者の受信の分析がうまくいっていません</b>${esc(paState.error.message || '')}(${esc(tkWhen(paState.error.at))})。次に成功すると、この表示は消えます。</div>` : '';
@@ -1757,7 +1773,7 @@ function parentsHTML() {
     <div class="pa-tools"><div class="vfilter">${chip('all', '全員')}${chip('new', '未確認')}${chip('need', '要対応')}${chip('working', '対応中')}${chip('done', '対応済み')}${chip('skip', '対応不要')}${chip('none', 'やり取りなし')}</div>
       <span class="pk">並び順: 最後にLINEが届いた順(新しいものが上)</span>
       <input type="search" id="pa-q" placeholder="名前・メッセージで探す" value="${esc(paQuery)}" autocomplete="off"><button type="button" class="btn ghost" data-pselall="1">表示中を全部選ぶ</button><span class="gx-flex"></span><button type="button" class="btn ghost" data-preset="1" title="AIが拾った未対応のやることを閉じ、全員の状態を未確認に戻します(履歴は消えません)">バックログをリセット</button></div>
-    ${bulk}<div id="pa-tbl">${paTableInner()}</div>`;
+    ${plkHTML()}${bulk}<div id="pa-tbl">${paTableInner()}</div>`;
 }
 const tkOpen = () => tkTasks.filter(t => t.status === '未着手');
 const tkKindLabel = k => (k === 'お叱り' ? '要改善' : k || '指示');
@@ -2729,6 +2745,23 @@ document.addEventListener('click', async e => {
     btn.disabled = true;
     try { const r = await call('aiParentOps')({ action: 'review', status: st, items: ids.map(id => ({ uid: id, seen: (paList.find(p => p.id === id) || {}).lastInAt || '' })) }); paSel.clear(); toast(`${r.data.done}人を「${st}」にしました${r.data.stale ? `(${r.data.stale}人は、直前に新しい受信が届いたため、そのままです)` : ''}`); }
     catch (err) { btn.disabled = false; toast('できませんでした: ' + err.message); }
+    return;
+  }
+  if (btn.dataset.plk) {
+    const a = btn.dataset.plk;
+    if (a === 'no') { plk.skip.add(btn.dataset.uid); renderPanel(); return; }
+    if (a === 'find') {
+      plk.busy = true; plk.msg = ''; renderPanel();
+      try { const r = await call('aiParentOps')({ action: 'linkCandidates' }); plk.list = r.data.list || []; plk.skip = new Set(); plk.msg = ` (塾生リスト ${r.data.students}人と照合)`; }
+      catch (err) { plk.msg = ' 調べられませんでした: ' + err.message; }
+      plk.busy = false; renderPanel(); return;
+    }
+    if (a === 'ok') {
+      btn.disabled = true;
+      try { await call('aiParentOps')({ action: 'link', uid: btn.dataset.uid, ids: [btn.dataset.sid] }); plk.list = (plk.list || []).map(x => (x.uid === btn.dataset.uid ? { ...x, candidates: x.candidates.filter(c => c.id !== btn.dataset.sid) } : x)).filter(x => x.candidates.length); toast('結びつけました'); renderPanel(); }
+      catch (err) { btn.disabled = false; toast('できませんでした: ' + err.message); }
+      return;
+    }
     return;
   }
   if (btn.dataset.pact) {
