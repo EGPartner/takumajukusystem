@@ -382,6 +382,7 @@
   .inbox{border:1px solid var(--line-strong);background:var(--surface);border-radius:14px;padding:14px;margin:0 0 14px;display:grid;gap:8px}
   .ib-h{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}.ib-h b{font-size:1.05rem}.ib-n{font-weight:800;font-size:1.3rem}
   .ib-l{list-style:none;margin:0;padding:0;display:grid}.ib-r{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid var(--line)}
+  .ib-b{display:flex;gap:6px;flex:none}.ib-flash{outline:3px solid var(--accent,#0FB8C4);outline-offset:2px;border-radius:10px;transition:outline-color .3s}
   .ib-m{min-width:0;display:grid;gap:3px}.ib-t{display:flex;gap:6px;align-items:center;min-width:0}.ib-t b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ib-s{font-size:.82rem;color:var(--ink-2,#4D6264);display:flex;gap:4px;flex-wrap:wrap;align-items:center}
   .tk-chip.kind{background:var(--accent-soft);color:var(--accent-ink);border-color:transparent}
   .tk-chip.bad{background:var(--bad-soft);color:var(--bad);border-color:transparent}
@@ -1771,6 +1772,7 @@ function plkHTML() {
 /* ---------- 受信箱: 決裁・保護者LINE・やることを1つの並びにして、優先度の高い順に出す(読むだけ。操作は、それぞれの画面で行う) ---------- */
 /** 優先度の点数。AIの感覚ではなく、決まった足し算で出す。理由(chips)も一緒に返すので、なぜ上にあるか分かる */
 function inboxScore(x, now = Date.now(), today = todayJst()) {
+  if (x.fixed != null) return { score: x.fixed, why: x.fixedWhy || [] };
   let n = 0; const why = [];
   const add = (pt, label) => { n += pt; if (label) why.push(label); };
   if (x.due) { if (x.due < today) add(60, '期限切れ'); else if (x.due === today) add(40, '今日まで'); else if (x.due <= addDaysYmd(today, 7)) add(15, '今週'); }
@@ -1794,10 +1796,20 @@ function inboxItems() {
     const top = todos.find(t => t.needsHuman) || todos[0], dues = todos.map(t => t.due).filter(Boolean).sort();
     const n = paUnanswered(p).length;
     items.push({ key: 'p:' + p.id, src: 'parent', kind: top ? top.kind : '保護者LINE', urgent: todos.some(t => t.urgent), due: dues[0] || '', since: paSince(p),
-      title: paName(p), sub: top ? top.text : `未確認のメッセージ ${n}通`, go: { type: 'parent', id: p.id } });
+      title: paName(p), sub: top ? top.text : `未確認のメッセージ ${n}通`, go: { type: 'parent', id: p.id }, dis: { src: 'parent', id: p.id } });
   });
   if (quiet) items.push({ key: 'q:parents', src: 'report', kind: '保護者LINE', title: `AIが「対応不要」と見た未確認 ${quiet}人`, sub: '念のため、一覧で目を通せます', since: quietSince, go: { type: 'parent', id: '' } });
-  tdRows().open.filter(r => r.rank === 0 || r.label === '今日').forEach(r => items.push({ key: 't:' + r.key, src: 'task', kind: r.t.kind || 'やること', title: r.t.text, sub: `担当: ${r.owner}`, urgent: !!(r.t.urgent), due: r.due, since: Date.parse(r.t.createdAt) || 0, go: { type: 'task', id: r.t.id } }));
+  // やること: 「いま動くべきもの」だけ。期限が今日〜3日前のもの、または、作って3日以内の急ぎ。3日以上前に期限が過ぎたものは、1行にまとめて「整理してください」と出す(古いものが並んで、大事なものが埋もれないように)
+  const today = todayJst(), fresh = addDaysYmd(today, -3), nowMs = Date.now();
+  let stale = 0;
+  tdRows().open.forEach(r => {
+    const created = Date.parse(r.t.createdAt) || 0, recent = nowMs - created < 3 * 864e5;
+    const dueFresh = r.due && r.due >= fresh && r.due <= today, urgentNew = !r.due && r.t.urgent && recent;
+    if (r.due && r.due < fresh) { stale++; return; }
+    if (!dueFresh && !urgentNew) return;
+    items.push({ key: 't:' + r.key, src: 'task', kind: r.t.kind || 'やること', title: r.t.text, sub: `担当: ${r.owner}`, urgent: !!r.t.urgent && recent, due: r.due, since: created, go: { type: 'task', id: r.t.id, tkey: r.key }, dis: { src: r.src, id: r.t.id } });
+  });
+  if (stale) items.push({ key: 'x:stale', src: 'task', kind: '整理', title: `期限が3日以上過ぎたやること ${stale}件`, sub: 'まだ必要か、終わっていないかを確認して整理してください', fixed: 28, fixedWhy: ['古いものが溜まっています'], go: { type: 'stale' } });
   return items.map(x => ({ ...x, ...inboxScore(x, now) })).sort((a, b) => b.score - a.score || (a.since || 0) - (b.since || 0));
 }
 let inboxAll = false;
@@ -1805,17 +1817,37 @@ function inboxHTML() {
   const list = inboxItems(), need = list.filter(x => x.src !== 'report'), rep = list.length - need.length;
   const shown = inboxAll ? list : list.slice(0, 6);
   const tone = x => (x.score >= 60 ? 'bad' : x.score >= 30 ? 'warn' : '');
-  const rows = shown.map(x => `<li class="ib-r"><div class="ib-m"><div class="ib-t"><span class="tk-chip kind">${esc(x.kind)}</span><b>${esc(x.title)}</b></div><div class="ib-s">${esc(x.sub)}${x.why.length ? ' ・ ' : ''}${x.why.map(w => `<span class="tk-chip ${tone(x)}">${esc(w)}</span>`).join(' ')}</div></div><button type="button" class="btn" data-ibgo="${esc(x.key)}">見る</button></li>`).join('');
+  const rows = shown.map(x => `<li class="ib-r"><div class="ib-m"><div class="ib-t"><span class="tk-chip kind">${esc(x.kind)}</span><b>${esc(x.title)}</b></div><div class="ib-s">${esc(x.sub)}${x.why.length ? ' ・ ' : ''}${x.why.map(w => `<span class="tk-chip ${tone(x)}">${esc(w)}</span>`).join(' ')}</div></div><div class="ib-b"><button type="button" class="btn" data-ibgo="${esc(x.key)}">見る</button>${x.dis ? `<button type="button" class="btn ghost" data-ibdis="${esc(x.key)}" title="この件を、いま対応が必要な一覧から外します">不要</button>` : ''}</div></li>`).join('');
   return `<section class="inbox"><div class="ib-h"><b>いま対応が必要</b><span class="ib-n">${need.length}件</span>${rep ? `<span class="pk">(確認だけのもの ${rep}件を含め、全${list.length}件)</span>` : ''}</div>
     ${rows ? `<ul class="ib-l">${rows}</ul>` : `<div class="empty"><b>対応が必要なものはありません</b>決裁・保護者のLINE・期限の来たやること、すべて片付いています。</div>`}
     ${list.length > 6 ? `<button type="button" class="btn ghost" data-ibmore="1">${inboxAll ? '上位だけにする' : `ほか ${list.length - 6}件も見る`}</button>` : ''}
     <p class="pk">並びは、期限・急ぎ・経過時間・種類(お金やクレームは上)から、決まった計算で出しています。</p></section>`;
 }
+/** 開いたあと、その1件まで画面を動かして、少し光らせる */
+function inboxFocus(sel) {
+  setTimeout(() => { const el = document.querySelector(sel); if (!el) return; el.scrollIntoView({ block: 'center', behavior: 'smooth' }); el.classList.add('ib-flash'); setTimeout(() => el.classList.remove('ib-flash'), 2200); }, 120);
+}
 function inboxGo(key) {
   const x = inboxItems().find(i => i.key === key); if (!x) return;
   if (x.go.type === 'decide') return goDecide(x.go.id);
-  if (x.go.type === 'parent') { tasksView = 'parent'; paOpen = x.go.id || null; paFiltSt = x.go.id ? 'all' : 'new'; openPanel('tasks'); return; }
-  tasksView = 'tk'; tdView = 'week'; openPanel('tasks');
+  if (x.go.type === 'parent') { tasksView = 'parent'; paFiltSt = x.go.id ? 'all' : 'new'; paQuery = ''; paOpen = x.go.id || null; openPanel('tasks'); if (x.go.id) inboxFocus(`#pbody [data-pact="open"][data-uid="${CSS.escape(x.go.id)}"]`); return; }
+  tasksView = 'tk'; tdView = 'week'; tdWho = ''; tdOpen = x.go.tkey || null; openPanel('tasks');
+  if (x.go.tkey) inboxFocus(`#pbody [data-topen="${CSS.escape(x.go.tkey)}"]`);
+}
+/** 一覧から外す(やること=不要にする / 保護者=対応不要にして、残っているやることも不要にする) */
+async function inboxDismiss(key, btn) {
+  const x = inboxItems().find(i => i.key === key); if (!x || !x.dis) return;
+  btn.disabled = true;
+  try {
+    if (x.dis.src === 'tk') await call('aiTokatsuTasks')({ action: 'set', id: x.dis.id, status: '不要' });
+    else if (x.dis.src === 'st') await call('aiTasks')({ action: 'set', id: x.dis.id, status: '不要' });
+    else {
+      const p = paList.find(q => q.id === x.dis.id);
+      for (const t of p ? paOpenTodos(p) : []) await call('aiParentOps')({ uid: p.id, action: 'set', id: t.id, status: '不要' });
+      await call('aiParentOps')({ uid: x.dis.id, action: 'review', status: '対応不要', seen: (p && p.lastInAt) || '' });
+    }
+    toast('一覧から外しました');
+  } catch (err) { btn.disabled = false; toast('できませんでした: ' + err.message); }
 }
 function parentsHTML() {
   const when = paState && paState.lastRunAt ? tkWhen(paState.lastRunAt) : 'まだありません';
@@ -2802,6 +2834,7 @@ document.addEventListener('click', async e => {
     return;
   }
   if (btn.dataset.ibgo) { inboxGo(btn.dataset.ibgo); return; }
+  if (btn.dataset.ibdis) { inboxDismiss(btn.dataset.ibdis, btn); return; }
   if (btn.dataset.ibmore) { inboxAll = !inboxAll; renderPanel(); return; }
   if (btn.dataset.plk) {
     const a = btn.dataset.plk;
