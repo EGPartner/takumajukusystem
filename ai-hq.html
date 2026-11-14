@@ -394,7 +394,12 @@
   .pa2-r.late{box-shadow:inset 3px 0 0 #E0786B}
   .pa2-m{all:unset;cursor:pointer;flex:1 1 320px;min-width:0;display:grid;gap:4px}
   .pa2-n{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}.pa2-t{font-size:.78rem;color:var(--ink-3,#6B8284)}.pa2-t.late{color:#C0503F;font-weight:700}
-  .pa2-ai{font-size:.9rem;line-height:1.55}
+  .pa2-ai{font-size:.9rem}
+  .pa2-ai{display:grid;gap:6px}.pa2-l{display:grid;grid-template-columns:9.2em 1fr;gap:10px;align-items:start}
+  .pa2-k{display:inline-block;justify-self:start;padding:2px 10px;border-radius:999px;background:var(--accent-soft,#DDF4F5);color:var(--accent-ink,#0A6F77);font-size:.76rem;font-weight:700;line-height:1.6;white-space:nowrap}.pa2-k.warn{background:#F3EEDC;color:#7A6100}
+  .pa2-x{min-width:0;line-height:1.55}
+  @media (max-width:719px){.pa2-l{grid-template-columns:1fr;gap:2px}}
+
   .pa2-msg{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:.85rem;color:var(--ink-2,#4D6264)}.pa2-msg .b{display:block}
   .pa2-a{display:flex;gap:6px;flex:none;align-items:center}
   .pa2-r .pt-x{flex:1 1 100%}
@@ -1802,8 +1807,9 @@ function paRow(p) {
   const lastMs = paMs(p.lastInAt), late = (st === 'new' || st === 'need') && Date.now() - paSince(p) >= 24 * 3600e3;
   const bt = (stt, label, cls) => `<button type="button" class="btn${cls ? ' ' + cls : ''}" data-pact="review" data-st="${stt}" data-nonote="1" data-uid="${uid}" data-seen="${esc(p.lastInAt || '')}">${label}</button>`;
   const acts = ['new', 'need', 'working'].includes(st) ? bt('対応済み', '済み', 'tk-done') + bt('対応不要', '不要', 'ghost') : (st === 'none' ? '' : bt('未確認', '戻す', 'ghost'));
-  const ai = open.length ? `<span class="pa2-ai">${open.slice(0, 2).map(t => `<span class="tk-chip kind">${esc(t.kind)}</span>${t.urgent ? '<span class="tk-chip bad">急ぎ</span>' : ''}${esc(t.text)}`).join('<br>')}${open.length > 2 ? ` <span class="pk">ほか${open.length - 2}件</span>` : ''}</span>`
-    : miss.length ? `<span class="pa2-ai"><span class="tk-chip warn">AIが拾っていない</span>「${esc(miss[0].text.slice(0, 60))}」${miss.length > 1 ? ` <span class="pk">ほか${miss.length - 1}件</span>` : ''}</span>` : '';
+  const line = (kind, cls, text, extra) => `<span class="pa2-l"><span class="pa2-k ${cls}">${esc(kind)}</span><span class="pa2-x">${extra || ''}${text}</span></span>`;
+  const ai = open.length ? `<span class="pa2-ai">${open.slice(0, 2).map(t => line(t.kind, '', esc(t.text), t.urgent ? '<span class="tk-chip bad">急ぎ</span> ' : '')).join('')}${open.length > 2 ? `<span class="pa2-l"><span class="pa2-k"></span><span class="pa2-x pk">ほか${open.length - 2}件</span></span>` : ''}</span>`
+    : miss.length ? `<span class="pa2-ai">${line('AIが拾っていない', 'warn', `「${esc(miss[0].text.slice(0, 60))}」${miss.length > 1 ? ` <span class="pk">ほか${miss.length - 1}件</span>` : ''}`)}</span>` : '';
   // AIの要点があるときは、元のメッセージは出さない(同じ内容の二重表示をやめる。行を押すと全文が開く)
   const msgHtml = ai ? '' : st === 'none' ? '<i class="pk">(まだメッセージはありません)</i>' : (hiddenN ? `<i class="pk">(ほか前の未返信 ${hiddenN}件)</i>` : '') + shown.map(m => `<span class="b">${esc(String(m.text || '').trim()).replace(/\n/g, '<br>')}</span>`).join('');
   const setRow = `<div class="pa-set"><span class="pk">状態を選ぶ:</span>${['未確認', '要対応', '対応中', '対応済み', '対応不要'].map(x => `<button type="button" class="btn ghost" aria-pressed="${PA_ST[st] === x}" data-pact="review" data-st="${x}" data-uid="${uid}" data-seen="${esc(p.lastInAt || '')}">${x}</button>`).join('')}</div>`;
@@ -1812,23 +1818,9 @@ function paRow(p) {
     <span class="pa2-a">${acts}</span>
     ${isOpen ? `<div class="pt-x">${setRow}${open.length ? `<ul class="tasks" style="display:grid;gap:10px">${open.map(t => paTodo(p, t)).join('')}</ul>` : ''}${paDetail(p)}</div>` : ''}</li>`;
 }
-const PA_CAT = ['クレーム', '注文・キャンセル', '入金の連絡', '支払い', '休会・退会', '欠席・変更', '参加の連絡', '質問', '要返信', '約束・期限'];
-/** 要確認の人が、どのカテゴリか(AIが拾ったやることの種類。なければ「AIが拾っていない」か「人が要対応にした」) */
-function paCat(p) {
-  const open = paOpenTodos(p);
-  if (open.length) { const ks = open.map(t => t.kind); return PA_CAT.find(c => ks.includes(c)) || ks[0]; }
-  return paMissed(p).length ? 'AIが拾っていない' : '人が要対応にした';
-}
 function paTableInner() {
-  const list = paVisible();
-  if (!list.length) return `<div class="empty"><b>${paFiltSt === 'todo' ? '要確認の保護者はいません' : '該当する保護者はいません'}</b>${paFiltSt === 'todo' ? '返信や対応が必要なものは、すべて片付いています。' : '条件を変えてください。'}</div>`;
-  if (paFiltSt !== 'todo') return `<ul class="pa2">${list.map(paRow).join('')}</ul>`;
-  // 要確認: まず「24時間以上お待たせ」、次にカテゴリごと。どのグループも、新しく届いたものが上
-  const byNew = (x, y) => paMs(y.lastInAt) - paMs(x.lastInAt);
-  const late = list.filter(p => Date.now() - paSince(p) >= 24 * 3600e3).sort(byNew), rest = list.filter(p => !late.includes(p));
-  const order = [...PA_CAT, 'AIが拾っていない', '人が要対応にした'];
-  const groups = [['24時間以上お待たせ', late, true], ...order.map(c => [c, rest.filter(p => paCat(p) === c).sort(byNew), false]), ['その他', rest.filter(p => !order.includes(paCat(p))).sort(byNew), false]].filter(g => g[1].length);
-  return groups.map(([name, l, isLate]) => `<div class="rf-g pa-g"><h5${isLate ? ' class="late"' : ''}>${esc(name)} <span class="pk">${l.length}</span></h5><ul class="pa2">${l.map(paRow).join('')}</ul></div>`).join('');
+  const list = paVisible(); // 新しく届いた順の、1本のリスト。カテゴリは、各行の左に出す(区分で分けると、下の区分の新しいものが見えなくなるため)
+  return list.length ? `<ul class="pa2">${list.map(paRow).join('')}</ul>` : `<div class="empty"><b>${paFiltSt === 'todo' ? '要確認の保護者はいません' : '該当する保護者はいません'}</b>${paFiltSt === 'todo' ? '返信や対応が必要なものは、すべて片付いています。' : '条件を変えてください。'}</div>`;
 }
 /* ---------- 保護者と塾生の結びつけ(候補は名前の一致だけ。確定は人が押す) ---------- */
 let plk = { open: false, busy: false, list: null, skip: new Set(), msg: '' };
