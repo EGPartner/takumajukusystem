@@ -1785,19 +1785,34 @@ function inboxScore(x, now = Date.now(), today = todayJst()) {
   if (x.src === 'report') add(-20, '');
   return { score: n, why };
 }
+/** 見落とし検査(サーバーの src/missed.js と同じルール): AIがやることを拾わなかった発言のうち、見落とすと困る言葉を含むもの。人が最後に目を通した時刻より後だけ */
+const MS_SIGNAL = /(振込|振り込|支払|入金|月謝|会費|年会費|[\d,]+\s*円|領収|請求|返金|ユニフォーム|サイズ|注文|購入|申込|申し込|予約|キャンセル|見送|休部|休会|休塾|退会|退塾|やめ|辞め|欠席|休み|休ま|遅れ|遅刻|早退|変更|けが|怪我|ケガ|痛|病院|熱|体調|不満|不安|心配|困|いつ|教えて|参加|人数|大人|子供|子ども|間に合|行けない|行けません|欠場|[?？]|ですか|でしょうか|ますか)/;
+const MS_MEDIA = /^\[(写真|画像|ファイル|動画|音声|位置情報)/;
+function paMissed(p, now = Date.now()) {
+  const norm = x => String(x || '').replace(/\s+/g, ''), actAt = paActAt(p);
+  const covered = m => (p.todos || []).some(x => { const q = norm(x.quote).slice(0, 12); if (q.length >= 4 && norm(m.text).includes(q)) return true; const c = paMs(x.createdAt), a = paMs(m.at); return c >= a && c - a <= 30 * 60e3; });
+  return paIns(p).filter(m => m.text && paMs(m.at) > actAt && now - paMs(m.at) <= 14 * 864e5 && (MS_SIGNAL.test(m.text) || MS_MEDIA.test(String(m.text).trim())) && !covered(m)).sort((a, b) => String(b.at).localeCompare(String(a.at)));
+}
 function inboxItems() {
   const now = Date.now(), items = [];
   decisions.forEach(d => items.push({ key: 'd:' + d.id, src: 'decision', kind: '決裁', title: d.title || '決裁', sub: `指示#${d.orderNo || ''}`, since: Date.parse(d.createdAt) || 0, go: { type: 'decide', id: d.orderId } }));
   pendingB().forEach(o => items.push({ key: 'r:' + o.id, src: 'report', kind: '完了報告', title: (o.deliverable && o.deliverable.title) || o.text || '完了報告', sub: `指示#${o.no || ''}`, since: Date.parse(o.doneAt || o.createdAt) || 0, go: { type: 'decide', id: o.id } }));
   // 1人ずつ出すのは「やること(AIが拾った)が残っている人」と「人が要対応にした人」だけ。AIが対応不要と見た未確認は、1行にまとめる(53人が並んで、大事なものが埋もれないように)
   let quiet = 0, quietSince = 0;
+  const missed = new Map(paList.map(p => [p.id, paMissed(p)]).filter(([, r]) => r.length));
   paList.filter(p => ['new', 'need'].includes(paStatus(p))).forEach(p => {
     const todos = paOpenTodos(p);
-    if (!todos.length && paStatus(p) !== 'need') { quiet++; quietSince = Math.max(quietSince, paSince(p)); return; }
+    if (!todos.length && paStatus(p) !== 'need') { if (!missed.has(p.id)) { quiet++; quietSince = Math.max(quietSince, paSince(p)); } return; } // 見落とし疑いのある人は、下で専用の行を作る
     const top = todos.find(t => t.needsHuman) || todos[0], dues = todos.map(t => t.due).filter(Boolean).sort();
     const n = paUnanswered(p).length;
     items.push({ key: 'p:' + p.id, src: 'parent', kind: top ? top.kind : '保護者LINE', urgent: todos.some(t => t.urgent), due: dues[0] || '', since: paSince(p),
       title: paName(p), sub: top ? top.text : `未確認のメッセージ ${n}通`, go: { type: 'parent', id: p.id }, dis: { src: 'parent', id: p.id } });
+  });
+  missed.forEach((r, id) => {
+    const p = paList.find(q => q.id === id), n = r.length - 1, more = n > 0 ? ` ほか${n}件` : '', line = `AIが拾っていない発言: 「${r[0].text.slice(0, 40)}」${more}`;
+    const ex = items.find(i => i.key === 'p:' + id);
+    if (ex) { ex.sub += ' / ' + line; return; }
+    items.push({ key: 'p:' + id, src: 'parent', kind: '見落とし確認', title: paName(p), sub: line, fixed: 40, fixedWhy: ['AIが拾っていない'], go: { type: 'parent', id }, dis: { src: 'parent', id }, disLabel: '確認した' });
   });
   if (quiet) items.push({ key: 'q:parents', src: 'report', kind: '保護者LINE', title: `AIが「対応不要」と見た未確認 ${quiet}人`, sub: '念のため、一覧で目を通せます', since: quietSince, go: { type: 'parent', id: '' } });
   // やること: 「いま動くべきもの」だけ。期限が今日〜3日前のもの、または、作って3日以内の急ぎ。4日以上前に期限が過ぎたものは、1行にまとめて「整理してください」と出す(古いものが並んで、大事なものが埋もれないように)
@@ -1818,7 +1833,7 @@ function inboxHTML() {
   const list = inboxItems(), need = list.filter(x => x.src !== 'report'), rep = list.length - need.length;
   const shown = inboxAll ? list : list.slice(0, 6);
   const tone = x => (x.score >= 60 ? 'bad' : x.score >= 30 ? 'warn' : '');
-  const rows = shown.map(x => `<li class="ib-r"><div class="ib-m"><div class="ib-t"><span class="tk-chip kind">${esc(x.kind)}</span><b>${esc(x.title)}</b></div><div class="ib-s">${esc(x.sub)}${x.why.length ? ' ・ ' : ''}${x.why.map(w => `<span class="tk-chip ${tone(x)}">${esc(w)}</span>`).join(' ')}</div></div><div class="ib-b"><button type="button" class="btn" data-ibgo="${esc(x.key)}">見る</button>${x.dis ? `<button type="button" class="btn ghost" data-ibdis="${esc(x.key)}" title="この件を、いま対応が必要な一覧から外します">不要</button>` : ''}</div></li>`).join('');
+  const rows = shown.map(x => `<li class="ib-r"><div class="ib-m"><div class="ib-t"><span class="tk-chip kind">${esc(x.kind)}</span><b>${esc(x.title)}</b></div><div class="ib-s">${esc(x.sub)}${x.why.length ? ' ・ ' : ''}${x.why.map(w => `<span class="tk-chip ${tone(x)}">${esc(w)}</span>`).join(' ')}</div></div><div class="ib-b"><button type="button" class="btn" data-ibgo="${esc(x.key)}">見る</button>${x.dis ? `<button type="button" class="btn ghost" data-ibdis="${esc(x.key)}" title="この件を、いま対応が必要な一覧から外します">${esc(x.disLabel || '不要')}</button>` : ''}</div></li>`).join('');
   return `<section class="inbox"><div class="ib-h"><b>いま対応が必要</b><span class="ib-n">${need.length}件</span>${rep ? `<span class="pk">(確認だけのもの ${rep}件を含め、全${list.length}件)</span>` : ''}</div>
     ${rows ? `<ul class="ib-l">${rows}</ul>` : `<div class="empty"><b>対応が必要なものはありません</b>決裁・保護者のLINE・期限の来たやること、すべて片付いています。</div>`}
     ${list.length > 6 ? `<button type="button" class="btn ghost" data-ibmore="1">${inboxAll ? '上位だけにする' : `ほか ${list.length - 6}件も見る`}</button>` : ''}
