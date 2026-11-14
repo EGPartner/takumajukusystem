@@ -383,6 +383,7 @@
   .ib-h{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}.ib-h b{font-size:1.05rem}.ib-n{font-weight:800;font-size:1.3rem}
   .ib-l{list-style:none;margin:0;padding:0;display:grid}.ib-r{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid var(--line)}
   .stl-r{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-top:1px solid var(--line);cursor:pointer}.stl-r small{display:block}.stl-r input{margin-top:4px;flex:none;width:18px;height:18px}
+  .atl-e{border-top:1px solid var(--line);padding:6px 0}.atl-e summary{cursor:pointer;display:flex;gap:6px;flex-wrap:wrap;align-items:center}.atl-l{display:grid;gap:6px;padding:8px 0 4px}.atl-r{display:flex;gap:10px;align-items:flex-start}.atl-r small{display:block}.atl-a{flex:none;min-width:3.8em;text-align:center;border-radius:8px;padding:2px 6px;font-weight:700;font-size:.8rem}.a-y{background:#DDF4F5;color:#0A6F77}.a-n{background:#F4E1E1;color:#A33}.a-m{background:#F3EEDC;color:#7A6100}
   .ib-b{display:flex;gap:6px;flex:none}.ib-flash{outline:3px solid var(--accent,#0FB8C4);outline-offset:2px;border-radius:10px;transition:outline-color .3s}
   .ib-m{min-width:0;display:grid;gap:3px}.ib-t{display:flex;gap:6px;align-items:center;min-width:0}.ib-t b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ib-s{font-size:.82rem;color:var(--ink-2,#4D6264);display:flex;gap:4px;flex-wrap:wrap;align-items:center}
   .tk-chip.kind{background:var(--accent-soft);color:var(--accent-ink);border-color:transparent}
@@ -1881,6 +1882,15 @@ async function inboxDismiss(key, btn) {
     toast('一覧から外しました');
   } catch (err) { btn.disabled = false; toast('できませんでした: ' + err.message); }
 }
+/* ---------- 出欠名簿(保護者の「参加します」をAIが読み取って、行事ごとの名簿にしたもの。数え上げは決まった処理) ---------- */
+let atl = { busy: false, ledger: null, msg: '' };
+function atlHTML() {
+  const head = `<div class="plk-h"><b>出欠名簿</b><span class="pk">保護者のLINEの「参加します/不参加です」から作ります</span><span class="sp"></span><button type="button" class="btn ghost" data-atl="collect"${atl.busy ? ' disabled' : ''} title="過去45日の受信から、出欠の連絡をAIがまとめて読み取ります(新しい受信は、15分ごとに自動で読み取ります)">${atl.busy ? '読み取り中…' : '過去の受信から集める'}</button><button type="button" class="btn ghost" data-atl="load"${atl.busy ? ' disabled' : ''}>${atl.ledger ? '更新' : '名簿を見る'}</button></div>`;
+  if (!atl.ledger) return `<div class="vboard atl">${head}<p class="pk">${esc(atl.msg) || 'スプレッドシートの「出欠名簿」タブにも、同じ内容が書き出されます。'}</p></div>`;
+  const ev = atl.ledger.map(e => `<details class="atl-e"><summary><b>${esc(e.date ? tkMd(e.date) : '日付不明')} ${esc(e.name || '')}</b> <span class="tk-chip">参加 ${e.counts['参加']}</span> <span class="tk-chip">不参加 ${e.counts['不参加']}</span>${e.counts['未定'] ? ` <span class="tk-chip">未定 ${e.counts['未定']}</span>` : ''}${e.adults || e.kids ? ` <span class="pk">同行 大人${e.adults}・子供${e.kids}</span>` : ''}${e.needCheck ? ` <span class="tk-chip warn">要確認 ${e.needCheck}</span>` : ''}</summary>
+      <div class="atl-l">${e.list.map(x => `<div class="atl-r"><span class="atl-a a-${x.attend === '参加' ? 'y' : x.attend === '不参加' ? 'n' : 'm'}">${esc(x.attend)}</span><span><b>${esc(x.player || '(選手不明)')}</b>${x.adults || x.kids ? ` 大人${x.adults}・子供${x.kids}` : ''}${x.note ? ` ・ ${esc(x.note)}` : ''}<small class="pk">${esc(x.parent)} ・ 「${esc(x.quote)}」${x.unknownPlayer ? ' ・ <b>選手が不明です。元の発言を確認してください</b>' : ''}${x.changed ? ` ・ 回答が変わりました(前: ${esc(x.changed.from)})` : ''}</small></span></div>`).join('')}</div></details>`).join('');
+  return `<div class="vboard atl">${head}<p class="pk">${atl.ledger.length ? '同じ選手が何度か答えたときは、最後の回答を採用しています。AIの読み取りなので、「要確認」は元の発言と照らしてください。' : '出欠の連絡は、まだ読み取れていません。「過去の受信から集める」を押してください。'}${esc(atl.msg)}</p>${ev}</div>`;
+}
 function parentsHTML() {
   const when = paState && paState.lastRunAt ? tkWhen(paState.lastRunAt) : 'まだありません';
   const err = paState && paState.error ? `<div class="alertbox"><b>保護者の受信の分析がうまくいっていません</b>${esc(paState.error.message || '')}(${esc(tkWhen(paState.error.at))})。次に成功すると、この表示は消えます。</div>` : '';
@@ -1891,7 +1901,7 @@ function parentsHTML() {
     <div class="pa-tools"><div class="vfilter">${chip('all', '全員')}${chip('new', '未確認')}${chip('need', '要対応')}${chip('working', '対応中')}${chip('done', '対応済み')}${chip('skip', '対応不要')}${chip('none', 'やり取りなし')}</div>
       <span class="pk">並び順: 最後にLINEが届いた順(新しいものが上)</span>
       <input type="search" id="pa-q" placeholder="名前・メッセージで探す" value="${esc(paQuery)}" autocomplete="off"><button type="button" class="btn ghost" data-pselall="1">表示中を全部選ぶ</button><span class="gx-flex"></span><button type="button" class="btn ghost" data-preset="1" title="AIが拾った未対応のやることを閉じ、全員の状態を未確認に戻します(履歴は消えません)">バックログをリセット</button></div>
-    ${plkHTML()}${bulk}<div id="pa-tbl">${paTableInner()}</div>`;
+    ${atlHTML()}${plkHTML()}${bulk}<div id="pa-tbl">${paTableInner()}</div>`;
 }
 const tkOpen = () => tkTasks.filter(t => t.status === '未着手');
 const tkKindLabel = k => (k === 'お叱り' ? '要改善' : k || '指示');
@@ -2888,6 +2898,15 @@ document.addEventListener('click', async e => {
   if (btn.dataset.ibgo) { inboxGo(btn.dataset.ibgo); return; }
   if (btn.dataset.ibdis) { inboxDismiss(btn.dataset.ibdis, btn); return; }
   if (btn.dataset.ibmore) { inboxAll = !inboxAll; renderPanel(); return; }
+  if (btn.dataset.atl) {
+    const a = btn.dataset.atl;
+    atl.busy = true; atl.msg = ''; renderPanel();
+    try {
+      if (a === 'collect') { const r = await call('aiParentOps')({ action: 'attendBackfill', days: 45 }); atl.msg = ` (出欠らしい受信 ${r.data.candidates}通のうち、新しく ${r.data.read}通を読み取りました。残りがあれば、もう一度押してください)`; }
+      atl.ledger = (await call('aiParentOps')({ action: 'attendLedger' })).data.ledger;
+    } catch (err) { atl.msg = ' できませんでした: ' + err.message; }
+    atl.busy = false; renderPanel(); return;
+  }
   if (btn.dataset.plk) {
     const a = btn.dataset.plk;
     if (a === 'no') { plk.skip.add(btn.dataset.uid); renderPanel(); return; }
