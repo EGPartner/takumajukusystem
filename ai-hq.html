@@ -2165,6 +2165,7 @@ function todoTableHTML() {
     <div class="gx-tools"><div class="gx-seg"><button type="button" data-tdview="week" aria-pressed="${tdView !== 'mission'}">今週</button><button type="button" data-tdview="mission" aria-pressed="${tdView === 'mission'}">案件</button></div>
       ${tdView === 'mission' ? `<div class="gx-nav mx-g"><button type="button" data-tdnav="-14" aria-label="2週間前">‹</button><button type="button" data-tdnav="0">今日</button><button type="button" data-tdnav="14" aria-label="2週間後">›</button></div>` : ''}
       <span class="gx-flex"></span>${tdView === 'mission' ? mform : form}<button type="button" class="btn ghost" data-tdtools="1" aria-pressed="${tdTools}" aria-label="絞り込み・分析・通知">⋯</button></div></div>${tools}`;
+  const help = `<p class="pk tip"><b>今週</b>: 1回で終わるタスクも、案件のタスクも、期限ごとに1本のリストで見ます。左の丸を押すと完了です。<b>案件</b>: 複数のタスクを抱えた1つのミッションだけを、ガントで見ます(進み具合は、タスクの完了数と期限から自動で出ます)。タスクを案件に入れるには、タスクをタップして「案件」を選びます。LINEのトーク画面には、何も出ません。</p>`;
   return `${err}${top}${tdView === 'mission' ? '' : tdCandHTML()}${tdView === 'mission' ? missionsHTML() : weekHTML()}${help}
 <div class="gx-pad"></div>`;
 }
