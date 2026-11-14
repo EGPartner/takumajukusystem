@@ -1752,7 +1752,7 @@ function paTodo(p, t) {
 /** この人とのやり取りの記録(新しい順)。左=保護者のメッセージ(日ごと)、右=管理者の対応(誰が・いつ・開始/済み・メモ) */
 function paThreadHTML(p) {
   const all = ((p.thread && p.thread.length) ? p.thread : (p.recent || []).map(m => ({ at: m.at, k: 'in', t: m.text }))).slice().sort((a, b) => String(b.at).localeCompare(String(a.at)));
-  const ins = all.filter(e => e.k !== 'act'), acts = all.filter(e => e.k === 'act');
+  const ins = all.filter(e => e.k !== 'act'); // 管理者の対応(誰がいつ押したか)は、画面には出さない(記録はデータに残る)
   const full = paThreadFull === p.id, vis = full ? ins : ins.slice(0, 40);
   let day = '', left = '';
   vis.forEach(e => {
@@ -1761,9 +1761,7 @@ function paThreadHTML(p) {
     left += `<div class="pa-in"><time>${esc(paHm(e.at))}</time>${esc(e.t).replace(/\n/g, '<br>')}</div>`;
   });
   const more = ins.length > vis.length ? `<button type="button" class="btn ghost" data-pact="threadmore" data-uid="${esc(p.id)}">さらに古い ${ins.length - vis.length}件を表示</button>` : '';
-  const right = acts.length ? acts.map(e => `<li><span class="w">${esc(tkWhen(e.at))}${e.by ? ' ・ ' + esc(paWho(e.by)) : ''}</span>${esc(e.t).replace(/\n/g, '<br>')}</li>`).join('') : '<li class="pk">まだありません。「開始」「済み」を押すと、ここに残ります。</li>';
-  return `<div class="pa-two"><div class="pa-thread"><h4>保護者のメッセージ(新しい順・${ins.length}件)</h4>${left || '(まだありません)'}${more}</div>
-    <div class="pa-thread pa-acts"><h4>管理者の対応(${acts.length}件)</h4><ol>${right}</ol><p class="pk tip">返信の本文は、LINEの仕様でここには届きません。「LINE↗」でManagerを開けます。</p></div></div>`;
+  return `<div class="pa-thread"><h4>保護者のメッセージ(新しい順・${ins.length}件)</h4>${left || '(まだありません)'}${more}</div>`;
 }
 function paDetail(p) {
   const uid = esc(p.id), done = (p.todos || []).filter(t => t.status !== '未対応').slice(-6).reverse();
