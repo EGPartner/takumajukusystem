@@ -378,7 +378,7 @@
   .tkc .tk-t{font-size:14.5px;font-weight:700;line-height:1.55;overflow-wrap:anywhere;margin:0}
   .tk-meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
   .tk-chip{font-size:11.5px;font-weight:700;padding:2px 9px;border-radius:999px;background:var(--surface-2);color:var(--ink-2);border:1px solid var(--line);white-space:nowrap}
-  .plk-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.plk-r{border-top:1px solid var(--line);padding:10px 0;display:grid;gap:6px}.plk-p{font-weight:700}.plk-one{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}.plk-one small{display:block}
+  .plk-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.plk-r{border-top:1px solid var(--line);padding:10px 0;display:grid;gap:6px}.plk-p{font-weight:700}.plk-one{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}.plk-one small{display:block}.plk-one{padding:8px 0;border-bottom:1px dashed var(--line)}.plk-btns{display:flex;gap:6px;flex:none}.plk-other{opacity:.8}
   .inbox{border:1px solid var(--line-strong);background:var(--surface);border-radius:14px;padding:14px;margin:0 0 14px;display:grid;gap:8px}
   .ib-h{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}.ib-h b{font-size:1.05rem}.ib-n{font-weight:800;font-size:1.3rem}
   .ib-l{list-style:none;margin:0;padding:0;display:grid}.ib-r{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid var(--line)}
@@ -1768,7 +1768,9 @@ function plkHTML() {
   const unlinked = paList.filter(p => !(p.children || []).length).length;
   const head = `<div class="plk-h"><b>塾生との結びつけ</b><span class="pk">結びつけ済み ${paList.length - unlinked}人 / 未 ${unlinked}人</span><span class="sp"></span><button type="button" class="btn ghost" data-plk="sheet" title="CRMのスプレッドシート「保護者LINE」タブに、やり取りを書き出します(15分ごとにも自動で更新されます)">シートに書き出す</button><button type="button" class="btn ghost" data-plk="find"${plk.busy ? ' disabled' : ''}>${plk.busy ? '調べています…' : plk.list ? '調べ直す' : '候補を探す'}</button></div>`;
   if (!plk.list) return `<div class="vboard plk">${head}<p class="pk">保護者のメッセージに出てくる子どもの名前を、塾生リストと照らして候補を出します(AIは使いません)。<b>確定は、人が「この子で確定」を押したときだけ</b>です。結びつくと、保護者の名前の横に子どもの名前が出ます。${esc(plk.msg)}</p></div>`;
-  const rows = plk.list.filter(x => !plk.skip.has(x.uid)).map(x => `<div class="plk-r"><div class="plk-p">${esc(x.name || '(名前なし)')}</div><div class="plk-c">${x.candidates.map(c => `<div class="plk-one"><span><b>${esc(c.name)}</b> ${esc(c.school)} ${esc(c.grade)}${c.dup ? ' <span class="tk-chip warn">同じ名前が複数</span>' : ''}<small class="pk"> 根拠「…${esc(c.evidence)}…」</small></span><button type="button" class="btn" data-plk="ok" data-uid="${esc(x.uid)}" data-sid="${esc(c.id)}">この子で確定</button></div>`).join('')}<button type="button" class="btn ghost" data-plk="no" data-uid="${esc(x.uid)}">違う・あとで</button></div></div>`).join('');
+  const REL = { same: ['苗字が同じ(自分の子の可能性が高い)', ''], unknown: ['関係は不明(発言を見て判断)', ''], other: ['別の家族の子として書かれている可能性', ' plk-other'] };
+  const one = (x, c) => `<div class="plk-one${(REL[c.rel] || REL.unknown)[1]}"><span><b>${esc(c.name)}</b> ${esc(c.school)} ${esc(c.grade)}${c.dup ? ' <span class="tk-chip warn">同じ名前が複数</span>' : ''}<span class="tk-chip${c.rel === 'same' ? '' : c.rel === 'other' ? ' warn' : ''}">${esc((REL[c.rel] || REL.unknown)[0])}</span><small class="pk">根拠「…${esc(c.evidence)}…」</small></span><span class="plk-btns"><button type="button" class="btn" data-plk="ok" data-uid="${esc(x.uid)}" data-sid="${esc(c.id)}">この子で確定</button><button type="button" class="btn ghost" data-plk="reject" data-uid="${esc(x.uid)}" data-sid="${esc(c.id)}">違う</button></span></div>`;
+  const rows = plk.list.filter(x => !plk.skip.has(x.uid)).map(x => `<div class="plk-r"><div class="plk-p">${esc(x.name || '(名前なし)')} <span class="pk">の候補 ${x.candidates.length}人(1人ずつ判断してください)</span></div><div class="plk-c">${x.candidates.map(c => one(x, c)).join('')}<button type="button" class="btn ghost" data-plk="no" data-uid="${esc(x.uid)}">この保護者は、あとで</button></div></div>`).join('');
   return `<div class="vboard plk">${head}<p class="pk">${plk.list.length ? '候補が ' + plk.list.filter(x => !plk.skip.has(x.uid)).length + '人分あります。根拠の発言を見て、合っているときだけ確定してください。' : '新しい候補はありません。'}${esc(plk.msg)}</p>${rows}</div>`;
 }
 /* ---------- 受信箱: 決裁・保護者LINE・やることを1つの並びにして、優先度の高い順に出す(読むだけ。操作は、それぞれの画面で行う) ---------- */
@@ -2910,6 +2912,12 @@ document.addEventListener('click', async e => {
   if (btn.dataset.plk) {
     const a = btn.dataset.plk;
     if (a === 'no') { plk.skip.add(btn.dataset.uid); renderPanel(); return; }
+    if (a === 'reject') {
+      btn.disabled = true;
+      try { await call('aiParentOps')({ action: 'linkReject', uid: btn.dataset.uid, id: btn.dataset.sid }); plk.list = (plk.list || []).map(x => (x.uid === btn.dataset.uid ? { ...x, candidates: x.candidates.filter(c => c.id !== btn.dataset.sid) } : x)).filter(x => x.candidates.length); toast('「この子ではない」として、もう出さないようにしました'); renderPanel(); }
+      catch (err) { btn.disabled = false; toast('できませんでした: ' + err.message); }
+      return;
+    }
     if (a === 'sheet') {
       btn.disabled = true;
       try { const r = await call('aiParentOps')({ action: 'sheetSync' }); toast(`スプレッドシートの「保護者LINE」に ${r.data.rows}行を書き出しました`); }
