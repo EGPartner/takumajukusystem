@@ -86,7 +86,7 @@
     .zoom .zl{font-size:11px;padding:1px 7px}
     .hint{font-size:10px;bottom:6px}
     .foot{font-size:11px}
-    .mnav{display:grid;grid-template-columns:repeat(4,1fr);position:fixed;left:0;right:0;bottom:0;z-index:25;background:var(--surface);border-top:1px solid var(--line);padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px))}
+    .mnav{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;z-index:25;background:var(--surface);border-top:1px solid var(--line);padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px))}
     .mnav button{border:0;background:none;padding:6px 0;font-size:11px;color:var(--ink-2);display:grid;justify-items:center;gap:2px;cursor:pointer;position:relative}
     .mnav svg{width:22px;height:22px}
     .mnav .on{color:var(--accent-ink);font-weight:700}
@@ -398,6 +398,7 @@
   .pa2-msg{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:.85rem;color:var(--ink-2,#4D6264)}.pa2-msg .b{display:block}
   .pa2-a{display:flex;gap:6px;flex:none;align-items:center}
   .pa2-r .pt-x{flex:1 1 100%}
+  .subnav{margin:0 0 12px}.subnav .n{display:inline-block;min-width:1.3em;padding:0 6px;border-radius:999px;background:#E0786B;color:#fff;font-size:.72rem;font-weight:700;text-align:center;margin-left:4px}
   .ib-b{display:flex;gap:6px;flex:none}.ib-flash{outline:3px solid var(--accent,#0FB8C4);outline-offset:2px;border-radius:10px;transition:outline-color .3s}
   .ib-m{min-width:0;display:grid;gap:3px}.ib-t{display:flex;gap:6px;align-items:center;min-width:0}.ib-t b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ib-s{font-size:.82rem;color:var(--ink-2,#4D6264);display:flex;gap:4px;flex-wrap:wrap;align-items:center}
   .tk-chip.kind{background:var(--accent-soft);color:var(--accent-ink);border-color:transparent}
@@ -841,7 +842,7 @@
     .mic,.send{height:40px}
     .mic{width:40px}
     .route{max-height:42dvh;overflow:auto;box-shadow:none}
-    .mnav{display:grid!important;grid-template-columns:repeat(8,1fr);height:calc(58px + env(safe-area-inset-bottom,0px));padding:4px 4px env(safe-area-inset-bottom,0px);z-index:25;box-shadow:0 -6px 18px -14px rgba(0,0,0,.35)}
+    .mnav{display:grid!important;grid-template-columns:repeat(5,1fr);height:calc(58px + env(safe-area-inset-bottom,0px));padding:4px 4px env(safe-area-inset-bottom,0px);z-index:25;box-shadow:0 -6px 18px -14px rgba(0,0,0,.35)}
     .mnav button{padding:4px 0;font-size:11px;min-height:48px}
     .mnav button.on{color:var(--accent-ink);font-weight:700}
     .mnav button.on svg{stroke-width:2.3}
@@ -971,16 +972,13 @@
       </div>
     </div>
 
-    <aside class="panel" id="panel" aria-label="サマリ・決裁・記録">
+    <aside class="panel" id="panel" aria-label="今日・保護者と代表・塾生・仕事・記録">
       <div class="tabs" role="tablist">
-        <button type="button" role="tab" data-ptab="sum" aria-selected="true">サマリ</button>
-        <button type="button" role="tab" data-ptab="decide" aria-selected="false">決裁 <span class="n" id="tab-n">0</span></button>
-        <button type="button" role="tab" data-ptab="tasks" aria-selected="false">やること <span class="n" id="tab-t" hidden>0</span></button>
-        <button type="button" role="tab" data-ptab="orders" aria-selected="false">指示</button>
-        <button type="button" role="tab" data-ptab="sched" aria-selected="false">予定</button>
-        <button type="button" role="tab" data-ptab="roster" aria-selected="false">名簿</button>
-        <button type="button" role="tab" data-ptab="voices" aria-selected="false">代表 <span class="n" id="tab-v" hidden>0</span></button>
-        <button type="button" role="tab" data-ptab="log" aria-selected="false">記録</button>
+        <button type="button" role="tab" data-pgroup="sum" aria-selected="true">今日</button>
+        <button type="button" role="tab" data-pgroup="people" aria-selected="false">保護者・代表 <span class="n" id="g-people-n" hidden>0</span></button>
+        <button type="button" role="tab" data-pgroup="players" aria-selected="false">塾生</button>
+        <button type="button" role="tab" data-pgroup="work" aria-selected="false">仕事 <span class="n" id="g-work-n" hidden>0</span></button>
+        <button type="button" role="tab" data-pgroup="log" aria-selected="false">記録</button>
         <button type="button" class="close" id="panel-close">× 閉じる</button>
       </div>
       <div class="pbody" id="pbody"></div>
@@ -1001,14 +999,11 @@
   <div class="foot"><span>異常があれば赤で知らせ、直れば消えます。何もなければ表示しません。</span><span>表示はすべて実際の指示・決裁・記録です(管理システムのデータ)。</span></div>
 </div>
 <nav class="mnav" aria-label="画面の切り替え">
-  <button type="button" data-m="sum"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-6 8 6v8a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/></svg>ホーム<span class="badge" id="m-alarm" hidden>!</span></button>
-  <button type="button" data-m="decide"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4 10-10"/></svg>決裁<span class="badge" id="m-badge" hidden>0</span></button>
-  <button type="button" data-m="orders"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M4 12h10M4 18h7"/></svg>指示</button>
-  <button type="button" data-m="sched"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>予定</button>
-  <button type="button" data-m="roster"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h4v-5h4v-5h4V5h4"/></svg>名簿</button>
-  <button type="button" data-m="voices"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4l-5.2 2.7 1-5.8L3.5 9.2l5.9-.9z"/></svg>代表<span class="badge" id="m-voice" hidden>0</span></button>
-  <button type="button" data-m="tasks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 12l3 3 5-6"/></svg>やること<span class="badge" id="m-task" hidden>0</span></button>
-  <button type="button" data-m="log"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>記録</button>
+  <button type="button" data-mg="sum"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-6 8 6v8a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/></svg>今日<span class="badge" id="m-alarm" hidden>!</span></button>
+  <button type="button" data-mg="people"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4l-5.2 2.7 1-5.8L3.5 9.2l5.9-.9z"/></svg>保護者・代表<span class="badge" id="m-people" hidden>0</span></button>
+  <button type="button" data-mg="players"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h4v-5h4v-5h4V5h4"/></svg>塾生</button>
+  <button type="button" data-mg="work"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 12l3 3 5-6"/></svg>仕事<span class="badge" id="m-work" hidden>0</span></button>
+  <button type="button" data-mg="log"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>記録</button>
 </nav>
 <div class="viewer" id="viewer" hidden role="dialog" aria-modal="true" aria-labelledby="v-title">
   <div class="vbox">
@@ -1507,12 +1502,11 @@ function renderCounts() {
   const bad = orders.filter(o => o.stage === 'error' || o.stage === 'paused_quota').length;
   $('#n-alarm').textContent = bad; $('#chip-alarm').hidden = !bad; $('#m-alarm').hidden = !bad;
   const nd = decisions.length; // 決裁待ちの数字は「決めること」だけ(完了報告は見るだけなので数えない)
-  $('#n-decide').textContent = nd; $('#m-badge').textContent = nd; $('#m-badge').hidden = !nd;
-  $('#tab-n').textContent = nd; $('#tab-n').hidden = !nd;
+  $('#n-decide').textContent = nd;
   const nt = tasksDue().length; // 期限切れ・今日までの「やること」
-  $('#tab-t').textContent = nt; $('#tab-t').hidden = !nt; $('#m-task').textContent = nt; $('#m-task').hidden = !nt;
   const nv = voices.filter(v => (v.status || '未対応') === '未対応').length;
-  $('#tab-v').textContent = nv; $('#tab-v').hidden = !nv; $('#m-voice').textContent = nv; $('#m-voice').hidden = !nv;
+  const people = nv + paList.filter(paNeeds).length, work = nd + nt; // 数字は、「次に人がやること」の合計
+  [['#g-people-n', people], ['#m-people', people], ['#g-work-n', work], ['#m-work', work]].forEach(([id, n]) => { const e = $(id); if (e) { e.textContent = n; e.hidden = !n; } });
   $('#n-today').textContent = todayCount();
   $('#n-ok').textContent = all.filter(t => teamState(t.id) !== 'idle').length;
   $('#n-idle').textContent = all.filter(t => teamState(t.id) === 'idle').length;
@@ -1532,6 +1526,35 @@ let panelTab = 'sum';
 const pcov = { open: false, data: null }; // 保護者のログイン状況(サマリの中)
 let isSysAdmin = false; // システム管理者か(AI本部を使える人を増やせるのは、この人だけ)
 const ga = { open: false, email: '', name: '', msg: '' };
+/* ---------- 画面の入口は5つ(今日 / 保護者・代表 / 塾生 / 仕事 / 記録)。中身の画面は、これまでの8つをそのまま使う ---------- */
+const GROUPS = [
+  { id: 'sum', label: '今日', subs: [{ tab: 'sum' }] },
+  { id: 'people', label: '保護者・代表', subs: [{ tab: 'tasks', view: 'parent', label: '保護者LINE' }, { tab: 'voices', label: '代表' }] },
+  { id: 'players', label: '塾生', subs: [{ tab: 'roster' }] },
+  { id: 'work', label: '仕事', subs: [{ tab: 'tasks', view: 'tk', label: 'やること' }, { tab: 'decide', label: '決裁' }, { tab: 'orders', label: '指示' }, { tab: 'sched', label: '予定' }] },
+  { id: 'log', label: '記録', subs: [{ tab: 'log' }] }
+];
+const subOn = sb => sb.tab === panelTab && (!sb.view || sb.view === tasksView);
+const groupOf = () => GROUPS.find(g => g.subs.some(subOn)) || GROUPS[0];
+const lastSub = {}; // 入口ごとに、最後に見ていた画面を覚える
+function subCount(sb) {
+  if (sb.tab === 'decide') return decisions.length;
+  if (sb.tab === 'voices') return voices.filter(v => (v.status || '未対応') === '未対応').length;
+  if (sb.tab === 'tasks') return sb.view === 'parent' ? paList.filter(paNeeds).length : tasksDue().length;
+  return 0;
+}
+function subnavHTML() {
+  const g = groupOf(); if (g.subs.length < 2) return '';
+  return `<div class="vfilter subnav">${g.subs.map((sb, i) => { const n = subCount(sb); return `<button type="button" data-psub="${i}" aria-pressed="${subOn(sb)}">${esc(sb.label)}${n ? ` <span class="n">${n}</span>` : ''}</button>`; }).join('')}</div>`;
+}
+function goSub(g, sb) {
+  lastSub[g.id] = g.subs.indexOf(sb);
+  if (sb.view) tasksView = sb.view;
+  if (isMobile()) return setMobileView(sb.tab);
+  if ($('#panel').hidden) return openPanel(sb.tab);
+  panelTab = sb.tab; renderPanel();
+}
+function goGroup(id) { const g = GROUPS.find(x => x.id === id) || GROUPS[0]; goSub(g, g.subs[lastSub[g.id]] || g.subs[0]); }
 function renderPanel() {
   const keep = {}, act = document.activeElement, actId = act && act.closest && act.closest('#pbody') ? act.id : '';
   const pos = actId && act.selectionStart != null ? [act.selectionStart, act.selectionEnd] : null;
@@ -1540,12 +1563,13 @@ function renderPanel() {
   renderPanelInner();
   Object.entries(keep).forEach(([id, v]) => { const t = document.getElementById(id); if (t) t.value = v; });
   $('#pbody').scrollTop = y;
+  $('#pbody').insertAdjacentHTML('afterbegin', subnavHTML());
   if (isMobile() && VIEW_TITLE[panelTab]) $('#pbody').insertAdjacentHTML('afterbegin', `<h2 class="m-title">${VIEW_TITLE[panelTab]}</h2>`);
   if (actId) { const t = document.getElementById(actId); if (t) { t.focus({ preventScroll: true }); if (pos && t.setSelectionRange) t.setSelectionRange(pos[0], pos[1]); } }
   hydrateFiles();
 }
 function renderPanelInner() {
-  document.querySelectorAll('[data-ptab]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.ptab === panelTab)));
+  const gid = groupOf().id; document.querySelectorAll('[data-pgroup]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.pgroup === gid)));
   const P = $('#pbody');
   P.classList.toggle('wide', panelTab === 'tasks' || panelTab === 'roster'); // PCでは、やること・保護者LINEの表を広く・拡大なしで出す
   if (panelTab === 'sum') {
@@ -1580,7 +1604,7 @@ function renderPanelInner() {
       + (pendingB().length ? `<div class="sec-h big">目を通すもの ・ 完了報告(${pendingB().length}件)</div><p class="pk tip">押さなくても業務は止まりません。${7}日たつと自動で「確認なしで完了」になり、記録は残ります(後からでも採用・不採用にできます)。</p>` + pendingB().map(reviewCard).join('') : '');
     P.insertAdjacentHTML('beforeend', decidedHTML());
   } else if (panelTab === 'tasks') {
-    P.innerHTML = paSwitch() + (tasksView === 'parent' ? parentsHTML() : stlHTML() + todoTableHTML());
+    P.innerHTML = (tasksView === 'parent' ? parentsHTML() : stlHTML() + todoTableHTML());
   } else if (panelTab === 'roster') {
     P.innerHTML = rosterHTML();
   } else if (panelTab === 'voices') {
@@ -2635,7 +2659,7 @@ function setMobileView(tab) {
   panelTab = tab || 'sum';
   $('#panel').hidden = false;
   document.body.dataset.mview = panelTab;
-  document.querySelectorAll('.mnav [data-m]').forEach(b => { b.classList.toggle('on', b.dataset.m === panelTab); b.setAttribute('aria-current', b.dataset.m === panelTab ? 'page' : 'false'); });
+  const gid = groupOf().id; document.querySelectorAll('.mnav [data-mg]').forEach(b => { b.classList.toggle('on', b.dataset.mg === gid); b.setAttribute('aria-current', b.dataset.mg === gid ? 'page' : 'false'); });
   renderPanel();
   window.scrollTo({ top: 0 });
 }
@@ -3255,6 +3279,8 @@ document.addEventListener('click', async e => {
     catch (err) { btn.disabled = false; toast('やり直せませんでした: ' + err.message); }
     return;
   }
+  if (btn.dataset.pgroup) { goGroup(btn.dataset.pgroup); return; }
+  if (btn.dataset.psub !== undefined) { const g = groupOf(); goSub(g, g.subs[Number(btn.dataset.psub)]); return; }
   if (btn.dataset.ptab) { panelTab = btn.dataset.ptab; renderPanel(); }
   if (btn.dataset.order) { const id = btn.dataset.order; openOrders.has(id) ? openOrders.delete(id) : openOrders.add(id); renderPanel(); }
   if (['approve', 'back', 'drop', 'adopt', 'revise', 'reject'].includes(btn.dataset.act)) {
@@ -3337,6 +3363,7 @@ function hidePop() { const p = document.getElementById('pop'); if (p) p.remove()
 function setZoom(on) { document.querySelector('.stage-wrap').classList.toggle('zoom', on); $('#m-zoom-l').textContent = on ? '全体' : '拡大'; try { localStorage.setItem('aihq-zoom', on ? '1' : '0'); } catch (e) {} }
 $('#m-zoom').addEventListener('click', () => setZoom(!document.querySelector('.stage-wrap').classList.contains('zoom')));
 document.querySelectorAll('[data-m]').forEach(b => b.addEventListener('click', () => { const t = b.dataset.m; if (isMobile()) return setMobileView(t); if (!$('#panel').hidden && panelTab === t) closePanel(); else openPanel(t); }));
+document.querySelectorAll('[data-mg]').forEach(b => b.addEventListener('click', () => { if (!isMobile() && !$('#panel').hidden && groupOf().id === b.dataset.mg) return closePanel(); goGroup(b.dataset.mg); }));
 /* ---------- LINEで共有(窓口は1つ): 送り先を選んで、文面を直して、送る ---------- */
 const lsh = { open: false, kind: '', id: '', to: 'staff', text: '', busy: '', err: '' };
 const LSH_TO = [['staff', 'スタッフ', 'スタッフ用LINEグループ'], ['tokatsu', '統括グループ', '統括LINEグループ'], ['report', '社長', '社長用LINEグループ']];
