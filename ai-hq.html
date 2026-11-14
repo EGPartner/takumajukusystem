@@ -405,6 +405,7 @@
   .tkw-fold>summary h4::after{content:'▸';margin-left:6px;color:var(--ink-3,#6B8284)}.tkw-fold[open]>summary h4::after{content:'▾'}
   .tkw-fold>summary{cursor:pointer;list-style:none}.tkw-fold>summary h4{display:inline-block;margin:6px 0}.tkw-fold>summary::-webkit-details-marker{display:none}
   .gx-toolbox{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:0 0 10px}
+  .rf-g{margin:4px 0 12px}.rf-g h5{margin:0 0 4px;font-size:.92rem;display:flex;align-items:center;gap:6px}
   .ib-b{display:flex;gap:6px;flex:none}.ib-flash{outline:3px solid var(--accent,#0FB8C4);outline-offset:2px;border-radius:10px;transition:outline-color .3s}
   .ib-m{min-width:0;display:grid;gap:3px}.ib-t{display:flex;gap:6px;align-items:center;min-width:0}.ib-t b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ib-s{font-size:.82rem;color:var(--ink-2,#4D6264);display:flex;gap:4px;flex-wrap:wrap;align-items:center}
   .tk-chip.kind{background:var(--accent-soft);color:var(--accent-ink);border-color:transparent}
@@ -2341,15 +2342,18 @@ function roFormHTML(m) {
     ${schools.map(n => `<tr><th>${esc(n)}</th>${RF_TYPES.map(([t]) => { const v = allU.filter(r => r.school === n && r.type === t && r.month === k).length; return `<td class="num now">${v || '<span class="pk">0</span>'}</td>`; }).join('')}${RF_TYPES.map(([t]) => { const v = allU.filter(r => r.school === n && r.type === t && inRange(r)).length; return `<td class="num">${v || '<span class="pk">0</span>'}</td>`; }).join('')}</tr>`).join('')}
     <tr class="ro-sum"><th>全校</th>${RF_TYPES.map(([t]) => `<td class="num now">${allU.filter(r => r.type === t && r.month === k).length}</td>`).join('')}${RF_TYPES.map(([t]) => `<td class="num">${allU.filter(r => r.type === t && inRange(r)).length}</td>`).join('')}</tr></table></div>`;
   const list = f.rows.filter(r => r.month === k);
-  const md = iso => { const d = new Date(Date.parse(iso) + 9 * 3600e3); return (d.getUTCMonth() + 1) + '/' + d.getUTCDate() + ' ' + String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0'); };
-  const rowsHTML = list.map(r => { const c = RF_TYPES.find(x => x[0] === r.type)[1], detail = r.type === '退塾' ? [r.last, r.why].filter(Boolean).join(' ・ ') : r.type === '休塾' ? [r.pause, r.why].filter(Boolean).join(' ・ ') : '';
+  const md = iso => { const d = new Date(Date.parse(iso) + 9 * 3600e3); return (d.getUTCMonth() + 1) + '/' + d.getUTCDate(); };
+  const rowHTML = r => { const detail = r.type === '退塾' ? [r.last, r.why].filter(Boolean).join(' ・ ') : r.type === '休塾' ? [r.pause, r.why].filter(Boolean).join(' ・ ') : '';
     const st = r.type === '体験' ? '' : r.reflected ? '<span class="tk-chip">反映済み</span>' : '<span class="tk-chip warn">未反映</span>';
-    return `<li><span class="rf-t">${esc(md(r.at))}</span><span class="tk-chip" style="color:${tone[c]}">${r.type}</span><b>${esc(r.name)}</b><span class="pk">${esc(r.school)}${r.grade ? ' ・ ' + esc(r.grade) : ''}${r.team ? ' ・ ' + esc(r.team) : ''}</span>${detail ? `<span class="rf-d">${esc(detail)}</span>` : ''}${st}</li>`; }).join('');
+    return `<li><span class="rf-t">${esc(md(r.at))}</span><b>${esc(r.name)}</b><span class="pk">${esc(r.school)}${r.grade ? ' ・ ' + esc(r.grade) : ''}${r.team ? ' ・ ' + esc(r.team) : ''}</span>${detail ? `<span class="rf-d">${esc(detail)}</span>` : ''}${st}</li>`; };
+  // 種別ごと(入塾・休塾・体験・退塾)に分けて、それぞれ日付の古い順(月の初めから)に並べる
+  const ORDER = ['入塾', '休塾', '体験', '退塾'];
+  const groups = ORDER.map(t => { const c = (RF_TYPES.find(x => x[0] === t) || [t, 'accent'])[1], l = list.filter(r => r.type === t).sort((a, b) => String(a.at).localeCompare(String(b.at))); return l.length ? `<div class="rf-g"><h5><span class="rf-dot" style="background:${tone[c]}"></span>${t} <span class="pk">${l.length}件</span></h5><ul class="rf-list">${l.map(rowHTML).join('')}</ul></div>` : ''; }).join('');
   return `<div class="ro-kpis rf-kpis">${kpis}</div>
-    <div class="ro-card"><h4>月ごとの申し込み数${f.sel ? '(' + esc(f.sel.name) + ')' : '(全校)'} <span class="pk">同じ人の同じ月の同じ申し込みは1人として数えます</span></h4>${trend}</div>
-    <div class="ro-card"><h4>校舎ごとの申し込み数</h4>${bySch}</div>
-    <div class="ro-card"><h4>${esc(roMJa(k))}の申し込み一覧(${list.length}件)${roF.busy ? ' <span class="pk">更新中…</span>' : ''}</h4>${list.length ? `<ul class="rf-list">${rowsHTML}</ul>` : '<p class="pk">この月の申し込みはありません</p>'}
-      <p class="pk tip">「未反映」は、フォームの回答が塾生リストに反映されていないもの(体験は反映の対象外です)。電話番号・メールアドレスは、ここには出しません。</p></div>`;
+    <div class="ro-card"><h4>${esc(roMJa(k))}の申し込み(${list.length}件)${roF.busy ? ' <span class="pk">更新中…</span>' : ''}</h4>${groups || '<p class="pk">この月の申し込みはありません</p>'}
+      <p class="pk tip">日付の古い順(月の初めから)に並べています。同じ人の同じ月の同じ申し込みは、1人として数えます。「未反映」は、フォームの回答が塾生リストに反映されていないもの(体験は反映の対象外です)。電話番号・メールアドレスは、ここには出しません。</p></div>
+    <div class="ro-card"><h4>月ごとの申し込み数${f.sel ? '(' + esc(f.sel.name) + ')' : '(全校)'}</h4>${trend}</div>
+    <div class="ro-card"><h4>校舎ごとの申し込み数</h4>${bySch}</div>`;
 }
 function rosterHTML() {
   if (!ro.schools && !ro.busy && !ro.err) roLoad();
