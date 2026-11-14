@@ -2346,12 +2346,12 @@ function roFormHTML(m) {
   const rowHTML = r => { const detail = r.type === '退塾' ? [r.last, r.why].filter(Boolean).join(' ・ ') : r.type === '休塾' ? [r.pause, r.why].filter(Boolean).join(' ・ ') : '';
     const st = r.type === '体験' ? '' : r.reflected ? '<span class="tk-chip">反映済み</span>' : '<span class="tk-chip warn">未反映</span>';
     return `<li><span class="rf-t">${esc(md(r.at))}</span><b>${esc(r.name)}</b><span class="pk">${esc(r.school)}${r.grade ? ' ・ ' + esc(r.grade) : ''}${r.team ? ' ・ ' + esc(r.team) : ''}</span>${detail ? `<span class="rf-d">${esc(detail)}</span>` : ''}${st}</li>`; };
-  // 種別ごと(入塾・休塾・体験・退塾)に分けて、それぞれ日付の古い順(月の初めから)に並べる
+  // 種別ごと(入塾・休塾・体験・退塾)に分けて、それぞれ日付の新しい順に並べる
   const ORDER = ['入塾', '休塾', '体験', '退塾'];
-  const groups = ORDER.map(t => { const c = (RF_TYPES.find(x => x[0] === t) || [t, 'accent'])[1], l = list.filter(r => r.type === t).sort((a, b) => String(a.at).localeCompare(String(b.at))); return l.length ? `<div class="rf-g"><h5><span class="rf-dot" style="background:${tone[c]}"></span>${t} <span class="pk">${l.length}件</span></h5><ul class="rf-list">${l.map(rowHTML).join('')}</ul></div>` : ''; }).join('');
+  const groups = ORDER.map(t => { const c = (RF_TYPES.find(x => x[0] === t) || [t, 'accent'])[1], l = list.filter(r => r.type === t).sort((a, b) => String(b.at).localeCompare(String(a.at))); return l.length ? `<div class="rf-g"><h5><span class="rf-dot" style="background:${tone[c]}"></span>${t} <span class="pk">${l.length}件</span></h5><ul class="rf-list">${l.map(rowHTML).join('')}</ul></div>` : ''; }).join('');
   return `<div class="ro-kpis rf-kpis">${kpis}</div>
     <div class="ro-card"><h4>${esc(roMJa(k))}の申し込み(${list.length}件)${roF.busy ? ' <span class="pk">更新中…</span>' : ''}</h4>${groups || '<p class="pk">この月の申し込みはありません</p>'}
-      <p class="pk tip">日付の古い順(月の初めから)に並べています。同じ人の同じ月の同じ申し込みは、1人として数えます。「未反映」は、フォームの回答が塾生リストに反映されていないもの(体験は反映の対象外です)。電話番号・メールアドレスは、ここには出しません。</p></div>
+      <p class="pk tip">日付の新しい順に並べています。同じ人の同じ月の同じ申し込みは、1人として数えます。「未反映」は、フォームの回答が塾生リストに反映されていないもの(体験は反映の対象外です)。電話番号・メールアドレスは、ここには出しません。</p></div>
     <div class="ro-card"><h4>月ごとの申し込み数${f.sel ? '(' + esc(f.sel.name) + ')' : '(全校)'}</h4>${trend}</div>
     <div class="ro-card"><h4>校舎ごとの申し込み数</h4>${bySch}</div>`;
 }
