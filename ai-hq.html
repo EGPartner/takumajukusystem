@@ -412,6 +412,13 @@
   .gx-toolbox{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:0 0 10px}
   .rf-g{margin:4px 0 12px}.rf-g h5{margin:0 0 4px;font-size:.92rem;display:flex;align-items:center;gap:6px}
   .pa-g h5{margin:14px 0 6px}.pa-g h5.late{color:#C0503F}.atl-h{margin:8px 0 2px;font-size:.88rem}
+  .pa-split{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:14px;align-items:start;margin-top:8px}
+  @media (max-width:760px){.pa-split{grid-template-columns:1fr}}
+  .pa-side{display:grid;gap:10px;align-content:start}.pa-side h4{margin:0;font-size:12px;color:var(--ink-3)}
+  .pa-tdo{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:start;padding:8px 0;border-top:1px solid var(--line)}.pa-tdo:first-of-type{border-top:0}
+  .pa-tdo .pa2-x small{display:block}.pa-tb{display:flex;gap:6px;flex:none}
+  .pa-sum{margin:0;font-size:.8rem;line-height:1.6}
+  @media (max-width:560px){.pa-tdo{grid-template-columns:1fr}.pa-tb{justify-self:start}}
   .ib-b{display:flex;gap:6px;flex:none}.ib-flash{outline:3px solid var(--accent,#0FB8C4);outline-offset:2px;border-radius:10px;transition:outline-color .3s}
   .ib-m{min-width:0;display:grid;gap:3px}.ib-t{display:flex;gap:6px;align-items:center;min-width:0}.ib-t b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ib-s{font-size:.82rem;color:var(--ink-2,#4D6264);display:flex;gap:4px;flex-wrap:wrap;align-items:center}
   .tk-chip.kind{background:var(--accent-soft);color:var(--accent-ink);border-color:transparent}
@@ -1769,16 +1776,22 @@ function paThreadHTML(p) {
   return `<div class="pa-thread"><h4>保護者のメッセージ(新しい順・${ins.length}件)</h4>${left || '(まだありません)'}${more}</div>`;
 }
 function paDetail(p) {
-  const uid = esc(p.id), done = (p.todos || []).filter(t => t.status !== '未対応').slice(-6).reverse();
-  const c = paCompose && paCompose.uid === p.id ? `<div class="vform"><b>返信案</b><p class="pk">${paCompose.busy === 'draft' ? '返信案を作っています…' : 'AIの案です。直して、コピーしてLINE公式アカウントから送ってください。このシステムからは送られません。'}</p>
-      <textarea id="pa-msg" rows="6" ${paCompose.busy ? 'disabled' : ''}>${esc(paCompose.text || '')}</textarea>
-      <div class="actions"><button type="button" class="btn primary" data-pact="copy" data-uid="${uid}" ${paCompose.busy ? 'disabled' : ''}>コピー</button><button type="button" class="btn ghost" data-pact="closedraft" data-uid="${uid}">閉じる</button></div></div>` : '';
-  return `<div class="pa-box"><h4>これまでの要点</h4>${p.summary ? esc(p.summary) : '(まだありません。受信が分析されると入ります)'}
-      ${p.memo ? `<h4>メモ</h4>${esc(p.memo)}` : ''}</div>
+  const uid = esc(p.id), open = paOpenTodos(p), done = (p.todos || []).filter(t => t.status !== '未対応').slice(-6).reverse();
+  const c = paCompose && paCompose.uid === p.id ? `<div class="vform"><b>返信案</b>
+      <textarea id="pa-msg" rows="6" ${paCompose.busy ? 'disabled' : ''} placeholder="${paCompose.busy === 'draft' ? '返信案を作っています…' : ''}">${esc(paCompose.text || '')}</textarea>
+      <div class="actions"><button type="button" class="btn primary" data-pact="copy" data-uid="${uid}" ${paCompose.busy ? 'disabled' : ''}>コピー</button><button type="button" class="btn ghost" data-pact="closedraft" data-uid="${uid}">閉じる</button><span class="pk tip">AIの案です。直して、コピーしてLINE公式アカウントから送ってください。このシステムからは送られません。</span></div></div>` : '';
+  // 対応案: AIが拾ったやること。1件=左にカテゴリ・中央に内容・右に「済み」「不要」
+  const todos = open.length ? open.map(t => `<div class="pa-tdo"><span class="pa2-k">${esc(t.kind)}</span><div class="pa2-x">${t.urgent ? '<span class="tk-chip bad">急ぎ</span> ' : ''}${esc(t.text)}${t.due ? ` <span class="pk">期限 ${esc(tkMd(t.due))}</span>` : ''}${t.quote ? `<small class="pk">「${esc(t.quote)}」</small>` : ''}</div>
+      <span class="pa-tb"><button type="button" class="btn tk-done" data-pact="done" data-nonote="1" data-uid="${uid}" data-tid="${esc(t.id)}">済み</button><button type="button" class="btn ghost" data-pact="none" data-uid="${uid}" data-tid="${esc(t.id)}">不要</button></span></div>`).join('') : '<p class="pk">AIが拾った対応は、ありません</p>';
+  return `<div class="pa-split">
     ${paThreadHTML(p)}
-    ${done.length ? `<div class="pa-box"><h4>終わったこと</h4>${done.map(t => `<p class="pa-msg"><span>${esc(t.status)} ${t.doneAt ? esc(tkWhen(t.doneAt)) : ''}${t.doneBy ? ' ・ ' + esc(t.doneBy) : ''}</span>${esc(t.text)}${(t.history || []).map(x => `<br>└ ${esc(x.note)}`).join('')}${t.note ? `<br>└ ${esc(t.note)}` : ''}</p>`).join('')}</div>` : ''}
-    ${c}
-    <div class="tk-act"><button type="button" class="btn" data-pact="draft" data-uid="${uid}">返信案を作る</button><button type="button" class="btn ghost" data-pact="add" data-uid="${uid}">やることを足す</button><button type="button" class="btn ghost" data-pact="name" data-uid="${uid}">名前</button><button type="button" class="btn ghost" data-pact="memo" data-uid="${uid}">メモ</button><span class="sp"></span><button type="button" class="btn ghost" data-pact="erase" data-uid="${uid}">記録を削除</button></div>`;
+    <div class="pa-side"><h4>対応案</h4>${todos}
+      ${p.summary ? `<p class="pa-sum pk">${esc(p.summary)}</p>` : ''}${p.memo ? `<p class="pa-sum pk">メモ: ${esc(p.memo)}</p>` : ''}
+      <div class="tk-act"><button type="button" class="btn" data-pact="draft" data-uid="${uid}">返信案を作る</button><button type="button" class="btn ghost" data-pact="add" data-uid="${uid}">やることを足す</button></div>
+      ${c}
+      <details class="dc-more"><summary>その他</summary><div class="tk-act"><button type="button" class="btn ghost" data-pact="name" data-uid="${uid}">名前</button><button type="button" class="btn ghost" data-pact="memo" data-uid="${uid}">メモ</button><span class="sp"></span><button type="button" class="btn ghost" data-pact="erase" data-uid="${uid}">記録を削除</button></div>
+        ${done.length ? `<div class="pa-box"><h4>終わったこと</h4>${done.map(t => `<p class="pa-msg"><span>${esc(t.status)} ${t.doneAt ? esc(tkWhen(t.doneAt)) : ''}</span>${esc(t.text)}${t.note ? `<br>└ ${esc(t.note)}` : ''}</p>`).join('')}</div>` : ''}</details>
+    </div></div>`;
 }
 // 「選んだ人」「管理者の対応」に出す名前。記録にはログインのメールアドレスの@より前が残っていることがあるため、ここで人の名前に読み替える(過去の記録にも効く)
 const PA_WHO = { 'contact': 'ヤマグチ', 'mf2yan': 'ヤマグチ', 'campeon10041004': 'タクマ', 'yukiya.k.80': 'ユキヤ', 'kaikio72268': 'kkk' };
@@ -1812,11 +1825,10 @@ function paRow(p) {
     : miss.length ? `<span class="pa2-ai">${line('AIが拾っていない', 'warn', `「${esc(miss[0].text.slice(0, 60))}」${miss.length > 1 ? ` <span class="pk">ほか${miss.length - 1}件</span>` : ''}`)}</span>` : '';
   // AIの要点があるときは、元のメッセージは出さない(同じ内容の二重表示をやめる。行を押すと全文が開く)
   const msgHtml = ai ? '' : st === 'none' ? '<i class="pk">(まだメッセージはありません)</i>' : (hiddenN ? `<i class="pk">(ほか前の未返信 ${hiddenN}件)</i>` : '') + shown.map(m => `<span class="b">${esc(String(m.text || '').trim()).replace(/\n/g, '<br>')}</span>`).join('');
-  const setRow = `<div class="pa-set"><span class="pk">状態を選ぶ:</span>${['未確認', '要対応', '対応中', '対応済み', '対応不要'].map(x => `<button type="button" class="btn ghost" aria-pressed="${PA_ST[st] === x}" data-pact="review" data-st="${x}" data-uid="${uid}" data-seen="${esc(p.lastInAt || '')}">${x}</button>`).join('')}</div>`;
   return `<li class="pa2-r st-${st}${late ? ' late' : ''}"><button type="button" class="pa2-m" data-pact="open" data-uid="${uid}" aria-expanded="${isOpen}">
       <span class="pa2-n"><b>${esc(paName(p))}</b><span class="pa2-t${late ? ' late' : ''}">${esc(lastMs ? jstStamp(lastMs) + ' ・ ' + paAgo(lastMs) : '')}${paFiltSt === 'todo' ? '' : ' ・ ' + esc(st === 'none' ? 'なし' : PA_ST[st])}</span></span>${ai}${msgHtml ? `<span class="pa2-msg">${msgHtml}</span>` : ''}</button>
     <span class="pa2-a">${acts}</span>
-    ${isOpen ? `<div class="pt-x">${setRow}${open.length ? `<ul class="tasks" style="display:grid;gap:10px">${open.map(t => paTodo(p, t)).join('')}</ul>` : ''}${paDetail(p)}</div>` : ''}</li>`;
+    ${isOpen ? `<div class="pt-x">${paDetail(p)}</div>` : ''}</li>`;
 }
 function paTableInner() {
   const list = paVisible(); // 新しく届いた順の、1本のリスト。カテゴリは、各行の左に出す(区分で分けると、下の区分の新しいものが見えなくなるため)
@@ -3050,7 +3062,7 @@ document.addEventListener('click', async e => {
     if (act === 'work') return op({ action: 'work', on: true }, '対応中にしました。ほかの管理者にも表示されます');
     if (act === 'unwork') return op({ action: 'work', on: false }, '対応中をやめました');
     if (act === 'handled') { const n = prompt('返信した内容や約束したことを一言(空でもOK。「管理者の対応」に残ります)', ''); if (n === null) return; return op({ action: 'handled', note: n.trim(), seen: btn.dataset.seen || '' }, '対応済みにしました'); }
-    if (act === 'done') { const n = prompt('返信した内容や、約束したことを一言(空でもOK。あとで経歴に残ります)', ''); if (n === null) return; return op({ action: 'set', id: tid, status: '対応済み', note: n.trim() }, '対応済みにしました'); }
+    if (act === 'done') { const n = btn.dataset.nonote ? '' : prompt('返信した内容や、約束したことを一言(空でもOK。あとで経歴に残ります)', ''); if (n === null) return; return op({ action: 'set', id: tid, status: '対応済み', note: n.trim() }, '対応済みにしました'); }
     if (act === 'none') return op({ action: 'set', id: tid, status: '不要' }, '不要にしました');
     if (act === 'due') { const t = (p.todos || []).find(x => x.id === tid); const v = prompt('期限(YYYY-MM-DD。空にすると期限なし)', (t && t.due) || todayJst()); if (v === null) return; return op({ action: 'set', id: tid, due: v.trim() }, '変更しました'); }
     if (act === 'name') { const v = prompt('保護者の呼び名(例: 山田さん(太郎くんの保護者))', p.name || ''); if (v === null) return; return op({ action: 'edit', name: v }, '変更しました'); }
