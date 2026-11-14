@@ -386,6 +386,18 @@
   .atl-e{border-top:1px solid var(--line);padding:6px 0}.atl-e summary{cursor:pointer;display:flex;gap:6px;flex-wrap:wrap;align-items:center}.atl-l{display:grid;gap:6px;padding:8px 0 4px}.atl-r{display:flex;gap:10px;align-items:flex-start}.atl-r small{display:block}.atl-a{flex:none;min-width:3.8em;text-align:center;border-radius:8px;padding:2px 6px;font-weight:700;font-size:.8rem}.a-y{background:#DDF4F5;color:#0A6F77}.a-n{background:#F4E1E1;color:#A33}.a-m{background:#F3EEDC;color:#7A6100}
   .sumfoot{font-size:.8rem;color:var(--ink-3,#6B8284);margin:8px 2px}
   details.tip{display:inline-block;vertical-align:middle;margin:2px 0}details.tip>summary{list-style:none;cursor:pointer;width:20px;height:20px;border-radius:50%;border:1px solid var(--line-strong);color:var(--muted,#6B8284);text-align:center;font-size:.72rem;line-height:18px;user-select:none}details.tip>summary::-webkit-details-marker{display:none}details.tip[open]{display:block}details.tip[open]>p{margin:6px 0 0}
+  .pa2-h{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:0 0 10px}.pa2-h b{font-size:1.05rem}.pa2-h .tip{flex:none}
+  .pa2-tools{margin:0 0 10px}
+  .pa2-h input[type=search]{flex:1 1 160px;max-width:260px;min-width:120px;padding:8px 12px;border:1px solid var(--line-strong);border-radius:10px;background:var(--surface);color:inherit;font:inherit;font-size:.88rem}
+  ul.pa2{list-style:none;margin:0;padding:0;display:grid;gap:0;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface)}
+  .pa2-r{display:flex;gap:10px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;padding:12px 14px;border-top:1px solid var(--line)}.pa2-r:first-child{border-top:0}
+  .pa2-r.late{box-shadow:inset 3px 0 0 #E0786B}
+  .pa2-m{all:unset;cursor:pointer;flex:1 1 320px;min-width:0;display:grid;gap:4px}
+  .pa2-n{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}.pa2-t{font-size:.78rem;color:var(--ink-3,#6B8284)}.pa2-t.late{color:#C0503F;font-weight:700}
+  .pa2-ai{font-size:.9rem;line-height:1.55}
+  .pa2-msg{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:.85rem;color:var(--ink-2,#4D6264)}.pa2-msg .b{display:block}
+  .pa2-a{display:flex;gap:6px;flex:none;align-items:center}
+  .pa2-r .pt-x{flex:1 1 100%}
   .ib-b{display:flex;gap:6px;flex:none}.ib-flash{outline:3px solid var(--accent,#0FB8C4);outline-offset:2px;border-radius:10px;transition:outline-color .3s}
   .ib-m{min-width:0;display:grid;gap:3px}.ib-t{display:flex;gap:6px;align-items:center;min-width:0}.ib-t b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ib-s{font-size:.82rem;color:var(--ink-2,#4D6264);display:flex;gap:4px;flex-wrap:wrap;align-items:center}
   .tk-chip.kind{background:var(--accent-soft);color:var(--accent-ink);border-color:transparent}
@@ -1732,33 +1744,37 @@ const paWho = n => PA_WHO[String(n || '').trim()] || String(n || '');
 const LINE_CHAT_BASE = 'https://chat.line.biz/U91689be46b4c7a64eeb685a327019f50'; // 公式アカウントのManager(チャット一覧)。個別チャットの住所は、保護者のLINE IDでは開けなかったため、一覧に行く
 const paAgo = ms => { const m = Math.floor((Date.now() - ms) / 60000); return m < 1 ? 'たった今' : m < 60 ? m + '分前' : m < 1440 ? Math.floor(m / 60) + '時間前' : Math.floor(m / 1440) + '日前'; };
 /** 全保護者の一覧(1人=1行)。状態は人が選ぶ。行をタップすると、その下にやり取りと状態の選択が開く */
-let paFiltSt = 'all', paQuery = '', paSel = new Set();
+let paFiltSt = 'todo', paQuery = '', paSel = new Set(), paTools = false; // todo=要確認(やることが残っている・見落とし疑い・人が要対応にした人)
+/** 要確認: 返信などの対応がまだの人のうち、AIが拾った「やること」が残っている・AIが拾っていない発言がある・人が要対応/対応中にした人 */
+const paNeeds = p => { const st = paStatus(p); return (st === 'need' || st === 'working') || ((st === 'new') && (paOpenTodos(p).length > 0 || paMissed(p).length > 0)); };
 function paVisible() {
   const q = paQuery.trim().toLowerCase();
-  const list = paList.filter(p => (paFiltSt === 'all' || paStatus(p) === paFiltSt) && (!q || (paName(p) + ' ' + paIns(p).slice(-3).map(m => m.text).join(' ')).toLowerCase().includes(q)));
-  // 並び順は、いつも「最後にLINEが届いた順(新しい順)」。状態では並べ替えない(状態は色で分かる)。やり取りがない人は、いちばん下に名前順
-  return list.sort((a, b) => (paMs(b.lastInAt) - paMs(a.lastInAt)) || paName(a).localeCompare(paName(b), 'ja'));
+  const pick = p => paFiltSt === 'all' ? true : paFiltSt === 'todo' ? paNeeds(p) : paFiltSt === 'closed' ? ['done', 'skip'].includes(paStatus(p)) : paStatus(p) === paFiltSt;
+  const list = paList.filter(p => pick(p) && (!q || (paName(p) + ' ' + paIns(p).slice(-3).map(m => m.text).join(' ')).toLowerCase().includes(q)));
+  // 要確認は「長く待たせている順」(見落とさないため)。ほかは「最後にLINEが届いた順(新しい順)」
+  return paFiltSt === 'todo' ? list.sort((a, b) => paSince(a) - paSince(b)) : list.sort((a, b) => (paMs(b.lastInAt) - paMs(a.lastInAt)) || paName(a).localeCompare(paName(b), 'ja'));
 }
 const LINE_LINK = `<a class="btn ghost" href="${LINE_CHAT_BASE}" target="_blank" rel="noopener" title="公式アカウントのManager(チャット一覧)を開く">LINE↗</a>`;
 function paBtn(p, st, label, cls) { return `<button type="button" class="btn${cls ? ' ' + cls : ''}" data-pact="review" data-st="${st}" data-uid="${esc(p.id)}" data-seen="${esc(p.lastInAt || '')}">${label}</button>`; }
 function paRow(p) {
-  const st = paStatus(p), uid = esc(p.id), isOpen = paOpen === p.id, open = paOpenTodos(p);
+  const st = paStatus(p), uid = esc(p.id), isOpen = paOpen === p.id, open = paOpenTodos(p), miss = open.length ? [] : paMissed(p);
   const ins = paIns(p), unans = st === 'done' || st === 'skip' || st === 'none' ? [] : paUnanswered(p);
-  const shown = st === 'none' ? [] : (unans.length ? unans.slice(-5) : ins.slice(-1)), hiddenN = Math.max(0, unans.length - shown.length);
+  const shown = st === 'none' ? [] : (unans.length ? unans.slice(-2) : ins.slice(-1)), hiddenN = Math.max(0, unans.length - shown.length);
   const lastMs = paMs(p.lastInAt), late = (st === 'new' || st === 'need') && Date.now() - paSince(p) >= 24 * 3600e3;
-  const acts = { new: paBtn(p, '要対応', '要対応', '') + paBtn(p, '対応不要', '不要', 'ghost'), need: paBtn(p, '対応中', '開始', '') + paBtn(p, '対応済み', '済み', 'ghost'),
-    working: paBtn(p, '対応済み', '済み', 'tk-done') + paBtn(p, '要対応', '戻す', 'ghost'), done: paBtn(p, '未確認', '戻す', 'ghost'), skip: paBtn(p, '未確認', '戻す', 'ghost'), none: '' }[st];
-  const rv = p.review, who = st === 'working' ? (rv && rv.by) || p.workingBy : st === 'done' ? (rv && rv.by) || p.handledBy : st === 'skip' || st === 'need' ? (rv && rv.by) || '' : '';
-  const msgHtml = st === 'none' ? '<i class="pk">(まだメッセージはありません)</i>' : (hiddenN ? `<i class="pk">(ほか前の未返信 ${hiddenN}件。行をタップで全部)</i>` : '') + shown.map(m => `<i><em>${esc(tkMd(paDayKey(paMs(m.at))))}</em><em>${esc(paHm(m.at))}</em><span class="b">${esc(String(m.text || '').trim()).replace(/\n/g, '<br>')}</span></i>`).join('');
+  const bt = (stt, label, cls) => `<button type="button" class="btn${cls ? ' ' + cls : ''}" data-pact="review" data-st="${stt}" data-nonote="1" data-uid="${uid}" data-seen="${esc(p.lastInAt || '')}">${label}</button>`;
+  const acts = ['new', 'need', 'working'].includes(st) ? bt('対応済み', '済み', 'tk-done') + bt('対応不要', '不要', 'ghost') : (st === 'none' ? '' : bt('未確認', '戻す', 'ghost'));
+  const ai = open.length ? `<span class="pa2-ai">${open.slice(0, 2).map(t => `<span class="tk-chip kind">${esc(t.kind)}</span>${t.urgent ? '<span class="tk-chip bad">急ぎ</span>' : ''}${esc(t.text)}`).join('<br>')}${open.length > 2 ? ` <span class="pk">ほか${open.length - 2}件</span>` : ''}</span>`
+    : miss.length ? `<span class="pa2-ai"><span class="tk-chip warn">AIが拾っていない</span>「${esc(miss[0].text.slice(0, 50))}」${miss.length > 1 ? ` <span class="pk">ほか${miss.length - 1}件</span>` : ''}</span>` : '';
+  const msgHtml = st === 'none' ? '<i class="pk">(まだメッセージはありません)</i>' : (hiddenN ? `<i class="pk">(ほか前の未返信 ${hiddenN}件)</i>` : '') + shown.map(m => `<span class="b">${esc(String(m.text || '').trim()).replace(/\n/g, '<br>')}</span>`).join('');
   const setRow = `<div class="pa-set"><span class="pk">状態を選ぶ:</span>${['未確認', '要対応', '対応中', '対応済み', '対応不要'].map(x => `<button type="button" class="btn ghost" aria-pressed="${PA_ST[st] === x}" data-pact="review" data-st="${x}" data-uid="${uid}" data-seen="${esc(p.lastInAt || '')}">${x}</button>`).join('')}</div>`;
-  return `<li class="pt-row st-${st}"><div class="pt-line"><input type="checkbox" class="pt-ck" data-psel="${uid}" ${paSel.has(p.id) ? 'checked' : ''} aria-label="${esc(paName(p))}を選ぶ"><span class="pt-b">${st === 'none' ? 'なし' : PA_ST[st]}</span>
-      <button type="button" class="pt-main" data-pact="open" data-uid="${uid}" aria-expanded="${isOpen}"><b>${esc(paName(p))}</b><span>${msgHtml}</span></button>
-      <span class="pt-t${late ? ' late' : ''}">${esc(lastMs ? paAgo(lastMs) : '')}</span><span class="pt-who">${esc(paWho(who))}</span><span class="pt-a">${LINE_LINK}${acts}</span></div>
-    ${isOpen ? `<div class="pt-x">${setRow}${open.length ? `<p class="pk tip">AIが拾った要点(参考です。要否は上の「状態を選ぶ」で決まります):</p><ul class="tasks" style="display:grid;gap:10px">${open.map(t => paTodo(p, t)).join('')}</ul>` : ''}${paDetail(p)}</div>` : ''}</li>`;
+  return `<li class="pa2-r st-${st}${late ? ' late' : ''}"><button type="button" class="pa2-m" data-pact="open" data-uid="${uid}" aria-expanded="${isOpen}">
+      <span class="pa2-n"><b>${esc(paName(p))}</b><span class="pa2-t${late ? ' late' : ''}">${esc(lastMs ? paAgo(lastMs) : '')}${paFiltSt === 'todo' ? '' : ' ・ ' + esc(st === 'none' ? 'なし' : PA_ST[st])}</span></span>${ai}<span class="pa2-msg">${msgHtml}</span></button>
+    <span class="pa2-a">${LINE_LINK}${acts}</span>
+    ${isOpen ? `<div class="pt-x">${setRow}${open.length ? `<ul class="tasks" style="display:grid;gap:10px">${open.map(t => paTodo(p, t)).join('')}</ul>` : ''}${paDetail(p)}</div>` : ''}</li>`;
 }
 function paTableInner() {
   const list = paVisible();
-  return list.length ? `<ul class="pt pt3"><li class="pt-h"><span></span><span>状態</span><span class="m"><span>名前</span><span class="mh"><em>日付</em><em>時刻</em><em>本文</em></span></span><span>最終受信</span><span>選んだ人</span><span></span></li>${list.map(paRow).join('')}</ul>` : '<div class="empty"><b>該当する保護者はいません</b>条件を変えてください。</div>';
+  return list.length ? `<ul class="pa2">${list.map(paRow).join('')}</ul>` : `<div class="empty"><b>${paFiltSt === 'todo' ? '要確認の保護者はいません' : '該当する保護者はいません'}</b>${paFiltSt === 'todo' ? '返信や対応が必要なものは、すべて片付いています。' : '条件を変えてください。'}</div>`;
 }
 /* ---------- 保護者と塾生の結びつけ(候補は名前の一致だけ。確定は人が押す) ---------- */
 let plk = { open: false, busy: false, list: null, skip: new Set(), msg: '' };
@@ -1897,14 +1913,13 @@ function atlHTML() {
 function parentsHTML() {
   const when = paState && paState.lastRunAt ? tkWhen(paState.lastRunAt) : 'まだありません';
   const err = paState && paState.error ? `<div class="alertbox"><b>保護者の受信の分析がうまくいっていません</b>${esc(paState.error.message || '')}(${esc(tkWhen(paState.error.at))})。次に成功すると、この表示は消えます。</div>` : '';
-  const chip = (k, label) => `<button type="button" data-pfst="${k}" aria-pressed="${paFiltSt === k}">${label} ${k === 'all' ? paList.length : paCount(k)}</button>`;
-  const bulk = paSel.size ? `<div class="pa-bulk"><b>${paSel.size}人を選択中</b><button type="button" class="btn" data-pbulk="要対応">要対応にする</button><button type="button" class="btn" data-pbulk="対応不要">対応不要にする</button><button type="button" class="btn" data-pbulk="対応済み">対応済みにする</button><button type="button" class="btn ghost" data-pbulk="未確認">未確認に戻す</button><button type="button" class="btn ghost" data-pselnone="1">選択をやめる</button></div>` : '';
-  return `${err}<div class="vboard"><div class="tk-head"><b>保護者LINE</b><span class="pk">全${paList.length}人 ・ 未確認 ${paCount('new')} ・ 要対応 ${paCount('need')} ・ 対応中 ${paCount('working')}</span><span class="sp"></span><button type="button" class="btn ghost" data-pact="run">今すぐ分析</button></div>
-      <p class="pk tip">公式アカウントの友だち全員の一覧です。<b>要否は人が選びます</b>(システムは決めません)。新しいメッセージが届くと「未確認」に戻るので、見落としません。使い方: ①未確認の人を見て「要対応」か「不要」を選ぶ → ②要対応の人は「開始」→「LINE↗」で返信 → ③「済み」。複数人は、左のチェックでまとめて選べます。(AIの分析: ${esc(when)})</p>${notifyBoxHTML()}</div>
-    <div class="pa-tools"><div class="vfilter">${chip('all', '全員')}${chip('new', '未確認')}${chip('need', '要対応')}${chip('working', '対応中')}${chip('done', '対応済み')}${chip('skip', '対応不要')}${chip('none', 'やり取りなし')}</div>
-      <span class="pk">並び順: 最後にLINEが届いた順(新しいものが上)</span>
-      <input type="search" id="pa-q" placeholder="名前・メッセージで探す" value="${esc(paQuery)}" autocomplete="off"><button type="button" class="btn ghost" data-pselall="1">表示中を全部選ぶ</button><span class="gx-flex"></span><button type="button" class="btn ghost" data-preset="1" title="AIが拾った未対応のやることを閉じ、全員の状態を未確認に戻します(履歴は消えません)">バックログをリセット</button></div>
-    ${atlHTML()}${plkHTML()}${bulk}<div id="pa-tbl">${paTableInner()}</div>`;
+  const need = paList.filter(paNeeds).length, closed = paList.filter(p => ['done', 'skip'].includes(paStatus(p))).length;
+  const chip = (k, label, n) => `<button type="button" data-pfst="${k}" aria-pressed="${paFiltSt === k}">${label} ${n}</button>`;
+  const tools = paTools ? `<div class="vboard pa2-tools"><div class="plk-h"><button type="button" class="btn ghost" data-pact="run">今すぐ分析</button><button type="button" class="btn ghost" data-preset="1" title="AIが拾った未対応のやることを閉じ、全員の状態を未確認に戻します(履歴は消えません)">バックログをリセット</button><span class="pk">AIの分析: ${esc(when)}</span></div>${notifyBoxHTML()}</div>${atlHTML()}${plkHTML()}` : '';
+  return `${err}<div class="pa2-h"><b>保護者LINE</b><div class="vfilter">${chip('todo', '要確認', need)}${chip('all', '全員', paList.length)}${chip('closed', '済み・不要', closed)}</div>
+      <input type="search" id="pa-q" placeholder="名前・メッセージで探す" value="${esc(paQuery)}" autocomplete="off"><span class="sp"></span><button type="button" class="btn ghost" data-ptools="1" aria-pressed="${paTools}">ツール</button>
+      <p class="pk tip">AIが拾った「やること」が残っている人、AIが拾っていない発言がある人が、「要確認」に出ます。返信したら「済み」、返信が要らなければ「不要」を押してください。待たせている時間の長い順に並びます。</p></div>
+    ${tools}<div id="pa-tbl">${paTableInner()}</div>`;
 }
 const tkOpen = () => tkTasks.filter(t => t.status === '未着手');
 const tkKindLabel = k => (k === 'お叱り' ? '要改善' : k || '指示');
@@ -2878,6 +2893,7 @@ document.addEventListener('click', async e => {
     catch (err) { btn.disabled = false; toast(/操作の種類/.test(String(err.message)) ? 'この操作には、バックエンドの更新(デプロイ)が必要です' : 'できませんでした: ' + err.message); }
     return;
   }
+  if (btn.dataset.ptools) { paTools = !paTools; renderPanel(); return; }
   if (btn.dataset.pfst) { paFiltSt = btn.dataset.pfst; renderPanel(); return; }
   if (btn.dataset.pselall) { paVisible().forEach(p => paSel.add(p.id)); renderPanel(); return; }
   if (btn.dataset.pselnone) { paSel.clear(); renderPanel(); return; }
@@ -2971,7 +2987,7 @@ document.addEventListener('click', async e => {
     }
     if (act === 'review') {
       const st = btn.dataset.st; let note = '';
-      if (st === '対応済み') { const n = prompt('返信した内容や約束したことを一言(空でもOK。「管理者の対応」に残ります)', ''); if (n === null) return; note = n.trim(); }
+      if (st === '対応済み' && !btn.dataset.nonote) { const n = prompt('返信した内容や約束したことを一言(空でもOK。「管理者の対応」に残ります)', ''); if (n === null) return; note = n.trim(); }
       return op({ action: 'review', status: st, seen: btn.dataset.seen || '', note }, `「${st}」にしました`);
     }
     if (act === 'work') return op({ action: 'work', on: true }, '対応中にしました。ほかの管理者にも表示されます');
