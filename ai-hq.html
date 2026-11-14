@@ -1765,7 +1765,7 @@ function paTableInner() {
 let plk = { open: false, busy: false, list: null, skip: new Set(), msg: '' };
 function plkHTML() {
   const unlinked = paList.filter(p => !(p.children || []).length).length;
-  const head = `<div class="plk-h"><b>塾生との結びつけ</b><span class="pk">結びつけ済み ${paList.length - unlinked}人 / 未 ${unlinked}人</span><span class="sp"></span><button type="button" class="btn ghost" data-plk="find"${plk.busy ? ' disabled' : ''}>${plk.busy ? '調べています…' : plk.list ? '調べ直す' : '候補を探す'}</button></div>`;
+  const head = `<div class="plk-h"><b>塾生との結びつけ</b><span class="pk">結びつけ済み ${paList.length - unlinked}人 / 未 ${unlinked}人</span><span class="sp"></span><button type="button" class="btn ghost" data-plk="sheet" title="CRMのスプレッドシート「保護者LINE」タブに、やり取りを書き出します(15分ごとにも自動で更新されます)">シートに書き出す</button><button type="button" class="btn ghost" data-plk="find"${plk.busy ? ' disabled' : ''}>${plk.busy ? '調べています…' : plk.list ? '調べ直す' : '候補を探す'}</button></div>`;
   if (!plk.list) return `<div class="vboard plk">${head}<p class="pk">保護者のメッセージに出てくる子どもの名前を、塾生リストと照らして候補を出します(AIは使いません)。<b>確定は、人が「この子で確定」を押したときだけ</b>です。結びつくと、保護者の名前の横に子どもの名前が出ます。${esc(plk.msg)}</p></div>`;
   const rows = plk.list.filter(x => !plk.skip.has(x.uid)).map(x => `<div class="plk-r"><div class="plk-p">${esc(x.name || '(名前なし)')}</div><div class="plk-c">${x.candidates.map(c => `<div class="plk-one"><span><b>${esc(c.name)}</b> ${esc(c.school)} ${esc(c.grade)}${c.dup ? ' <span class="tk-chip warn">同じ名前が複数</span>' : ''}<small class="pk"> 根拠「…${esc(c.evidence)}…」</small></span><button type="button" class="btn" data-plk="ok" data-uid="${esc(x.uid)}" data-sid="${esc(c.id)}">この子で確定</button></div>`).join('')}<button type="button" class="btn ghost" data-plk="no" data-uid="${esc(x.uid)}">違う・あとで</button></div></div>`).join('');
   return `<div class="vboard plk">${head}<p class="pk">${plk.list.length ? '候補が ' + plk.list.filter(x => !plk.skip.has(x.uid)).length + '人分あります。根拠の発言を見て、合っているときだけ確定してください。' : '新しい候補はありません。'}${esc(plk.msg)}</p>${rows}</div>`;
@@ -2876,6 +2876,12 @@ document.addEventListener('click', async e => {
   if (btn.dataset.plk) {
     const a = btn.dataset.plk;
     if (a === 'no') { plk.skip.add(btn.dataset.uid); renderPanel(); return; }
+    if (a === 'sheet') {
+      btn.disabled = true;
+      try { const r = await call('aiParentOps')({ action: 'sheetSync' }); toast(`スプレッドシートの「保護者LINE」に ${r.data.rows}行を書き出しました`); }
+      catch (err) { toast('書き出せませんでした: ' + err.message); }
+      btn.disabled = false; return;
+    }
     if (a === 'find') {
       plk.busy = true; plk.msg = ''; renderPanel();
       try { const r = await call('aiParentOps')({ action: 'linkCandidates' }); plk.list = r.data.list || []; plk.skip = new Set(); plk.msg = ` (塾生リスト ${r.data.students}人と照合)`; }
