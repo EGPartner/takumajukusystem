@@ -1781,6 +1781,8 @@ function paDetail(p) {
 const PA_WHO = { 'contact': 'ヤマグチ', 'mf2yan': 'ヤマグチ', 'campeon10041004': 'タクマ', 'yukiya.k.80': 'ユキヤ', 'kaikio72268': 'kkk' };
 const paWho = n => PA_WHO[String(n || '').trim()] || String(n || '');
 const LINE_CHAT_BASE = 'https://chat.line.biz/U91689be46b4c7a64eeb685a327019f50'; // 公式アカウントのManager(チャット一覧)。個別チャットの住所は、保護者のLINE IDでは開けなかったため、一覧に行く
+/** 日本時間の「01月01日(曜日) 00:00」。時刻の表示は、「○日前」と並べて出す */
+const jstStamp = ms => { if (!ms) return ''; const d = new Date(ms + 9 * 3600e3), p2 = n => String(n).padStart(2, '0'); return `${p2(d.getUTCMonth() + 1)}月${p2(d.getUTCDate())}日(${'日月火水木金土'[d.getUTCDay()]}) ${p2(d.getUTCHours())}:${p2(d.getUTCMinutes())}`; };
 const paAgo = ms => { const m = Math.floor((Date.now() - ms) / 60000); return m < 1 ? 'たった今' : m < 60 ? m + '分前' : m < 1440 ? Math.floor(m / 60) + '時間前' : Math.floor(m / 1440) + '日前'; };
 /** 全保護者の一覧(1人=1行)。状態は人が選ぶ。行をタップすると、その下にやり取りと状態の選択が開く */
 let paFiltSt = 'todo', paQuery = '', paSel = new Set(), paTools = false; // todo=要確認(やることが残っている・見落とし疑い・人が要対応にした人)
@@ -1808,7 +1810,7 @@ function paRow(p) {
   const msgHtml = ai ? '' : st === 'none' ? '<i class="pk">(まだメッセージはありません)</i>' : (hiddenN ? `<i class="pk">(ほか前の未返信 ${hiddenN}件)</i>` : '') + shown.map(m => `<span class="b">${esc(String(m.text || '').trim()).replace(/\n/g, '<br>')}</span>`).join('');
   const setRow = `<div class="pa-set"><span class="pk">状態を選ぶ:</span>${['未確認', '要対応', '対応中', '対応済み', '対応不要'].map(x => `<button type="button" class="btn ghost" aria-pressed="${PA_ST[st] === x}" data-pact="review" data-st="${x}" data-uid="${uid}" data-seen="${esc(p.lastInAt || '')}">${x}</button>`).join('')}</div>`;
   return `<li class="pa2-r st-${st}${late ? ' late' : ''}"><button type="button" class="pa2-m" data-pact="open" data-uid="${uid}" aria-expanded="${isOpen}">
-      <span class="pa2-n"><b>${esc(paName(p))}</b><span class="pa2-t${late ? ' late' : ''}">${esc(lastMs ? paAgo(lastMs) : '')}${paFiltSt === 'todo' ? '' : ' ・ ' + esc(st === 'none' ? 'なし' : PA_ST[st])}</span></span>${ai}${msgHtml ? `<span class="pa2-msg">${msgHtml}</span>` : ''}</button>
+      <span class="pa2-n"><b>${esc(paName(p))}</b><span class="pa2-t${late ? ' late' : ''}">${esc(lastMs ? jstStamp(lastMs) + ' ・ ' + paAgo(lastMs) : '')}${paFiltSt === 'todo' ? '' : ' ・ ' + esc(st === 'none' ? 'なし' : PA_ST[st])}</span></span>${ai}${msgHtml ? `<span class="pa2-msg">${msgHtml}</span>` : ''}</button>
     <span class="pa2-a">${acts}</span>
     ${isOpen ? `<div class="pt-x">${setRow}${open.length ? `<ul class="tasks" style="display:grid;gap:10px">${open.map(t => paTodo(p, t)).join('')}</ul>` : ''}${paDetail(p)}</div>` : ''}</li>`;
 }
