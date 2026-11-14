@@ -399,6 +399,12 @@
   .pa2-a{display:flex;gap:6px;flex:none;align-items:center}
   .pa2-r .pt-x{flex:1 1 100%}
   .subnav{margin:0 0 12px}.subnav .n{display:inline-block;min-width:1.3em;padding:0 6px;border-radius:999px;background:#E0786B;color:#fff;font-size:.72rem;font-weight:700;text-align:center;margin-left:4px}
+  .dc .dc-m{font-size:.78rem;color:var(--ink-3,#6B8284);display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  details.dc-more{margin:6px 0}details.dc-more>summary{cursor:pointer;font-size:.82rem;font-weight:700;color:var(--accent-ink);padding:4px 0}
+  .bl-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 12px}.bl-bar .tip{flex:none}
+  .tkw-fold>summary h4::after{content:'▸';margin-left:6px;color:var(--ink-3,#6B8284)}.tkw-fold[open]>summary h4::after{content:'▾'}
+  .tkw-fold>summary{cursor:pointer;list-style:none}.tkw-fold>summary h4{display:inline-block;margin:6px 0}.tkw-fold>summary::-webkit-details-marker{display:none}
+  .gx-toolbox{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:0 0 10px}
   .ib-b{display:flex;gap:6px;flex:none}.ib-flash{outline:3px solid var(--accent,#0FB8C4);outline-offset:2px;border-radius:10px;transition:outline-color .3s}
   .ib-m{min-width:0;display:grid;gap:3px}.ib-t{display:flex;gap:6px;align-items:center;min-width:0}.ib-t b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ib-s{font-size:.82rem;color:var(--ink-2,#4D6264);display:flex;gap:4px;flex-wrap:wrap;align-items:center}
   .tk-chip.kind{background:var(--accent-soft);color:var(--accent-ink);border-color:transparent}
@@ -1585,22 +1591,7 @@ function renderPanelInner() {
       ${days != null && days <= 7 ? `<div class="alertbox"><b>APIキーの更新時期です</b>期限まであと${days}日(${esc(apiKeyMeta.expiresAt)})。ai-company フォルダで ./キー更新.sh を実行してください。</div>` : ''}
       ${inboxHTML()}`;
   } else if (panelTab === 'decide') {
-    P.innerHTML = backlogBar() + `<div class="sec-h big">決めること(${decisions.length}件)</div>` + (decisions.length ? decisions.map(d => d.type === 'adoption' ? adoptionCard(d) : `<article class="card" id="card-${d.id}" data-order="${esc(d.orderId)}">
-        <div class="card-h"><span class="pill">${esc(deptName(d.dept) || '部長会議')}</span><span class="pill due">指示#${esc(d.orderNo || '')}${d.round > 1 ? ' ・ 第' + d.round + '案' : ''}</span>${decAge(d.createdAt)}</div>${recRow('d:' + d.id)}${shareRow(d)}
-        <h3>${esc(d.title)}</h3>
-        <div class="row rec"><span class="lb">推奨</span><span class="bd">${esc(d.recommendation)}</span></div>
-        <div class="row"><span class="lb">選択肢</span><span class="bd">${(d.options || []).map((x, i) => `${'ABC'[i] || '・'}. ${esc(x)}`).join('<br>')}</span></div>
-        <div class="row dis"><span class="lb">反対意見</span><span class="bd">${esc(d.dissent)}</span></div>
-        <div class="row"><span class="lb">根拠</span><div class="ev">${(d.evidence || []).map(e => `<span>${esc(e)}</span>`).join('')}</div></div>
-        ${cxoRow(d.cxo)}
-        ${(d.views || []).length ? `<div class="row"><span class="lb">横串</span><span class="bd">${d.views.map(v => `${esc(deptName(v.dept))}: ${esc(v.view)}`).join('<br>')}</span></div>` : ''}
-        ${d.runAfterApproval ? `<div class="row"><span class="lb">承認後</span><span class="bd">${esc(d.runAfterApproval)}</span></div>` : ''}
-        <div class="cmd-mini"><label for="ins-${d.id}" class="sr">この案件への指示</label><textarea id="ins-${d.id}" placeholder="指示(任意)。差し戻すときは直してほしい点を書く"></textarea>
-          <button type="button" class="mic" data-mic="ins-${d.id}" aria-label="音声で入力"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button></div>
-        <div class="actions"><button type="button" class="btn primary" data-act="approve" data-id="${d.id}">承認する</button>
-          <button type="button" class="btn ghost" data-act="back" data-id="${d.id}">差し戻す</button>
-          <button type="button" class="btn ghost" data-act="drop" data-id="${d.id}">取り下げ</button></div>
-      </article>`).join('') : `<div class="empty"><b>決めることはありません</b>統括の判断が要る案件が届くと、ここに並びます。</div>`)
+    P.innerHTML = backlogBar() + (decisions.length ? decisions.map(d => d.type === 'adoption' ? adoptionCard(d) : decisionCard(d)).join('') : `<div class="empty"><b>決めることはありません</b>統括の判断が要る案件が届くと、ここに並びます。</div>`)
       + (pendingB().length ? `<div class="sec-h big">目を通すもの ・ 完了報告(${pendingB().length}件)</div><p class="pk tip">押さなくても業務は止まりません。${7}日たつと自動で「確認なしで完了」になり、記録は残ります(後からでも採用・不採用にできます)。</p>` + pendingB().map(reviewCard).join('') : '');
     P.insertAdjacentHTML('beforeend', decidedHTML());
   } else if (panelTab === 'tasks') {
@@ -1660,10 +1651,33 @@ function reportLeft(o) {
   const left = 7 - Math.floor((Date.now() - d) / 864e5);
   return `<span class="pill when">${left > 0 ? `あと${left}日で自動完了` : 'まもなく自動完了'}</span>`;
 }
+/** 決裁カード: 見えるのは「何を決めるか・推奨・反対意見・承認後・ボタン」だけ。選択肢・根拠・CXO・横串・指示欄は、1つの「詳細」に畳む(内容は消さない) */
+function decisionCard(d) {
+  const rec = blItem('d:' + d.id), meta = [deptName(d.dept) || '部長会議', `指示#${d.orderNo || ''}${d.round > 1 ? ' ・ 第' + d.round + '案' : ''}`].join(' ・ ');
+  const more = [
+    (d.options || []).length ? `<div class="row"><span class="lb">選択肢</span><span class="bd">${d.options.map((x, i) => `${'ABC'[i] || '・'}. ${esc(x)}`).join('<br>')}</span></div>` : '',
+    (d.evidence || []).length ? `<div class="row"><span class="lb">根拠</span><div class="ev">${d.evidence.map(e => `<span>${esc(e)}</span>`).join('')}</div></div>` : '',
+    cxoRow(d.cxo),
+    (d.views || []).length ? `<div class="row"><span class="lb">横串</span><span class="bd">${d.views.map(v => `${esc(deptName(v.dept))}: ${esc(v.view)}`).join('<br>')}</span></div>` : '',
+    shareRow(d)].join('');
+  return `<article class="card dc" id="card-${d.id}" data-order="${esc(d.orderId)}">
+    <div class="dc-m">${esc(meta)}${decAge(d.createdAt)}</div>
+    <h3>${esc(d.title)}</h3>
+    <div class="row rec"><span class="lb">推奨</span><span class="bd">${esc(d.recommendation)}${rec ? ` <span class="tk-chip">AIの勧め: ${esc(BL_LABEL[rec.rec] || rec.rec)}</span>` : ''}</span></div>
+    ${d.dissent ? `<div class="row dis"><span class="lb">反対意見</span><span class="bd">${esc(d.dissent)}</span></div>` : ''}
+    ${d.runAfterApproval ? `<div class="row"><span class="lb">承認後</span><span class="bd">${esc(d.runAfterApproval)}</span></div>` : ''}
+    ${more ? `<details class="dc-more"><summary>選択肢・根拠・横串</summary>${more}</details>` : ''}
+    <details class="dc-more"><summary>指示を添える</summary><div class="cmd-mini"><label for="ins-${d.id}" class="sr">この案件への指示</label><textarea id="ins-${d.id}" placeholder="指示(任意)。差し戻すときは直してほしい点を書く"></textarea>
+      <button type="button" class="mic" data-mic="ins-${d.id}" aria-label="音声で入力"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button></div></details>
+    <div class="actions"><button type="button" class="btn primary" data-act="approve" data-id="${d.id}">承認する</button>
+      <button type="button" class="btn ghost" data-act="back" data-id="${d.id}">差し戻す</button>
+      <button type="button" class="btn ghost" data-act="drop" data-id="${d.id}">取り下げ</button></div>
+  </article>`;
+}
 function backlogBar() {
   const todo = blTodo(), when = backlog && backlog.at ? new Date(backlog.at).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) + `(${esc(backlog.trigger || '')})` : 'まだありません';
-  return `<div class="vboard"><div class="vb-h"><b>棚卸し</b><span class="pk">前回: ${when} ・ 毎週日曜20時に自動</span><span class="sp"></span><button type="button" class="btn" id="bl-review">今すぐ棚卸し</button>${todo.length ? `<button type="button" class="btn primary" id="bl-apply" style="flex:none">勧めどおりにまとめて処理(${todo.length}件)</button>` : ''}</div>
-    <p>AIが1件ずつ「承認・取り下げ・採用・不採用・統括が見て判断」を勧めます。まとめて処理しても「統括が見て判断」のものには触れません。期限を過ぎた案件と、後の指示に引き継がれた完了報告は、毎日自動で外れます。</p></div>`;
+  return `<div class="bl-bar">${todo.length ? `<button type="button" class="btn primary" id="bl-apply">勧めどおりにまとめて処理(${todo.length}件)</button>` : ''}<button type="button" class="btn ghost" id="bl-review">今すぐ棚卸し</button>
+    <p class="pk tip">AIが1件ずつ「承認・取り下げ・採用・不採用・統括が見て判断」を勧めます(前回: ${when}。毎週日曜20時に自動)。まとめて処理しても「統括が見て判断」のものには触れません。期限を過ぎた案件と、後の指示に引き継がれた完了報告は、毎日自動で外れます。</p></div>`;
 }
 function reopenForm(orderId) {
   return `<button type="button" class="btn ghost" data-reopen-open="${orderId}" style="justify-self:start">再審査を求める</button>
@@ -2009,7 +2023,7 @@ function tdExtra(r) {
   return `<div class="pt-x">${chips}<p class="tk-t" style="font-size:13.5px">${esc(t.text)}</p>${quote}${src}${prep}${hist}${fin}${midSel}<div class="tk-act">${main}<span class="sp"></span>${edit}</div>${compose}</div>`;
 }
 let tdOff = 0; // 案件のガント: 表示する日付の動かし方(日)。0=今日の1週間前から
-let tkMissions = [], tdWho = '', tdMOpen = null;
+let tkMissions = [], tdWho = '', tdMOpen = null, tdTools = false;
 const mOf = id => tkMissions.find(m => m.id === id);
 /** 案件の進み具合。人は入力せず、タスクの完了数と期限から計算する: 期限を過ぎた未完了のタスクがある(または案件の期限切れ)=遅れ / なければ順調 */
 function mStat(m) {
@@ -2034,7 +2048,7 @@ function tkRow(r) {
   const flag = r.label === '急ぎ' || r.label === '再確認' ? `<span class="tk-chip bad">${r.label}</span>` : '';
   return `<li class="tkr${r.isOpen ? '' : ' fin'}${r.over ? ' over' : ''}"><div class="tkr-l"><button type="button" class="tkr-ck" ${set} data-st="${r.isOpen ? '完了' : '未着手'}" aria-label="${r.isOpen ? '完了にする' : '未完了に戻す'}">${r.isOpen ? '' : '✓'}</button>
     <button type="button" class="tkr-m" data-topen="${esc(r.key)}" aria-expanded="${isOpen}"><span class="tkr-t">${esc((tk && t.kind && t.kind !== '指示' ? tkKindLabel(t.kind) + ' ' : '') + t.text)}</span>
-      <span class="tkr-s">${esc(r.owner)} ・ <span class="${r.over ? 'late' : ''}">${r.due ? '期限 ' + esc(tkMd(r.due)) : '期限なし'}</span>${t.doing ? ' ・ 進行中' : ''}${m ? ` ・ <em>${esc(m.title)}</em>` : ''}${flag}</span></button></div>${isOpen ? tdExtra(r) : ''}</li>`;
+      <span class="tkr-s">${esc(r.owner)} ・ <span class="${r.over ? 'late' : ''}">${r.due ? esc(tkMd(r.due)) : '期限なし'}</span>${t.doing ? ' ・ 進行中' : ''}${m ? ` ・ <em>${esc(m.title)}</em>` : ''}${flag}</span></button></div>${isOpen ? tdExtra(r) : ''}</li>`;
 }
 /** 今週: 期限ごとに区切った1本のリスト(単発のタスクも、案件のタスクも、ここで漏れなく見る) */
 function weekHTML() {
@@ -2042,11 +2056,11 @@ function weekHTML() {
   const mine = open.filter(r => !tdWho || r.owner === tdWho);
   const cnt = {}; open.forEach(r => { cnt[r.owner] = (cnt[r.owner] || 0) + 1; });
   const who = [...new Set([...TD_MEMBERS, ...Object.keys(cnt)])].filter(n => TD_MEMBERS.includes(n) || cnt[n]);
-  const chips = `<div class="vfilter tkw"><button type="button" data-tdwho="" aria-pressed="${tdWho === ''}">全員 ${open.length}</button>${who.map(n => `<button type="button" data-tdwho="${esc(n)}" aria-pressed="${tdWho === n}">${esc(n)} ${cnt[n] || 0}</button>`).join('')}</div>`;
-  const B = [['over', '期限切れ', r => r.over], ['today', '今日', r => !r.over && r.due && r.due <= today], ['week', '今週(7日以内)', r => !r.over && r.due > today && r.due <= week], ['later', 'それ以降', r => r.due > week], ['none', '期限なし', r => !r.due]];
-  const sec = B.map(([k, name, f]) => { const l = mine.filter(f).sort((a, b) => String(a.due || '9999').localeCompare(String(b.due || '9999')) || (a.t.no || 0) - (b.t.no || 0)); return l.length ? `<div class="tkw-sec ${k}"><h4>${name} <span>${l.length}</span></h4><ul class="tkl">${l.map(tkRow).join('')}</ul></div>` : ''; }).join('');
+  const chips = tdWho ? `<div class="vfilter tkw"><button type="button" data-tdwho="" aria-pressed="true">担当: ${esc(tdWho)} ✕</button></div>` : '';
+  const B = [['over', '期限切れ', r => r.over, 1], ['today', '今日', r => !r.over && r.due && r.due <= today, 1], ['week', '今週(7日以内)', r => !r.over && r.due > today && r.due <= week, 1], ['later', 'それ以降', r => r.due > week, 0], ['none', '期限なし', r => !r.due, 0]];
+  const sec = B.map(([k, name, f, openIt]) => { const l = mine.filter(f).sort((a, b) => String(a.due || '9999').localeCompare(String(b.due || '9999')) || (a.t.no || 0) - (b.t.no || 0)); if (!l.length) return ''; const body = `<ul class="tkl">${l.map(tkRow).join('')}</ul>`; return openIt ? `<div class="tkw-sec ${k}"><h4>${name} <span>${l.length}</span></h4>${body}</div>` : `<details class="tkw-sec ${k} tkw-fold"><summary><h4>${name} <span>${l.length}</span></h4></summary>${body}</details>`; }).join('');
   const dn = done.filter(r => !tdWho || r.owner === tdWho);
-  return chips + (sec || '<div class="empty"><b>やることはありません</b>「＋ 指示を出す」で登録するか、会話から拾った候補を「管理する」にすると、ここに並びます。</div>')
+  return chips + (sec || '<div class="empty"><b>やることはありません</b></div>')
     + (dn.length ? `<details class="tkw-done"><summary>最近終わったもの ${dn.length}件</summary><ul class="tkl">${dn.map(tkRow).join('')}</ul></details>` : '');
 }
 /** 案件の詳細: 進み具合・タスク・追加・編集 */
@@ -2101,9 +2115,9 @@ function missionsHTML() {
 }
 function tdCandHTML() {
   const c = tdCands(); if (!c.length) return '';
-  return `<div class="vboard td-cand"><div class="tk-head"><b>候補 ${c.length}件</b><span class="pk">会話から、指示・依頼らしいものを拾いました。管理するものだけ選んでください(選ぶまで進捗管理には入りません)</span></div>
+  return `<div class="vboard td-cand"><div class="tk-head"><b>候補 ${c.length}</b><span class="pk tip">会話から、指示・依頼らしいものを拾いました。管理するものだけ選んでください(選ぶまで進捗管理には入りません)</span></div>
     ${c.map(t => `<div class="td-c"><div><span class="tk-chip kind">${esc(tkKindLabel(t.kind))}</span> ${t.urgent ? '<span class="tk-chip bad">急ぎ</span> ' : ''}<b>${esc(t.text)}</b>
-      <div class="pk">${t.quote ? `発言「${esc(t.quote)}」 ・ ` : ''}担当(案): ${esc(tdOwner(t.owner) || '未定')} ・ 期限(案): ${t.due ? esc(tkMd(t.due)) : 'なし'} ・ ${esc(tkWhen(t.createdAt))}</div></div>
+      <div class="pk">${t.quote ? `「${esc(t.quote)}」 ・ ` : ''}${esc(tdOwner(t.owner) || '担当未定')} ・ ${t.due ? esc(tkMd(t.due)) : '期限なし'}</div></div>
       <div class="pt-a"><button type="button" class="btn" data-tkcand="${esc(t.id)}">管理する</button><button type="button" class="btn ghost" data-tkset="${esc(t.id)}" data-st="不要">不要</button></div></div>`).join('')}</div>`;
 }
 /** 統括グループへの自動通知の、停止・再開(ホールドにしている間は送らない) */
@@ -2125,13 +2139,14 @@ function todoTableHTML() {
     <div class="gx-card"><input id="mx-add-title" placeholder="案件の名前(例: 12月 福井遠征の準備)" aria-label="案件の名前" style="width:100%;font-size:13px;padding:6px 8px">
       <div class="gx-fields"><label>責任者 <select id="mx-add-owner">${owners}</select></label><label>開始日 <input type="date" id="mx-add-start" value="${esc(todayJst())}"></label><label>期限 <input type="date" id="mx-add-due"></label><button type="button" class="btn primary" id="mx-add-go">つくる</button></div>
       <p class="pk tip">つくったあと、案件の中にタスクを足していきます。</p></div></details>`;
-  const top = `<div class="gx-top"><div class="gx-title"><h3>やること</h3><span class="gx-sub">管理中 <b>${open.length}</b>${nOver ? ` ・ <em class="bad">期限切れ ${nOver}</em>` : ''} ・ 案件 <b>${nAct}</b>${nLate ? ` <em class="bad">(遅れ ${nLate})</em>` : ''}</span></div>
+  const owners2 = `<option value="">全員</option>${TD_MEMBERS.map(m => `<option${tdWho === m ? ' selected' : ''}>${esc(m)}</option>`).join('')}`;
+  const tools = tdTools ? `<div class="vboard gx-toolbox"><label class="pk">担当で絞る <select id="td-who">${owners2}</select></label><button type="button" class="btn ghost" id="tk-run" title="統括グループの会話から、候補を拾い直します(前回: ${esc(when)})">今すぐ分析</button>${notifyBoxHTML()}${hidden ? `<button type="button" class="btn ghost" id="tk-purge">終わった古い${hidden}件を削除</button>` : ''}</div>` : '';
+  const top = `<div class="gx-top"><div class="gx-title"><h3>${tdView === 'mission' ? '案件' : 'やること'} <span class="ib-n">${tdView === 'mission' ? nAct : open.length}</span></h3>${nOver && tdView !== 'mission' ? `<span class="gx-sub"><em class="bad">期限切れ ${nOver}</em></span>` : ''}${nLate && tdView === 'mission' ? `<span class="gx-sub"><em class="bad">遅れ ${nLate}</em></span>` : ''}</div>
     <div class="gx-tools"><div class="gx-seg"><button type="button" data-tdview="week" aria-pressed="${tdView !== 'mission'}">今週</button><button type="button" data-tdview="mission" aria-pressed="${tdView === 'mission'}">案件</button></div>
       ${tdView === 'mission' ? `<div class="gx-nav mx-g"><button type="button" data-tdnav="-14" aria-label="2週間前">‹</button><button type="button" data-tdnav="0">今日</button><button type="button" data-tdnav="14" aria-label="2週間後">›</button></div>` : ''}
-      <span class="gx-flex"></span>${tdView === 'mission' ? mform : form}<button type="button" class="btn ghost" id="tk-run" title="統括グループの会話から、候補を拾い直します(前回: ${esc(when)})">今すぐ分析</button>${notifyBoxHTML()}</div></div>`;
-  const help = `<details class="gx-help"><summary>使い方</summary><p class="pk"><b>今週</b>: 1回で終わるタスクも、案件のタスクも、期限ごとに1本のリストで見ます。左の丸を押すと完了です。<b>案件</b>: 複数のタスクを抱えた1つのミッションだけを、ガントで見ます(進み具合は、タスクの完了数と期限から自動で出ます)。タスクを案件に入れるには、タスクをタップして「案件」を選びます。LINEのトーク画面には、何も出ません。</p></details>`;
+      <span class="gx-flex"></span>${tdView === 'mission' ? mform : form}<button type="button" class="btn ghost" data-tdtools="1" aria-pressed="${tdTools}" aria-label="絞り込み・分析・通知">⋯</button></div></div>${tools}`;
   return `${err}${top}${tdView === 'mission' ? '' : tdCandHTML()}${tdView === 'mission' ? missionsHTML() : weekHTML()}${help}
-    ${hidden ? `<div class="tkpurge">統括グループの終わったもののうち、古い ${hidden}件は非表示です <button type="button" class="btn ghost" id="tk-purge">古い${hidden}件をまとめて削除</button></div>` : ''}<div class="gx-pad"></div>`;
+<div class="gx-pad"></div>`;
 }
 /* ---------- 名簿・階段図(タクマ塾CRMの塾生リストから) ----------
    データ: academies/{校舎}/students の months('YYYY-MM': 'active')。シートが正本で、10分ごとにシステムへ同期されている。
@@ -2445,23 +2460,23 @@ function voicesHTML() {
 }
 /** CXO秘書の見解(戦略・法務・推奨) */
 const cxoRow = c => !c ? '' : `<div class="row cxo"><span class="lb">CXO</span><span class="bd">戦略: ${esc(c.strategy)}<br>法務: ${esc(c.legal)}<br>推奨: ${esc(c.advice)}${c.lawyer ? '<br><span class="law">実行の前に弁護士への確認を勧めます</span>' : ''}</span></div>`;
-const closedDv = new Set(); // 利用者が閉じた成果物の全文(再描画しても閉じたまま)
+const openDv = new Set(); // 利用者が開いた成果物の全文(再描画しても開いたまま。初めは閉じている)
 function fullDeliverable(o, key) {
-  return `<details class="dv-wrap" data-dv="${key}"${closedDv.has(key) ? '' : ' open'}><summary>成果物の全文</summary><div class="dv">${deliverableHTML(o, true)}</div>
+  return `<details class="dv-wrap" data-dv="${key}"${openDv.has(key) ? ' open' : ''}><summary>成果物の全文</summary><div class="dv">${deliverableHTML(o, true)}</div>
     <div class="dv-tools">${fileBtn(o)}<button type="button" class="btn" data-view-output="${o.id}">大きく表示</button></div></details>`;
 }
-document.addEventListener('toggle', e => { const el = e.target; if (el.matches && el.matches('details.dv-wrap')) { el.open ? closedDv.delete(el.dataset.dv) : closedDv.add(el.dataset.dv); } }, true);
+document.addEventListener('toggle', e => { const el = e.target; if (el.matches && el.matches('details.dv-wrap')) { el.open ? openDv.add(el.dataset.dv) : openDv.delete(el.dataset.dv); } }, true);
 /** 区分Bの確認待ち(完了した社内の資料・調査。押さなくても業務は止まらない) */
 const pendingB = () => orders.filter(o => o.stage === 'done' && o.adoption && o.adoption.status === 'pending' && o.deliverable);
 function reviewCard(o) {
-  return `<article class="card" id="card-b-${o.id}" data-order="${esc(o.id)}">
-    <div class="card-h"><span class="pill">完了報告</span><span class="pill due">指示#${esc(o.no)} ・ ${esc(targetName(o.target))}</span>${reportLeft(o)}</div>${recRow('o:' + o.id)}
+  const auto = (o && o.deliverable && (o.deliverable.next || []).length && !o.auto && !o.followedUp);
+  return `<article class="card dc" id="card-b-${o.id}" data-order="${esc(o.id)}">
+    <div class="dc-m">${esc(`指示#${o.no} ・ ${targetName(o.target)}`)}${reportLeft(o)}</div>
     <h3>${esc(o.deliverable.title)}</h3>
     <div class="row rec"><span class="lb">要約</span><span class="bd">${esc(o.deliverable.summary)}</span></div>
     ${fullDeliverable(o, 'b-' + o.id)}
-    <div class="cmd-mini"><label for="ad-${o.id}" class="sr">コメント</label><textarea id="ad-${o.id}" placeholder="不採用・修正のときは理由や直してほしい点を書く"></textarea></div>
-    ${(o && o.deliverable && (o.deliverable.next || []).length && !o.auto && !o.followedUp) ? `<p class="pk auto-note">採用すると、「次にやること」のうちAIが進められるものを、担当の係へ自動で指示します(システムの改修は依頼文を作ります。電話・送信など人が行う作業には出しません)。</p>` : ''}
-    <div class="actions"><button type="button" class="btn primary" data-adopt="adopt" data-id="${o.id}">採用</button><button type="button" class="btn ghost" data-adopt="revise" data-id="${o.id}">修正</button><button type="button" class="btn ghost" data-adopt="reject" data-id="${o.id}">不採用</button></div>
+    <details class="dc-more"><summary>コメントを添える</summary><div class="cmd-mini"><label for="ad-${o.id}" class="sr">コメント</label><textarea id="ad-${o.id}" placeholder="不採用・修正のときは理由や直してほしい点を書く"></textarea></div></details>
+    <div class="actions"><button type="button" class="btn primary" data-adopt="adopt" data-id="${o.id}">採用</button><button type="button" class="btn ghost" data-adopt="revise" data-id="${o.id}">修正</button><button type="button" class="btn ghost" data-adopt="reject" data-id="${o.id}">不採用</button>${auto ? '<span class="pk tip">採用すると、「次にやること」のうちAIが進められるものを、担当の係へ自動で指示します(システムの改修は依頼文を作ります。電話・送信など人が行う作業には出しません)。</span>' : ''}</div>
   </article>`;
 }
 function adoptionCard(d) {
@@ -2574,6 +2589,7 @@ function schedHTML() {
 }
 document.addEventListener('input', e => {
   if (e.target.dataset && e.target.dataset.stlck) { const k = e.target.dataset.stlck; if (e.target.checked) stl.sel.add(k); else stl.sel.delete(k); renderPanel(); return; }
+  if (e.target.id === 'td-who') { tdWho = e.target.value; renderPanel(); return; }
   if (e.target.id === 'pa-q') { paQuery = e.target.value; const t = document.getElementById('pa-tbl'); if (t) t.innerHTML = paTableInner(); } // 検索は、表だけを入れ替える(入力の途中で外れないように)
 });
 document.addEventListener('change', e => {
@@ -2916,6 +2932,7 @@ document.addEventListener('click', async e => {
     catch (err) { btn.disabled = false; toast(/操作の種類/.test(String(err.message)) ? 'この操作には、バックエンドの更新(デプロイ)が必要です' : 'できませんでした: ' + err.message); }
     return;
   }
+  if (btn.dataset.tdtools) { tdTools = !tdTools; renderPanel(); return; }
   if (btn.dataset.ptools) { paTools = !paTools; renderPanel(); return; }
   if (btn.dataset.pfst) { paFiltSt = btn.dataset.pfst; renderPanel(); return; }
   if (btn.dataset.pselall) { paVisible().forEach(p => paSel.add(p.id)); renderPanel(); return; }
