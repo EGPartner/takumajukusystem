@@ -393,7 +393,7 @@
   .pa2-r{display:flex;gap:10px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;padding:12px 14px;border-top:1px solid var(--line)}.pa2-r:first-child{border-top:0}
   .pa2-r.late{box-shadow:inset 3px 0 0 #E0786B}
   .pa2-m{all:unset;cursor:pointer;flex:1 1 320px;min-width:0;display:grid;gap:4px}
-  .pa2-n b{color:var(--name-y)}
+  .pa2-n b{color:var(--name-y);font-size:1.08rem;font-weight:800;letter-spacing:.01em}.pa2-c{font-weight:700;color:var(--ink);font-size:.95rem}.pa2-c::before{content:'子: ';font-weight:400;color:var(--ink-3);font-size:.78rem}
   .pa2-n{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}.pa2-t{font-size:.78rem;color:var(--ink-3,#6B8284)}.pa2-t.late{color:#C0503F;font-weight:700}
   .pa2-ai{font-size:.9rem}
   .pa2-ai{display:grid;gap:6px}.pa2-l{display:grid;grid-template-columns:9.2em 1fr;gap:10px;align-items:start}
@@ -1827,7 +1827,7 @@ function paRow(p) {
   // AIの要点があるときは、元のメッセージは出さない(同じ内容の二重表示をやめる。行を押すと全文が開く)
   const msgHtml = ai ? '' : st === 'none' ? '<i class="pk">(まだメッセージはありません)</i>' : (hiddenN ? `<i class="pk">(ほか前の未返信 ${hiddenN}件)</i>` : '') + shown.map(m => `<span class="b">${esc(String(m.text || '').trim()).replace(/\n/g, '<br>')}</span>`).join('');
   return `<li class="pa2-r st-${st}${late ? ' late' : ''}"><button type="button" class="pa2-m" data-pact="open" data-uid="${uid}" aria-expanded="${isOpen}">
-      <span class="pa2-n"><b>${esc(paName(p))}</b><span class="pa2-t${late ? ' late' : ''}">${esc(lastMs ? jstStamp(lastMs) + ' ・ ' + paAgo(lastMs) : '')}${paFiltSt === 'todo' ? '' : ' ・ ' + esc(st === 'none' ? 'なし' : PA_ST[st])}</span></span>${ai}${msgHtml ? `<span class="pa2-msg">${msgHtml}</span>` : ''}</button>
+      <span class="pa2-n"><b>${esc(p.name || p.lineName || '名前未設定')}</b>${(p.children || []).length ? `<span class="pa2-c">${esc(p.children.map(c => c.name).join('・'))}</span>` : ''}<span class="pa2-t${late ? ' late' : ''}">${esc(lastMs ? jstStamp(lastMs) + ' ・ ' + paAgo(lastMs) : '')}${paFiltSt === 'todo' ? '' : ' ・ ' + esc(st === 'none' ? 'なし' : PA_ST[st])}</span></span>${ai}${msgHtml ? `<span class="pa2-msg">${msgHtml}</span>` : ''}</button>
     <span class="pa2-a">${acts}</span>
     ${isOpen ? `<div class="pt-x">${paDetail(p)}</div>` : ''}</li>`;
 }
