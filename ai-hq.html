@@ -17,7 +17,7 @@
   /* Layout: ドット絵のオフィス(上段=ラウンジ・会議室・統括室・事務局、下段=4P各部)を主役に、サマリ/決裁/記録は全画面のパネル(PC)、下に動きのティッカー */
   :root{
     --bg:#E9F0F0; --surface:#FFFFFF; --surface-2:#F4F8F8; --line:#D8E3E3; --line-strong:#BFD0D0;
-    --ink:#0F1C1E; --ink-2:#4D6264; --ink-3:#88A0A2;
+    --ink:#0F1C1E; --ink-2:#4D6264; --ink-3:#88A0A2; --name-y:#B38600;
     --accent:#0FB8C4; --accent-ink:#087A83; --accent-soft:#DDF4F5;
     --ok:#1F9D63; --ok-soft:#E1F3E9; --warn:#C98300; --warn-soft:#FFF2D6; --bad:#D2483C; --bad-soft:#FCE7E4; --idle:#9AAAAC;
     --navy:#14284A;
@@ -30,13 +30,13 @@
   }
   @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
     --bg:#0B1416; --surface:#121E21; --surface-2:#172629; --line:#22363A; --line-strong:#2F4A4F;
-    --ink:#E6F0F0; --ink-2:#A3B8BA; --ink-3:#6E8689;
+    --ink:#E6F0F0; --ink-2:#A3B8BA; --ink-3:#6E8689; --name-y:#F5D547;
     --accent:#2FCAD5; --accent-ink:#7FE2E9; --accent-soft:#123A3E;
     --ok:#3CC487; --ok-soft:#123326; --warn:#E8A93A; --warn-soft:#3A2C10; --bad:#F06B5F; --bad-soft:#3D1A17; --idle:#5E7477;
     --navy:#0A1830; --shadow:0 18px 40px -22px rgba(0,0,0,.75); color-scheme:dark; } }
   :root[data-theme="dark"]{
     --bg:#0B1416; --surface:#121E21; --surface-2:#172629; --line:#22363A; --line-strong:#2F4A4F;
-    --ink:#E6F0F0; --ink-2:#A3B8BA; --ink-3:#6E8689;
+    --ink:#E6F0F0; --ink-2:#A3B8BA; --ink-3:#6E8689; --name-y:#F5D547;
     --accent:#2FCAD5; --accent-ink:#7FE2E9; --accent-soft:#123A3E;
     --ok:#3CC487; --ok-soft:#123326; --warn:#E8A93A; --warn-soft:#3A2C10; --bad:#F06B5F; --bad-soft:#3D1A17; --idle:#5E7477;
     --navy:#0A1830; --shadow:0 18px 40px -22px rgba(0,0,0,.75); color-scheme:dark; }
@@ -393,6 +393,7 @@
   .pa2-r{display:flex;gap:10px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;padding:12px 14px;border-top:1px solid var(--line)}.pa2-r:first-child{border-top:0}
   .pa2-r.late{box-shadow:inset 3px 0 0 #E0786B}
   .pa2-m{all:unset;cursor:pointer;flex:1 1 320px;min-width:0;display:grid;gap:4px}
+  .pa2-n b{color:var(--name-y)}
   .pa2-n{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}.pa2-t{font-size:.78rem;color:var(--ink-3,#6B8284)}.pa2-t.late{color:#C0503F;font-weight:700}
   .pa2-ai{font-size:.9rem}
   .pa2-ai{display:grid;gap:6px}.pa2-l{display:grid;grid-template-columns:9.2em 1fr;gap:10px;align-items:start}
