@@ -420,6 +420,11 @@
   .pa-tdo .pa2-x small{display:block}.pa-tb{display:flex;gap:6px;flex:none}
   .pa-sum{margin:0;font-size:.8rem;line-height:1.6}
   @media (max-width:560px){.pa-tdo{grid-template-columns:1fr}.pa-tb{justify-self:start}}
+  .pa-sumbox{display:grid;gap:8px}.pa-intro{margin:0;font-size:.82rem;line-height:1.7;color:var(--ink-2)}
+  ol.pa-tl{list-style:none;margin:0;padding:0 0 0 12px;border-left:2px solid var(--line-strong);display:grid;gap:12px}
+  ol.pa-tl>li{position:relative;display:grid;gap:3px}ol.pa-tl>li::before{content:'';position:absolute;left:-18px;top:.45em;width:10px;height:10px;border-radius:50%;background:var(--name-y,#F5D547);border:2px solid var(--surface)}
+  ol.pa-tl time{font-size:.8rem;font-weight:800;color:var(--name-y,#B38600)}ol.pa-tl p{margin:0;font-size:.86rem;line-height:1.6}ol.pa-tl small{display:block}
+  .pa-h4{margin:12px 0 6px;font-size:12px;color:var(--ink-3)}
   .ib-b{display:flex;gap:6px;flex:none}.ib-flash{outline:3px solid var(--accent,#0FB8C4);outline-offset:2px;border-radius:10px;transition:outline-color .3s}
   .ib-m{min-width:0;display:grid;gap:3px}.ib-t{display:flex;gap:6px;align-items:center;min-width:0}.ib-t b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ib-s{font-size:.82rem;color:var(--ink-2,#4D6264);display:flex;gap:4px;flex-wrap:wrap;align-items:center}
   .tk-chip.kind{background:var(--accent-soft);color:var(--accent-ink);border-color:transparent}
@@ -1776,8 +1781,49 @@ function paThreadHTML(p) {
   const more = ins.length > vis.length ? `<button type="button" class="btn ghost" data-pact="threadmore" data-uid="${esc(p.id)}">さらに古い ${ins.length - vis.length}件を表示</button>` : '';
   return `<div class="pa-thread"><h4>保護者のメッセージ(新しい順・${ins.length}件)</h4>${left || '(まだありません)'}${more}</div>`;
 }
+/* ---------- 要点・終わったことを、日付ごとの時系列で見せる(日付が変われば、行を分ける。新しい日が上) ---------- */
+const PA_WD = '日月火水木金土';
+/** 「11/05」「2026-11-12」の日付を「11月05日(木)」にする(年がなければ今年。日本時間) */
+function paDateLabel(y, m, d) {
+  const yy = y || new Date(Date.now() + 9 * 3600e3).getUTCFullYear(), dt = new Date(Date.UTC(yy, Number(m) - 1, Number(d)));
+  return { key: `${yy}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`, label: `${String(m).padStart(2, '0')}月${String(d).padStart(2, '0')}日(${PA_WD[dt.getUTCDay()]})` };
+}
+/**
+ * AIの要点(日付が文の途中に混ざった文章)を、{ intro:[日付のない文], days:[{ key,label,lines:[…] }] } に分ける。
+ * 文の頭が日付(11/05・2026-11-12・11/07 13:20)なら、その日の行。「同日18:00」は、直前の日の行。日付のない文は intro(その人の人物像)。
+ * 日付は新しい日が上。同じ日の中も、あとの出来事が上。
+ */
+function paParseSummary(text) {
+  const sents = String(text || '').split(/。/).map(x => x.replace(/\s+/g, ' ').trim()).filter(Boolean);
+  const intro = [], map = new Map(); let cur = null;
+  for (const t of sents) {
+    let m = t.match(/^(?:(\d{4})-)?(\d{1,2})[-/](\d{1,2})(?:\s*(\d{1,2}:\d{2}))?\s*(?:、|,|に|は|\s)?\s*(.*)$/);
+    if (m && m[5] !== undefined) { cur = paDateLabel(m[1] && Number(m[1]), m[2], m[3]); const body = (m[4] ? m[4] + ' ' : '') + m[5]; if (!map.has(cur.key)) map.set(cur.key, { ...cur, lines: [] }); map.get(cur.key).lines.push(body.trim()); continue; }
+    m = t.match(/^同日(?:\s*(\d{1,2}:\d{2}))?\s*(?:、|,)?\s*(.*)$/);
+    if (m && cur) { map.get(cur.key).lines.push(((m[1] ? m[1] + ' ' : '') + m[2]).trim()); continue; }
+    intro.push(t);
+  }
+  const days = [...map.values()].sort((a, b) => b.key.localeCompare(a.key)).map(d => ({ ...d, lines: d.lines.slice().reverse() }));
+  return { intro, days };
+}
+function paSummaryHTML(text) {
+  if (!String(text || '').trim()) return '';
+  const { intro, days } = paParseSummary(text);
+  return `<div class="pa-sumbox">${intro.length ? `<p class="pa-intro">${intro.map(esc).join('。')}。</p>` : ''}${days.length ? `<ol class="pa-tl">${days.map(d => `<li><time>${esc(d.label)}</time><div>${d.lines.map(l => `<p>${esc(l)}</p>`).join('')}</div></li>`).join('')}</ol>` : ''}</div>`;
+}
+/** 終わったこと: 終わった日ごとに(新しい日が上)。1行 = 時刻・状態・内容 */
+function paDoneHTML(done) {
+  const by = new Map();
+  done.slice().sort((a, b) => String(b.doneAt || '').localeCompare(String(a.doneAt || ''))).forEach(t => {
+    const ms = Date.parse(t.doneAt || ''), j = ms ? new Date(ms + 9 * 3600e3) : null, k = j ? j.toISOString().slice(0, 10) : '日付なし';
+    const lab = j ? paDateLabel(j.getUTCFullYear(), j.getUTCMonth() + 1, j.getUTCDate()).label : '日付なし';
+    if (!by.has(k)) by.set(k, { label: lab, rows: [] });
+    by.get(k).rows.push({ time: j ? j.toISOString().slice(11, 16) : '', t });
+  });
+  return `<ol class="pa-tl">${[...by.values()].map(d => `<li><time>${esc(d.label)}</time><div>${d.rows.map(r => `<p><span class="pk">${esc(r.time)} ${esc(r.t.status)}</span> ${esc(r.t.text)}${r.t.note ? `<small class="pk">${esc(r.t.note)}</small>` : ''}</p>`).join('')}</div></li>`).join('')}</ol>`;
+}
 function paDetail(p) {
-  const uid = esc(p.id), open = paOpenTodos(p), done = (p.todos || []).filter(t => t.status !== '未対応').slice(-6).reverse();
+  const uid = esc(p.id), open = paOpenTodos(p), done = (p.todos || []).filter(t => t.status !== '未対応').slice(-20).reverse();
   const c = paCompose && paCompose.uid === p.id ? `<div class="vform"><b>返信案</b>
       <textarea id="pa-msg" rows="6" ${paCompose.busy ? 'disabled' : ''} placeholder="${paCompose.busy === 'draft' ? '返信案を作っています…' : ''}">${esc(paCompose.text || '')}</textarea>
       <div class="actions"><button type="button" class="btn primary" data-pact="copy" data-uid="${uid}" ${paCompose.busy ? 'disabled' : ''}>コピー</button><button type="button" class="btn ghost" data-pact="closedraft" data-uid="${uid}">閉じる</button><span class="pk tip">AIの案です。直して、コピーしてLINE公式アカウントから送ってください。このシステムからは送られません。</span></div></div>` : '';
@@ -1787,11 +1833,11 @@ function paDetail(p) {
   return `<div class="pa-split">
     ${paThreadHTML(p)}
     <div class="pa-side"><h4>対応案</h4>${todos}
-      ${p.summary ? `<p class="pa-sum pk">${esc(p.summary)}</p>` : ''}${p.memo ? `<p class="pa-sum pk">メモ: ${esc(p.memo)}</p>` : ''}
+      ${paSummaryHTML(p.summary)}${p.memo ? `<p class="pa-sum pk">メモ: ${esc(p.memo)}</p>` : ''}
       <div class="tk-act"><button type="button" class="btn" data-pact="draft" data-uid="${uid}">返信案を作る</button><button type="button" class="btn ghost" data-pact="add" data-uid="${uid}">やることを足す</button></div>
       ${c}
       <details class="dc-more"><summary>その他</summary><div class="tk-act"><button type="button" class="btn ghost" data-pact="name" data-uid="${uid}">名前</button><button type="button" class="btn ghost" data-pact="memo" data-uid="${uid}">メモ</button><span class="sp"></span><button type="button" class="btn ghost" data-pact="erase" data-uid="${uid}">記録を削除</button></div>
-        ${done.length ? `<div class="pa-box"><h4>終わったこと</h4>${done.map(t => `<p class="pa-msg"><span>${esc(t.status)} ${t.doneAt ? esc(tkWhen(t.doneAt)) : ''}</span>${esc(t.text)}${t.note ? `<br>└ ${esc(t.note)}` : ''}</p>`).join('')}</div>` : ''}</details>
+        ${done.length ? `<h4 class="pa-h4">終わったこと</h4>${paDoneHTML(done)}` : ''}</details>
     </div></div>`;
 }
 // 「選んだ人」「管理者の対応」に出す名前。記録にはログインのメールアドレスの@より前が残っていることがあるため、ここで人の名前に読み替える(過去の記録にも効く)
