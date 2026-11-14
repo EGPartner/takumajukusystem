@@ -1885,7 +1885,7 @@ function paTableInner() {
 let plk = { open: false, busy: false, list: null, skip: new Set(), msg: '' };
 function plkHTML() {
   const unlinked = paList.filter(p => !(p.children || []).length).length;
-  const head = `<div class="plk-h"><b>塾生との結びつけ</b><span class="pk">結びつけ済み ${paList.length - unlinked}人 / 未 ${unlinked}人</span><span class="sp"></span><button type="button" class="btn ghost" data-plk="sheet" title="CRMのスプレッドシート「保護者LINE」タブに、やり取りを書き出します(15分ごとにも自動で更新されます)">シートに書き出す</button><button type="button" class="btn ghost" data-plk="find"${plk.busy ? ' disabled' : ''}>${plk.busy ? '調べています…' : plk.list ? '調べ直す' : '候補を探す'}</button></div>`;
+  const head = `<div class="plk-h"><b>塾生との結びつけ</b><span class="pk">結びつけ済み ${paList.length - unlinked}人 / 未 ${unlinked}人</span><span class="sp"></span><button type="button" class="btn primary" data-plk="auto" title="塾生リストの「LINEアカウント名」と、公式LINEの表示名が完全に一致する保護者を、自動で結びつけます(迷うものは自動にしません)">LINE名で自動で結びつける</button><button type="button" class="btn ghost" data-plk="sheet" title="CRMのスプレッドシート「保護者LINE」タブに、やり取りを書き出します(15分ごとにも自動で更新されます)">シートに書き出す</button><button type="button" class="btn ghost" data-plk="find"${plk.busy ? ' disabled' : ''}>${plk.busy ? '調べています…' : plk.list ? '調べ直す' : '候補を探す'}</button></div>`;
   if (!plk.list) return `<div class="vboard plk">${head}<p class="pk tip">保護者のメッセージに出てくる子どもの名前を、塾生リストと照らして候補を出します(AIは使いません)。<b>確定は、人が「この子で確定」を押したときだけ</b>です。結びつくと、保護者の名前の横に子どもの名前が出ます。</p>${plk.msg ? `<p class="pk">${esc(plk.msg)}</p>` : ''}</div>`;
   const REL = { same: ['苗字が同じ(自分の子の可能性が高い)', ''], unknown: ['関係は不明(発言を見て判断)', ''], other: ['別の家族の子として書かれている可能性', ' plk-other'] };
   const one = (x, c) => `<div class="plk-one${(REL[c.rel] || REL.unknown)[1]}"><span><b>${esc(c.name)}</b> ${esc(c.school)} ${esc(c.grade)}${c.dup ? ' <span class="tk-chip warn">同じ名前が複数</span>' : ''}<span class="tk-chip${c.rel === 'same' ? '' : c.rel === 'other' ? ' warn' : ''}">${esc((REL[c.rel] || REL.unknown)[0])}</span><small class="pk">根拠「…${esc(c.evidence)}…」</small></span><span class="plk-btns"><button type="button" class="btn" data-plk="ok" data-uid="${esc(x.uid)}" data-sid="${esc(c.id)}">この子で確定</button><button type="button" class="btn ghost" data-plk="reject" data-uid="${esc(x.uid)}" data-sid="${esc(c.id)}">違う</button></span></div>`;
@@ -3061,6 +3061,17 @@ document.addEventListener('click', async e => {
       try { await call('aiParentOps')({ action: 'linkReject', uid: btn.dataset.uid, id: btn.dataset.sid }); plk.list = (plk.list || []).map(x => (x.uid === btn.dataset.uid ? { ...x, candidates: x.candidates.filter(c => c.id !== btn.dataset.sid) } : x)).filter(x => x.candidates.length); toast('「この子ではない」として、もう出さないようにしました'); renderPanel(); }
       catch (err) { btn.disabled = false; toast('できませんでした: ' + err.message); }
       return;
+    }
+    if (a === 'auto') {
+      btn.disabled = true;
+      try {
+        const dry = (await call('aiParentOps')({ action: 'linkAuto', dry: true })).data;
+        if (!dry.parents) { toast(`自動で結びつけられるものは、ありません(塾生リストにLINE名のある塾生: ${dry.withLine}人)`); btn.disabled = false; return; }
+        if (!confirm(`LINE名が完全に一致した ${dry.parents}人の保護者を、${dry.students}人の塾生に結びつけます。\n(同じLINE名の友だちが複数いる場合や、別の家族が同じLINE名の場合は、自動にしません)\nよろしいですか?`)) { btn.disabled = false; return; }
+        const r = (await call('aiParentOps')({ action: 'linkAuto' })).data;
+        toast(`${r.parents}人の保護者を、${r.students}人の塾生に結びつけました`); plk.list = null;
+      } catch (err) { toast('できませんでした: ' + err.message); }
+      btn.disabled = false; renderPanel(); return;
     }
     if (a === 'sheet') {
       btn.disabled = true;
