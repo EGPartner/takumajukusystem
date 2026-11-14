@@ -406,6 +406,7 @@
   .tkw-fold>summary{cursor:pointer;list-style:none}.tkw-fold>summary h4{display:inline-block;margin:6px 0}.tkw-fold>summary::-webkit-details-marker{display:none}
   .gx-toolbox{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:0 0 10px}
   .rf-g{margin:4px 0 12px}.rf-g h5{margin:0 0 4px;font-size:.92rem;display:flex;align-items:center;gap:6px}
+  .pa-g h5{margin:14px 0 6px}.pa-g h5.late{color:#C0503F}.atl-h{margin:8px 0 2px;font-size:.88rem}
   .ib-b{display:flex;gap:6px;flex:none}.ib-flash{outline:3px solid var(--accent,#0FB8C4);outline-offset:2px;border-radius:10px;transition:outline-color .3s}
   .ib-m{min-width:0;display:grid;gap:3px}.ib-t{display:flex;gap:6px;align-items:center;min-width:0}.ib-t b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ib-s{font-size:.82rem;color:var(--ink-2,#4D6264);display:flex;gap:4px;flex-wrap:wrap;align-items:center}
   .tk-chip.kind{background:var(--accent-soft);color:var(--accent-ink);border-color:transparent}
@@ -1789,8 +1790,8 @@ function paVisible() {
   const q = paQuery.trim().toLowerCase();
   const pick = p => paFiltSt === 'all' ? true : paFiltSt === 'todo' ? paNeeds(p) : paFiltSt === 'closed' ? ['done', 'skip'].includes(paStatus(p)) : paStatus(p) === paFiltSt;
   const list = paList.filter(p => pick(p) && (!q || (paName(p) + ' ' + paIns(p).slice(-3).map(m => m.text).join(' ')).toLowerCase().includes(q)));
-  // 要確認は「長く待たせている順」(見落とさないため)。ほかは「最後にLINEが届いた順(新しい順)」
-  return paFiltSt === 'todo' ? list.sort((a, b) => paSince(a) - paSince(b)) : list.sort((a, b) => (paMs(b.lastInAt) - paMs(a.lastInAt)) || paName(a).localeCompare(paName(b), 'ja'));
+  // 並びは、最後にLINEが届いた順(新しいものが上)。要確認は、paTableInner で「24時間以上お待たせ」とカテゴリに分ける
+  return list.sort((a, b) => (paMs(b.lastInAt) - paMs(a.lastInAt)) || paName(a).localeCompare(paName(b), 'ja'));
 }
 const LINE_LINK = `<a class="btn ghost" href="${LINE_CHAT_BASE}" target="_blank" rel="noopener" title="公式アカウントのManager(チャット一覧)を開く">LINE↗</a>`;
 function paBtn(p, st, label, cls) { return `<button type="button" class="btn${cls ? ' ' + cls : ''}" data-pact="review" data-st="${st}" data-uid="${esc(p.id)}" data-seen="${esc(p.lastInAt || '')}">${label}</button>`; }
@@ -1811,9 +1812,23 @@ function paRow(p) {
     <span class="pa2-a">${acts}</span>
     ${isOpen ? `<div class="pt-x">${setRow}${open.length ? `<ul class="tasks" style="display:grid;gap:10px">${open.map(t => paTodo(p, t)).join('')}</ul>` : ''}${paDetail(p)}</div>` : ''}</li>`;
 }
+const PA_CAT = ['クレーム', '注文・キャンセル', '入金の連絡', '支払い', '休会・退会', '欠席・変更', '参加の連絡', '質問', '要返信', '約束・期限'];
+/** 要確認の人が、どのカテゴリか(AIが拾ったやることの種類。なければ「AIが拾っていない」か「人が要対応にした」) */
+function paCat(p) {
+  const open = paOpenTodos(p);
+  if (open.length) { const ks = open.map(t => t.kind); return PA_CAT.find(c => ks.includes(c)) || ks[0]; }
+  return paMissed(p).length ? 'AIが拾っていない' : '人が要対応にした';
+}
 function paTableInner() {
   const list = paVisible();
-  return list.length ? `<ul class="pa2">${list.map(paRow).join('')}</ul>` : `<div class="empty"><b>${paFiltSt === 'todo' ? '要確認の保護者はいません' : '該当する保護者はいません'}</b>${paFiltSt === 'todo' ? '返信や対応が必要なものは、すべて片付いています。' : '条件を変えてください。'}</div>`;
+  if (!list.length) return `<div class="empty"><b>${paFiltSt === 'todo' ? '要確認の保護者はいません' : '該当する保護者はいません'}</b>${paFiltSt === 'todo' ? '返信や対応が必要なものは、すべて片付いています。' : '条件を変えてください。'}</div>`;
+  if (paFiltSt !== 'todo') return `<ul class="pa2">${list.map(paRow).join('')}</ul>`;
+  // 要確認: まず「24時間以上お待たせ」、次にカテゴリごと。どのグループも、新しく届いたものが上
+  const byNew = (x, y) => paMs(y.lastInAt) - paMs(x.lastInAt);
+  const late = list.filter(p => Date.now() - paSince(p) >= 24 * 3600e3).sort(byNew), rest = list.filter(p => !late.includes(p));
+  const order = [...PA_CAT, 'AIが拾っていない', '人が要対応にした'];
+  const groups = [['24時間以上お待たせ', late, true], ...order.map(c => [c, rest.filter(p => paCat(p) === c).sort(byNew), false]), ['その他', rest.filter(p => !order.includes(paCat(p))).sort(byNew), false]].filter(g => g[1].length);
+  return groups.map(([name, l, isLate]) => `<div class="rf-g pa-g"><h5${isLate ? ' class="late"' : ''}>${esc(name)} <span class="pk">${l.length}</span></h5><ul class="pa2">${l.map(paRow).join('')}</ul></div>`).join('');
 }
 /* ---------- 保護者と塾生の結びつけ(候補は名前の一致だけ。確定は人が押す) ---------- */
 let plk = { open: false, busy: false, list: null, skip: new Set(), msg: '' };
@@ -1945,7 +1960,7 @@ function atlHTML() {
   const head = `<div class="plk-h"><b>出欠名簿</b><span class="sp"></span><button type="button" class="btn ghost" data-atl="collect"${atl.busy ? ' disabled' : ''} title="過去45日の受信から、出欠の連絡をAIがまとめて読み取ります(新しい受信は、15分ごとに自動で読み取ります)">${atl.busy ? '読み取り中…' : '過去の受信から集める'}</button><button type="button" class="btn ghost" data-atl="load"${atl.busy ? ' disabled' : ''}>${atl.ledger ? '更新' : '名簿を見る'}</button></div>`;
   if (!atl.ledger) return `<div class="vboard atl">${head}${atl.msg ? `<p class="pk">${esc(atl.msg)}</p>` : ''}<p class="pk tip">スプレッドシートの「出欠名簿」タブにも、同じ内容が書き出されます。</p></div>`;
   const ev = atl.ledger.map(e => `<details class="atl-e"><summary><b>${esc(e.date ? tkMd(e.date) : '日付不明')} ${esc(e.name || '')}</b> <span class="tk-chip">参加 ${e.counts['参加']}</span> <span class="tk-chip">不参加 ${e.counts['不参加']}</span>${e.counts['未定'] ? ` <span class="tk-chip">未定 ${e.counts['未定']}</span>` : ''}${e.adults || e.kids ? ` <span class="pk">同行 大人${e.adults}・子供${e.kids}</span>` : ''}${e.needCheck ? ` <span class="tk-chip warn">要確認 ${e.needCheck}</span>` : ''}</summary>
-      <div class="atl-l">${e.list.map(x => `<div class="atl-r"><span class="atl-a a-${x.attend === '参加' ? 'y' : x.attend === '不参加' ? 'n' : 'm'}">${esc(x.attend)}</span><span><b>${esc(x.player || '(選手不明)')}</b>${x.adults || x.kids ? ` 大人${x.adults}・子供${x.kids}` : ''}${x.note ? ` ・ ${esc(x.note)}` : ''}<small class="pk">${esc(x.parent)} ・ 「${esc(x.quote)}」${x.unknownPlayer ? ' ・ <b>選手が不明です。元の発言を確認してください</b>' : ''}${x.changed ? ` ・ 回答が変わりました(前: ${esc(x.changed.from)})` : ''}</small></span></div>`).join('')}</div></details>`).join('');
+      <div class="atl-l">${['参加', '不参加', '未定'].map(a => { const l = e.list.filter(x => x.attend === a).sort((x, y) => String(y.at).localeCompare(String(x.at))); return l.length ? `<h5 class="atl-h">${a} <span class="pk">${l.length}</span></h5>${l.map(x => `<div class="atl-r"><span><b>${esc(x.player || '(選手不明)')}</b>${x.adults || x.kids ? ` 大人${x.adults}・子供${x.kids}` : ''}${x.note ? ` ・ ${esc(x.note)}` : ''}<small class="pk">${esc(x.parent)} ・ 「${esc(x.quote)}」${x.unknownPlayer ? ' ・ <b>選手が不明です。元の発言を確認してください</b>' : ''}${x.changed ? ` ・ 回答が変わりました(前: ${esc(x.changed.from)})` : ''}</small></span></div>`).join('')}` : ''; }).join('')}</div></details>`).join('');
   return `<div class="vboard atl">${head}${atl.ledger.length ? '<p class="pk tip">同じ選手が何度か答えたときは、最後の回答を採用しています。AIの読み取りなので、「要確認」は元の発言と照らしてください。</p>' : '<p class="pk">出欠の連絡は、まだ読み取れていません</p>'}${atl.msg ? `<p class="pk">${esc(atl.msg)}</p>` : ''}${ev}</div>`;
 }
 function parentsHTML() {
@@ -2256,15 +2271,21 @@ function roKinds(m) {
 function roAbsCard(m) {
   const k = m.base, a = m.ab;
   if (!a.ok) return '<div class="ro-card"><h4>欠席連絡</h4><p class="pk">欠席連絡を読み込めませんでした(権限か、通信の問題です)</p></div>';
-  const inMonth = (r, mo) => a.get(r, mo), list = m.all.map(r => ({ r, n: inMonth(r, k) })).filter(x => x.n.length).sort((x, y) => y.n.length - x.n.length || String(x.r.st.name).localeCompare(String(y.r.st.name), 'ja'));
-  const total = list.reduce((s, x) => s + x.n.length, 0), prev = m.all.reduce((s, r) => s + inMonth(r, roAdd(k, -1)).length, 0);
-  const rs = {}; list.forEach(x => x.n.forEach(o => { rs[o.reason || '(理由なし)'] = (rs[o.reason || '(理由なし)'] || 0) + 1; }));
+  // 1件ずつに分けて、理由(カテゴリ)ごとにまとめ、各カテゴリの中は日付の新しい順。同じ人・同じ日・同じ理由は、1行にまとめて「○通」と出す
+  const items = [], perPlayer = {};
+  m.all.forEach(r => a.get(r, k).forEach(o => { items.push({ r, o, reason: o.reason || '(理由なし)', date: String(o.absenceDate) }); const pk = r.sid + '|' + r.st.id; (perPlayer[pk] = perPlayer[pk] || new Set()).add(String(o.absenceDate)); }));
+  const total = items.length, people = Object.keys(perPlayer).length, prev = m.all.reduce((sum, r) => sum + a.get(r, roAdd(k, -1)).length, 0);
+  const cats = {}; items.forEach(x => (cats[x.reason] = cats[x.reason] || []).push(x));
+  const catList = Object.entries(cats).sort((x, y) => (x[0] === '(理由なし)') - (y[0] === '(理由なし)') || y[1].length - x[1].length);
+  const groupHTML = ([reason, list]) => {
+    const merged = []; list.sort((x, y) => y.date.localeCompare(x.date) || String(x.r.st.name).localeCompare(String(y.r.st.name), 'ja')).forEach(x => { const key = x.r.sid + '|' + x.r.st.id + '|' + x.date; const f = merged.find(z => z.key === key); if (f) f.n++; else merged.push({ ...x, key, n: 1 }); });
+    return `<div class="rf-g"><h5>${esc(reason)} <span class="pk">${list.length}件</span></h5><ul class="ro-list">${merged.map(x => `<li><span class="rf-t">${esc(x.date.slice(5).replace('-', '/'))}</span><b>${esc(x.r.st.name)}</b><span class="pk">${esc(x.r.school)}${roGrade(x.r.st) ? ' ・ ' + esc(roGrade(x.r.st)) : ''}</span>${x.n > 1 ? `<span class="pk">${x.n}通</span>` : ''}${perPlayer[x.r.sid + '|' + x.r.st.id].size >= 2 ? `<span class="tk-chip warn">今月${perPlayer[x.r.sid + '|' + x.r.st.id].size}回</span>` : ''}</li>`).join('')}</ul></div>`;
+  };
   const un = a.unmatched.filter(o => String(o.absenceDate).slice(0, 7) === k);
-  return `<div class="ro-card"><h4>${esc(roMJa(k))}の欠席連絡(${total}件 ・ ${list.length}人) <span class="pk">前月 ${prev}件</span></h4>
-    ${list.length ? `<div class="ro-chips">${Object.entries(rs).sort((x, y) => y[1] - x[1]).map(([t, n]) => `<span class="tk-chip">${esc(t)} ${n}</span>`).join(' ')}</div>
-    <ul class="ro-list">${list.map(x => `<li><b>${esc(x.r.st.name)}</b><span class="pk">${esc(x.r.school)}${roGrade(x.r.st) ? ' ・ ' + esc(roGrade(x.r.st)) : ''}</span><span class="tk-chip warn">${x.n.length}回</span><span class="pk">${esc(x.n.map(o => o.absenceDate.slice(5).replace('-', '/') + (o.reason ? '(' + o.reason + ')' : '')).join('、'))}</span></li>`).join('')}</ul>` : '<p class="pk">この月の欠席連絡はありません</p>'}
+  return `<div class="ro-card"><h4>${esc(roMJa(k))}の欠席連絡(${total}件 ・ ${people}人) <span class="pk">前月 ${prev}件</span></h4>
+    ${total ? catList.map(groupHTML).join('') : '<p class="pk">この月の欠席連絡はありません</p>'}
     ${un.length ? `<p class="pk">名簿の選手と結びつかなかった連絡 ${un.length}件: ${un.map(o => esc(o.studentName) + '(' + esc(o.school) + ' ' + esc(o.absenceDate.slice(5).replace('-', '/')) + ')').join('、')} ← 名前の書き方が名簿と違う可能性があります</p>` : ''}
-    <p class="pk tip">出席率は、練習の回数がシステムにまだないため、出していません。</p></div>`;
+    <p class="pk tip">理由ごとに分け、日付の新しい順に並べています。出席率は、練習の回数がシステムにまだないため、出していません。</p></div>`;
 }
 function roSumHTML(m) {
   const k = m.base, total = m.all.filter(r => roAct(r.st, k)).length, prevTotal = m.every.filter(r => (ro.school === 'all' || r.sid === ro.school) && roAct(r.st, roAdd(k, -1))).length, mv = roMoves(m.all, k);
