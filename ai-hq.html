@@ -1559,8 +1559,7 @@ function renderPanelInner() {
     P.innerHTML = `
       ${bad.length ? `<div class="alertbox"><b>要対応 ${bad.length}件</b>${bad.map(o => `<div class="bad-row">指示#${o.no}: ${esc(pauseText(o))} ${retryBtn(o)}</div>`).join('')}</div>` : ''}
       ${days != null && days <= 7 ? `<div class="alertbox"><b>APIキーの更新時期です</b>期限まであと${days}日(${esc(apiKeyMeta.expiresAt)})。ai-company フォルダで ./キー更新.sh を実行してください。</div>` : ''}
-      ${inboxHTML()}
-      <p class="sumfoot">進行中の指示 ${orders.filter(o => ACTIVE.includes(o.stage)).length}件 ・ 今日のAI費用 ${costYen().toLocaleString('ja-JP')}円</p>`;
+      ${inboxHTML()}`;
   } else if (panelTab === 'decide') {
     P.innerHTML = backlogBar() + `<div class="sec-h big">決めること(${decisions.length}件)</div>` + (decisions.length ? decisions.map(d => d.type === 'adoption' ? adoptionCard(d) : `<article class="card" id="card-${d.id}" data-order="${esc(d.orderId)}">
         <div class="card-h"><span class="pill">${esc(deptName(d.dept) || '部長会議')}</span><span class="pill due">指示#${esc(d.orderNo || '')}${d.round > 1 ? ' ・ 第' + d.round + '案' : ''}</span>${decAge(d.createdAt)}</div>${recRow('d:' + d.id)}${shareRow(d)}
@@ -1597,7 +1596,7 @@ function renderPanelInner() {
 /** 設定(月に1回も使わないもの。「記録」の一番下にまとめる) */
 function settingsHTML() {
   return `<div class="sec-h">設定</div>
-  <p class="sumfoot"><a href="hq.html?goto=revenue">売上・在籍数(本部画面)</a></p>
+  <p class="sumfoot">進行中の指示 ${orders.filter(o => ACTIVE.includes(o.stage)).length}件 ・ 今日のAI費用 ${costYen().toLocaleString('ja-JP')}円 ・ <a href="hq.html?goto=revenue">売上・在籍数(本部画面)</a></p>
       <details class="vrules"><summary>LINEで操作する人の登録</summary>
     <span class="pk">番号を出して、その人のLINEから公式アカウント(1対1)に「登録 番号」と送ってもらいます(番号は10分有効)。登録すると、LINEからスタッフへの連絡などができます。</span>
     <div class="add"><label class="sr" for="lc-role">役割</label><select id="lc-role"><option value="admin">管理者(統括)</option><option value="rep">代表(タクマ代表)</option><option value="office">事務局</option></select>
@@ -1764,12 +1763,13 @@ function paRow(p) {
   const bt = (stt, label, cls) => `<button type="button" class="btn${cls ? ' ' + cls : ''}" data-pact="review" data-st="${stt}" data-nonote="1" data-uid="${uid}" data-seen="${esc(p.lastInAt || '')}">${label}</button>`;
   const acts = ['new', 'need', 'working'].includes(st) ? bt('対応済み', '済み', 'tk-done') + bt('対応不要', '不要', 'ghost') : (st === 'none' ? '' : bt('未確認', '戻す', 'ghost'));
   const ai = open.length ? `<span class="pa2-ai">${open.slice(0, 2).map(t => `<span class="tk-chip kind">${esc(t.kind)}</span>${t.urgent ? '<span class="tk-chip bad">急ぎ</span>' : ''}${esc(t.text)}`).join('<br>')}${open.length > 2 ? ` <span class="pk">ほか${open.length - 2}件</span>` : ''}</span>`
-    : miss.length ? `<span class="pa2-ai"><span class="tk-chip warn">AIが拾っていない</span>「${esc(miss[0].text.slice(0, 50))}」${miss.length > 1 ? ` <span class="pk">ほか${miss.length - 1}件</span>` : ''}</span>` : '';
-  const msgHtml = st === 'none' ? '<i class="pk">(まだメッセージはありません)</i>' : (hiddenN ? `<i class="pk">(ほか前の未返信 ${hiddenN}件)</i>` : '') + shown.map(m => `<span class="b">${esc(String(m.text || '').trim()).replace(/\n/g, '<br>')}</span>`).join('');
+    : miss.length ? `<span class="pa2-ai"><span class="tk-chip warn">AIが拾っていない</span>「${esc(miss[0].text.slice(0, 60))}」${miss.length > 1 ? ` <span class="pk">ほか${miss.length - 1}件</span>` : ''}</span>` : '';
+  // AIの要点があるときは、元のメッセージは出さない(同じ内容の二重表示をやめる。行を押すと全文が開く)
+  const msgHtml = ai ? '' : st === 'none' ? '<i class="pk">(まだメッセージはありません)</i>' : (hiddenN ? `<i class="pk">(ほか前の未返信 ${hiddenN}件)</i>` : '') + shown.map(m => `<span class="b">${esc(String(m.text || '').trim()).replace(/\n/g, '<br>')}</span>`).join('');
   const setRow = `<div class="pa-set"><span class="pk">状態を選ぶ:</span>${['未確認', '要対応', '対応中', '対応済み', '対応不要'].map(x => `<button type="button" class="btn ghost" aria-pressed="${PA_ST[st] === x}" data-pact="review" data-st="${x}" data-uid="${uid}" data-seen="${esc(p.lastInAt || '')}">${x}</button>`).join('')}</div>`;
   return `<li class="pa2-r st-${st}${late ? ' late' : ''}"><button type="button" class="pa2-m" data-pact="open" data-uid="${uid}" aria-expanded="${isOpen}">
-      <span class="pa2-n"><b>${esc(paName(p))}</b><span class="pa2-t${late ? ' late' : ''}">${esc(lastMs ? paAgo(lastMs) : '')}${paFiltSt === 'todo' ? '' : ' ・ ' + esc(st === 'none' ? 'なし' : PA_ST[st])}</span></span>${ai}<span class="pa2-msg">${msgHtml}</span></button>
-    <span class="pa2-a">${LINE_LINK}${acts}</span>
+      <span class="pa2-n"><b>${esc(paName(p))}</b><span class="pa2-t${late ? ' late' : ''}">${esc(lastMs ? paAgo(lastMs) : '')}${paFiltSt === 'todo' ? '' : ' ・ ' + esc(st === 'none' ? 'なし' : PA_ST[st])}</span></span>${ai}${msgHtml ? `<span class="pa2-msg">${msgHtml}</span>` : ''}</button>
+    <span class="pa2-a">${acts}</span>
     ${isOpen ? `<div class="pt-x">${setRow}${open.length ? `<ul class="tasks" style="display:grid;gap:10px">${open.map(t => paTodo(p, t)).join('')}</ul>` : ''}${paDetail(p)}</div>` : ''}</li>`;
 }
 function paTableInner() {
@@ -1826,10 +1826,10 @@ function inboxItems() {
       title: paName(p), sub: top ? top.text : `未確認のメッセージ ${n}通`, go: { type: 'parent', id: p.id }, dis: { src: 'parent', id: p.id } });
   });
   missed.forEach((r, id) => {
-    const p = paList.find(q => q.id === id), n = r.length - 1, more = n > 0 ? ` ほか${n}件` : '', line = `AIが拾っていない発言: 「${r[0].text.slice(0, 40)}」${more}`;
+    const p = paList.find(q => q.id === id), n = r.length - 1, more = n > 0 ? ` ほか${n}件` : '', line = `「${r[0].text.slice(0, 40)}」${more}`;
     const ex = items.find(i => i.key === 'p:' + id);
     if (ex) { ex.sub += ' / ' + line; return; }
-    items.push({ key: 'p:' + id, src: 'parent', kind: '見落とし確認', title: paName(p), sub: line, fixed: 40, fixedWhy: ['AIが拾っていない'], go: { type: 'parent', id }, dis: { src: 'parent', id }, disLabel: '確認した' });
+    items.push({ key: 'p:' + id, src: 'parent', kind: '見落とし確認', title: paName(p), sub: line, fixed: 40, fixedWhy: [], go: { type: 'parent', id }, dis: { src: 'parent', id }, disLabel: '確認した' });
   });
   if (quiet) items.push({ key: 'q:parents', src: 'report', kind: '保護者LINE', title: `AIが「対応不要」と見た未確認 ${quiet}人`, sub: '念のため、一覧で目を通せます', since: quietSince, go: { type: 'parent', id: '' } });
   // やること: 「いま動くべきもの」だけ。期限が今日〜3日前のもの、または、作って3日以内の急ぎ。4日以上前に期限が過ぎたものは、1行にまとめて「整理してください」と出す(古いものが並んで、大事なものが埋もれないように)
@@ -1852,11 +1852,10 @@ function inboxHTML() {
   const list = inboxItems(), need = list.filter(x => x.src !== 'report'), rep = list.length - need.length;
   const shown = inboxAll ? list : list.slice(0, 6);
   const tone = x => (x.score >= 60 ? 'bad' : x.score >= 30 ? 'warn' : '');
-  const rows = shown.map(x => `<li class="ib-r"><div class="ib-m"><div class="ib-t"><span class="tk-chip kind">${esc(x.kind)}</span><b>${esc(x.title)}</b></div><div class="ib-s">${esc(x.sub)}${x.why.length ? ' ・ ' : ''}${x.why.map(w => `<span class="tk-chip ${tone(x)}">${esc(w)}</span>`).join(' ')}</div></div><div class="ib-b"><button type="button" class="btn" data-ibgo="${esc(x.key)}">見る</button>${x.dis ? `<button type="button" class="btn ghost" data-ibdis="${esc(x.key)}" title="この件を、いま対応が必要な一覧から外します">${esc(x.disLabel || '不要')}</button>` : ''}</div></li>`).join('');
-  return `<section class="inbox"><div class="ib-h"><b>いま対応が必要</b><span class="ib-n">${need.length}件</span>${rep ? `<span class="pk">(確認だけのもの ${rep}件を含め、全${list.length}件)</span>` : ''}</div>
+  const rows = shown.map(x => `<li class="ib-r"><div class="ib-m"><div class="ib-t"><span class="tk-chip kind">${esc(x.kind)}</span><b>${esc(x.title)}</b></div><div class="ib-s">${esc(x.sub)}${x.why.length ? ' ・ ' : ''}${x.why.slice(0, 1).map(w => `<span class="tk-chip ${tone(x)}">${esc(w)}</span>`).join(' ')}</div></div><div class="ib-b"><button type="button" class="btn" data-ibgo="${esc(x.key)}">見る</button>${x.dis ? `<button type="button" class="btn ghost" data-ibdis="${esc(x.key)}" title="この件を、いま対応が必要な一覧から外します">${esc(x.disLabel || '不要')}</button>` : ''}</div></li>`).join('');
+  return `<section class="inbox"><div class="ib-h"><b>いま対応が必要</b><span class="ib-n">${need.length}</span></div>
     ${rows ? `<ul class="ib-l">${rows}</ul>` : `<div class="empty"><b>対応が必要なものはありません</b>決裁・保護者のLINE・期限の来たやること、すべて片付いています。</div>`}
-    ${list.length > 6 ? `<button type="button" class="btn ghost" data-ibmore="1">${inboxAll ? '上位だけにする' : `ほか ${list.length - 6}件も見る`}</button>` : ''}
-    <p class="pk tip">並びは、期限・急ぎ・経過時間・種類(お金やクレームは上)から、決まった計算で出しています。</p></section>`;
+    ${list.length > 6 ? `<button type="button" class="btn ghost" data-ibmore="1">${inboxAll ? '上位だけにする' : `ほか ${list.length - 6}件も見る`}</button>` : ''}</section>`;
 }
 /* ---------- 古いやることの整理(AIが「不要の候補」を出す。外すのは人が選んだものだけ) ---------- */
 let stl = { open: false, busy: false, list: null, sel: new Set(), msg: '' };
@@ -1915,10 +1914,10 @@ function parentsHTML() {
   const err = paState && paState.error ? `<div class="alertbox"><b>保護者の受信の分析がうまくいっていません</b>${esc(paState.error.message || '')}(${esc(tkWhen(paState.error.at))})。次に成功すると、この表示は消えます。</div>` : '';
   const need = paList.filter(paNeeds).length, closed = paList.filter(p => ['done', 'skip'].includes(paStatus(p))).length;
   const chip = (k, label, n) => `<button type="button" data-pfst="${k}" aria-pressed="${paFiltSt === k}">${label} ${n}</button>`;
-  const tools = paTools ? `<div class="vboard pa2-tools"><div class="plk-h"><button type="button" class="btn ghost" data-pact="run">今すぐ分析</button><button type="button" class="btn ghost" data-preset="1" title="AIが拾った未対応のやることを閉じ、全員の状態を未確認に戻します(履歴は消えません)">バックログをリセット</button><span class="pk">AIの分析: ${esc(when)}</span></div>${notifyBoxHTML()}</div>${atlHTML()}${plkHTML()}` : '';
-  return `${err}<div class="pa2-h"><b>保護者LINE</b><div class="vfilter">${chip('todo', '要確認', need)}${chip('all', '全員', paList.length)}${chip('closed', '済み・不要', closed)}</div>
-      <input type="search" id="pa-q" placeholder="名前・メッセージで探す" value="${esc(paQuery)}" autocomplete="off"><span class="sp"></span><button type="button" class="btn ghost" data-ptools="1" aria-pressed="${paTools}">ツール</button>
-      <p class="pk tip">AIが拾った「やること」が残っている人、AIが拾っていない発言がある人が、「要確認」に出ます。返信したら「済み」、返信が要らなければ「不要」を押してください。待たせている時間の長い順に並びます。</p></div>
+  const tools = paTools ? `<div class="vboard pa2-tools"><div class="vfilter">${chip('todo', '要確認', need)}${chip('all', '全員', paList.length)}${chip('closed', '済み・不要', closed)}</div>
+      <input type="search" id="pa-q" placeholder="名前・メッセージで探す" value="${esc(paQuery)}" autocomplete="off">
+      <div class="plk-h"><a class="btn ghost" href="${LINE_CHAT_BASE}" target="_blank" rel="noopener">LINEを開く↗</a><button type="button" class="btn ghost" data-pact="run">今すぐ分析</button><button type="button" class="btn ghost" data-preset="1" title="AIが拾った未対応のやることを閉じ、全員の状態を未確認に戻します(履歴は消えません)">バックログをリセット</button><span class="pk">AIの分析: ${esc(when)}</span></div>${notifyBoxHTML()}</div>${atlHTML()}${plkHTML()}` : '';
+  return `${err}<div class="pa2-h"><b>保護者LINE</b>${paFiltSt === 'todo' ? '' : `<span class="pk">${paFiltSt === 'all' ? '全員' : '済み・不要'}</span>`}<span class="ib-n">${paVisible().length}</span><span class="sp"></span><button type="button" class="btn ghost" data-ptools="1" aria-pressed="${paTools}" aria-label="切り替え・検索・ツール">⋯</button></div>
     ${tools}<div id="pa-tbl">${paTableInner()}</div>`;
 }
 const tkOpen = () => tkTasks.filter(t => t.status === '未着手');
