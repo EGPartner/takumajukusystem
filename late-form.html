@@ -186,7 +186,8 @@
       <div class="icon">✓</div>
       <h1 style="text-align:center;">連絡を受け付けました</h1>
       <p class="sub" style="text-align:center;margin-bottom:0;">ご連絡ありがとうございました。</p>
-      <p class="back-link" style="margin-top:18px;"><a href="parent-menu.html">← メニューへ戻る</a></p>
+      <p class="back-link" style="margin-top:18px;"><a href="my-requests.html">送った連絡を確認する</a></p>
+      <p class="back-link" style="margin-top:8px;"><a href="parent-menu.html">← メニューへ戻る</a></p>
     </div>
   </div>
 </div>
@@ -391,6 +392,19 @@ document.getElementById('btn-submit').addEventListener('click', async () => {
       status: 'new',
       submittedAt: firebase.firestore.FieldValue.serverTimestamp()
     });
+    // 保護者本人の「申請の確認」用の控え(失敗しても、受付そのものには影響させない)
+    try {
+      await db.collection('parentViewers').doc(auth.currentUser.uid).collection('requests').add({
+        kind: 'late',
+        studentName: name,
+        schoolName: (document.getElementById('f-school').selectedOptions[0] || {}).textContent || '',
+        date: date,
+        time: arrive,
+        reason: reason,
+        note: '',
+        submittedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    } catch(e){ console.error('控えの保存に失敗', e); }
     try { localStorage.setItem(LAST_SCHOOL_KEY, schoolId); } catch(e){}
     const schoolSel = document.getElementById('f-school');
     notifyLine({
