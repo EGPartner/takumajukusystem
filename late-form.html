@@ -172,17 +172,8 @@
       <input type="time" id="f-time">
     </div>
     <div class="field">
-      <label>理由</label>
-      <div class="reason-group" id="reason-group">
-        <button type="button" class="reason-btn" data-reason="学校・習い事">学校・習い事</button>
-        <button type="button" class="reason-btn" data-reason="移動・交通">移動・交通</button>
-        <button type="button" class="reason-btn" data-reason="体調">体調</button>
-        <button type="button" class="reason-btn" data-reason="その他">その他</button>
-      </div>
-    </div>
-    <div class="field">
-      <label for="f-note">備考(任意)</label>
-      <textarea id="f-note" rows="3" maxlength="900" placeholder="伝えておきたいことがあれば"></textarea>
+      <label for="f-reason">遅れる理由</label>
+      <textarea id="f-reason" rows="3" maxlength="90" placeholder="自由記載"></textarea>
     </div>
 
     <button type="button" class="submit" id="btn-submit">送信する</button>
@@ -259,16 +250,6 @@ async function loadSchoolOptions(){
   }
 }
 loadSchoolOptions();
-
-let selectedReason = null;
-
-document.querySelectorAll('.reason-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.reason-btn').forEach(b => b.classList.remove('selected'));
-    btn.classList.add('selected');
-    selectedReason = btn.dataset.reason;
-  });
-});
 
 function todayStr(){
   const d = new Date();
@@ -386,14 +367,14 @@ document.getElementById('btn-submit').addEventListener('click', async () => {
   const schoolId = document.getElementById('f-school').value;
   const name = document.getElementById('f-name').value.trim();
   const date = document.getElementById('f-date').value;
-  const note = document.getElementById('f-note').value.trim();
+  const reason = document.getElementById('f-reason').value.trim();
   const arrive = document.getElementById('f-time').value;
 
   if (!schoolId){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = '校舎を選択してください。'; return; }
   if (!name){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = '選手の氏名を入力してください。'; return; }
   if (!date){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = '練習日を選択してください。'; return; }
   if (!document.getElementById('f-time').value){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = '到着予定の時刻を入力してください。'; return; }
-  if (!selectedReason){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = '理由を選択してください。'; return; }
+  if (!reason){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = '遅れる理由を入力してください。'; return; }
 
   btn.disabled = true;
   statusEl.style.color = 'var(--ink-soft)';
@@ -405,8 +386,8 @@ document.getElementById('btn-submit').addEventListener('click', async () => {
       studentName: name,
       lateDate: date,
       arriveTime: arrive,
-      reason: selectedReason,
-      note: note,
+      reason: reason,
+      note: '',
       status: 'new',
       submittedAt: firebase.firestore.FieldValue.serverTimestamp()
     });
@@ -418,8 +399,7 @@ document.getElementById('btn-submit').addEventListener('click', async () => {
       name: name,
       date: date,
       time: arrive,
-      reason: selectedReason,
-      note: note
+      reason: reason
     });
     document.getElementById('form-card').style.display = 'none';
     document.getElementById('success-card').style.display = 'block';
