@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>到着遅れ連絡 - タクマ塾</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700;900&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#EEF5F5;
+    --surface:#FFFFFF;
+    --surface-2:#F2F8F8;
+    --border:#DEEAEA;
+    --border-strong:#C3D5D5;
+    --ink:#12181A;
+    --ink-soft:#586E70;
+    --ink-mute:#8A9DA0;
+    --accent:#0FB8C4;
+    --accent-deep:#0A6169;
+    --accent-bg:#E1F6F7;
+    --danger:#C24B41;
+    --warn-bg:#FFF3DE;
+    --warn-border:#E3AE55;
+    --warn-ink:#8A6416;
+    --radius-lg:20px;
+    --radius-md:14px;
+    --shadow:0 18px 40px -20px rgba(10,97,105,0.28), 0 2px 8px -2px rgba(18,24,26,0.06);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:28px 18px;
+    background:
+      radial-gradient(720px 420px at 12% -8%, #CFF1F2 0%, transparent 60%),
+      radial-gradient(600px 380px at 110% 10%, #DFF6E9 0%, transparent 55%),
+      var(--bg);
+    font-family:"Noto Sans JP","Hiragino Sans","Yu Gothic",-apple-system,BlinkMacSystemFont,sans-serif;
+    color:var(--ink);
+    line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .shell{width:100%;max-width:440px;}
+  .brand-row{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:18px;}
+  .brand-mark{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent-deep));flex:none;box-shadow:0 4px 12px -4px rgba(10,97,105,0.5);}
+  .brand-logo{height:34px;width:auto;display:block;}
+  .brand-name{font-family:"Zen Kaku Gothic New",sans-serif;font-weight:700;font-size:13.5px;letter-spacing:0.04em;color:var(--accent-deep);}
+
+  .card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--radius-lg);
+    padding:30px 26px;
+    box-shadow:var(--shadow);
+  }
+  h1{font-family:"Zen Kaku Gothic New",sans-serif;font-weight:900;font-size:20px;margin:0 0 6px;letter-spacing:-0.01em;text-wrap:balance;}
+  p.sub{font-size:13.5px;color:var(--ink-soft);margin:0 0 24px;}
+
+  label{font-size:12.5px;font-weight:700;color:var(--ink-soft);display:block;margin-bottom:7px;letter-spacing:0.01em;}
+  .field{margin-bottom:17px;}
+  input[type=text],input[type=date],select,textarea{
+    width:100%;
+    padding:12px 13px;
+    border:1.5px solid var(--border-strong);
+    border-radius:11px;
+    font-size:16px;
+    background:var(--surface-2);
+    color:var(--ink);
+    font-family:inherit;
+    transition:border-color 0.15s, background 0.15s;
+  }
+  select{
+    font-weight:600;
+    appearance:none;-webkit-appearance:none;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23586E70' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 14px center;padding-right:36px;
+  }
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);background:var(--surface);}
+  textarea{resize:vertical;min-height:76px;}
+
+  .notice{font-size:12px;line-height:1.6;background:var(--warn-bg);border:1px solid var(--warn-border);border-radius:10px;padding:10px 12px;color:var(--warn-ink);margin:9px 0 0;}
+
+  .reason-group{display:flex;gap:8px;flex-wrap:wrap;}
+  .reason-btn{
+    flex:1 1 auto;padding:11px 8px;border:1.5px solid var(--border-strong);border-radius:11px;
+    background:var(--surface-2);font-size:13.5px;font-weight:600;cursor:pointer;text-align:center;
+    color:var(--ink-soft);font-family:inherit;transition:all 0.12s;
+  }
+  .reason-btn.selected{background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:0 6px 14px -8px rgba(10,97,105,0.6);}
+
+  button.submit{
+    width:100%;padding:15px;border:none;border-radius:12px;
+    background:linear-gradient(135deg,var(--accent),var(--accent-deep));
+    color:#fff;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;margin-top:8px;
+    box-shadow:0 10px 22px -10px rgba(10,97,105,0.55);
+    transition:transform 0.12s, box-shadow 0.12s;
+  }
+  button.submit:active{transform:translateY(1px);box-shadow:0 6px 14px -8px rgba(10,97,105,0.5);}
+  button.submit:disabled{opacity:0.55;cursor:default;box-shadow:none;}
+
+  .status-line{font-size:12.5px;margin-top:12px;text-align:center;min-height:18px;color:var(--ink-mute);}
+  .back-link{font-size:12.5px;text-align:center;margin-top:18px;}
+  .back-link a{color:var(--accent-deep);text-decoration:none;font-weight:600;}
+
+  .success{text-align:center;padding:8px 0;}
+  .success .icon{width:56px;height:56px;border-radius:50%;background:var(--accent-bg);color:var(--accent-deep);display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 16px;}
+
+  .pending-icon{width:52px;height:52px;border-radius:50%;background:var(--accent-bg);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:22px;}
+  .pending-title{font-family:"Zen Kaku Gothic New",sans-serif;font-weight:700;font-size:15.5px;text-align:center;margin:0 0 8px;}
+  .pending-desc{font-size:13px;color:var(--ink-soft);text-align:center;margin:0;}
+  .ghost-link{display:block;margin:14px auto 0;background:none;border:none;color:var(--ink-soft);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:3px;}
+
+  @media (max-width:400px){ .card{padding:24px 20px;} }
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="brand-row">
+    <img class="brand-logo" src="takuma-logo-teal.png" alt="タクマ塾">
+  </div>
+
+  <div class="card" id="gate-card" style="display:none;">
+    <h1>塾生のご家族専用ページ</h1>
+    <p class="sub">確認のため、お子さまの情報を入力してください(この端末で初回のみ)。</p>
+    <div id="gate-form">
+      <div class="field">
+        <label for="gate-school">お子さまの校舎</label>
+        <select id="gate-school"><option value="">読み込み中…</option></select>
+        <p class="notice">※「福井校(エリート)」は「坂井・福井校(エリート)」に統合されました。福井校(エリート)の選手の方は「坂井・福井校(エリート)」をお選びください。</p>
+      </div>
+      <div class="field">
+        <label for="gate-name">塾生のお名前(カタカナ・姓名)</label>
+        <input type="text" id="gate-name" placeholder="例: ヤマダ レン">
+      </div>
+      <button type="button" class="submit" id="gate-submit">利用を開始する</button>
+      <p class="status-line" id="gate-status"></p>
+    </div>
+    <div id="gate-pending" style="display:none;">
+      <div class="pending-icon">⏳</div>
+      <p class="pending-title">申請を受け付けました</p>
+      <p class="pending-desc">入力されたお名前が名簿と一致しなかったため、教室で確認しています。通常は当日中にご案内できるよう対応しております。<br>確認が済むと、このページが自動で切り替わります。</p>
+      <button type="button" class="ghost-link" id="gate-retry">お名前を入力し直す</button>
+    </div>
+  </div>
+
+  <div class="card" id="form-card" style="display:none;">
+    <h1>到着遅れ連絡</h1>
+    <p class="sub">練習に遅れて到着する場合、こちらからご連絡ください。</p>
+
+    <div class="field">
+      <label for="f-school">校舎を選択</label>
+      <select id="f-school"><option value="">読み込み中…</option></select>
+      <p class="notice">※「福井校(エリート)」は「坂井・福井校(エリート)」に統合されました。福井校(エリート)の選手の方は「坂井・福井校(エリート)」をお選びください。</p>
+    </div>
+    <div class="field">
+      <label for="f-name">選手の氏名(姓名)</label>
+      <input type="text" id="f-name" maxlength="90" placeholder="例: 山田 蓮">
+    </div>
+    <div class="field">
+      <label for="f-date">練習日</label>
+      <input type="date" id="f-date">
+    </div>
+    <div class="field">
+      <label for="f-time">到着予定の時刻</label>
+      <input type="time" id="f-time">
+    </div>
+    <div class="field">
+      <label>理由</label>
+      <div class="reason-group" id="reason-group">
+        <button type="button" class="reason-btn" data-reason="学校・習い事">学校・習い事</button>
+        <button type="button" class="reason-btn" data-reason="移動・交通">移動・交通</button>
+        <button type="button" class="reason-btn" data-reason="体調">体調</button>
+        <button type="button" class="reason-btn" data-reason="その他">その他</button>
+      </div>
+    </div>
+    <div class="field">
+      <label for="f-note">備考(任意)</label>
+      <textarea id="f-note" rows="3" maxlength="900" placeholder="伝えておきたいことがあれば"></textarea>
+    </div>
+
+    <button type="button" class="submit" id="btn-submit">送信する</button>
+    <p class="status-line" id="form-status"></p>
+    <p class="back-link"><a href="parent-menu.html">← メニューへ戻る</a></p>
+  </div>
+
+  <div class="card" id="success-card" style="display:none;">
+    <div class="success">
+      <div class="icon">✓</div>
+      <h1 style="text-align:center;">連絡を受け付けました</h1>
+      <p class="sub" style="text-align:center;margin-bottom:0;">ご連絡ありがとうございました。</p>
+      <p class="back-link" style="margin-top:18px;"><a href="parent-menu.html">← メニューへ戻る</a></p>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="takuma-busy.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyDKTuN49WGP1pFobS6rS_RwDnDvzJe1h00",
+  authDomain: "takuma-juku-iwakuni.firebaseapp.com",
+  projectId: "takuma-juku-iwakuni",
+  storageBucket: "takuma-juku-iwakuni.firebasestorage.app",
+  messagingSenderId: "1065956673618",
+  appId: "1:1065956673618:web:e765409502a9b87031b78b"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+const schoolsRef = db.collection('schools');
+
+function escAttr(v){ return String(v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+const LAST_SCHOOL_KEY = 'takumajuku_last_school';
+
+// ---- LINEグループへの通知(Google Apps Script経由) ----
+// 固定の合言葉ではなく、その場で取得したFirebase AuthのIDトークンで本人確認する
+// (ページのソースに秘密を書かないため。呼び出し前に必ずensureSignedIn()で署名済みにしておくこと)。
+const LINE_HOOK_URL = 'https://script.google.com/macros/s/AKfycbw2iDqtyycsiUNLALl7PvTedMzgQ1d4YKddizYtJafSP9y6FDeIPDMB8ZadP1lCIkht/exec';  // Apps Scriptのデプロイ先URL
+// 通知は「送れたら送る」扱いにする。失敗しても到着遅れ連絡そのものは保存済みで、受付を妨げない。
+async function notifyLine(payload){
+  if (!LINE_HOOK_URL || !auth.currentUser) return;
+  try {
+    const idToken = await auth.currentUser.getIdToken();
+    fetch(LINE_HOOK_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(Object.assign({ idToken }, payload))
+    }).catch(e => console.error('LINE通知に失敗', e));
+  } catch(e){ console.error('LINE通知に失敗', e); }
+}
+
+async function loadSchoolOptions(){
+  const sel = document.getElementById('f-school');
+  try {
+    const snap = await schoolsRef.orderBy('name').get();
+    if (snap.empty){
+      sel.innerHTML = '<option value="">校舎が登録されていません</option>';
+      document.getElementById('btn-submit').disabled = true;
+      return;
+    }
+    sel.innerHTML = '<option value="">選択してください</option>' + snap.docs.filter(d => !d.data().hiddenFromParents).map(d => `<option value="${d.id}">${escAttr(d.data().name || d.id)}</option>`).join('');
+    const remembered = localStorage.getItem(LAST_SCHOOL_KEY);
+    if (remembered && snap.docs.some(d => d.id === remembered)) sel.value = remembered;
+  } catch(e){
+    console.error(e);
+    sel.innerHTML = '<option value="">読み込みに失敗しました</option>';
+  }
+}
+loadSchoolOptions();
+
+let selectedReason = null;
+
+document.querySelectorAll('.reason-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.reason-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    selectedReason = btn.dataset.reason;
+  });
+});
+
+function todayStr(){
+  const d = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate());
+}
+document.getElementById('f-date').value = todayStr();
+document.getElementById('f-date').min = todayStr();
+
+// ページを開いた直後は、Firebaseが「以前ログインした状態」を端末から復元し終えるまで一瞬の空白がある。
+// この間に signInAnonymously() を呼ぶと、復元前に新しい匿名アカウントが作られてしまい、承認済みの
+// 保護者でも「初めての端末」扱いになって、塾生名の入力と承認申請をやり直すことになる。
+// そのため、最初の1回だけ復元が終わるのを待ってから判断する(parent-menu.htmlと同じ方式)。
+let authReadyPromise = null;
+function waitForAuthReady(){
+  if (!authReadyPromise){
+    authReadyPromise = new Promise(resolve => {
+      const unsub = auth.onAuthStateChanged(user => { unsub(); resolve(user); });
+    });
+  }
+  return authReadyPromise;
+}
+async function ensureSignedIn(){
+  const restoredUser = await waitForAuthReady();
+  if (restoredUser) return restoredUser;
+  if (auth.currentUser) return auth.currentUser;
+  const cred = await auth.signInAnonymously();
+  return cred.user;
+}
+
+// ---- 塾生名簿との照合による関門(塾生家庭以外の利用を防ぐ) ----
+function normalizeName(n){ return String(n || '').replace(/[\s　・･]/g, ''); }
+// 保護者の本人確認はカタカナで照合する(漢字の字体違い・空白の有無による不一致を防ぐため)。
+// ひらがな・半角カナはカタカナにそろえ、空白と中黒は除く。名簿側(roster-schedule-sync.gs / school.html)も同じ規則で「K:」付きの鍵を作る。
+function normalizeKana(n){ return String(n || '').normalize('NFKC').replace(/[\u3041-\u3096]/g, c => String.fromCharCode(c.charCodeAt(0) + 0x60)).replace(/[\s\u3000・･·]/g, ''); }
+function isKanaName(n){ return /^[\u30A0-\u30FF]+$/.test(normalizeKana(n)); }
+function kanaKey(n){ return 'K:' + normalizeKana(n); }
+function showForm(prefillName){
+  document.getElementById('gate-card').style.display = 'none';
+  document.getElementById('form-card').style.display = 'block';
+  if (prefillName) document.getElementById('f-name').value = prefillName;
+}
+function showPending(uid){
+  document.getElementById('gate-card').style.display = 'block';
+  document.getElementById('gate-form').style.display = 'none';
+  document.getElementById('gate-pending').style.display = 'block';
+  db.collection('parentViewers').doc(uid).onSnapshot(doc => {
+    if (doc.exists && doc.data().status === 'approved') showForm(doc.data().studentName || '');
+  }, err => console.error(err));
+}
+// 承認待ちの間も、名前を入力し直して再申請できる(誤字で待ち続けるのを防ぐ)
+document.getElementById('gate-retry').addEventListener('click', () => {
+  document.getElementById('gate-pending').style.display = 'none';
+  document.getElementById('gate-form').style.display = 'block';
+  const st = document.getElementById('gate-status');
+  if (st) st.textContent = '';
+  loadGateSchoolOptions();
+});
+
+async function loadGateSchoolOptions(){
+  const sel = document.getElementById('gate-school');
+  try {
+    const snap = await schoolsRef.orderBy('name').get();
+    sel.innerHTML = '<option value="">選択してください</option>' + snap.docs.filter(d => !d.data().hiddenFromParents).map(d => `<option value="${d.id}">${escAttr(d.data().name || d.id)}</option>`).join('');
+    let remembered = null;
+    try { remembered = localStorage.getItem(LAST_SCHOOL_KEY); } catch(e){}
+    if (remembered && snap.docs.some(d => d.id === remembered)) sel.value = remembered;
+  } catch(e){ console.error(e); sel.innerHTML = '<option value="">読み込みに失敗しました</option>'; }
+}
+async function initGate(){
+  try {
+    const user = await ensureSignedIn();
+    const doc = await db.collection('parentViewers').doc(user.uid).get();
+    if (doc.exists){
+      if (doc.data().status === 'approved'){ showForm(); return; }
+      showPending(user.uid);
+      return;
+    }
+  } catch(e){ console.error(e); }
+  document.getElementById('gate-card').style.display = 'block';
+  loadGateSchoolOptions();
+}
+document.getElementById('gate-submit').addEventListener('click', async () => {
+  const statusEl = document.getElementById('gate-status');
+  const schoolId = document.getElementById('gate-school').value;
+  const name = document.getElementById('gate-name').value.trim();
+  if (!schoolId){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = '校舎を選択してください。'; return; }
+  if (!name){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = '塾生のお名前を入力してください。'; return; }
+  statusEl.style.color = 'var(--ink-soft)';
+  statusEl.textContent = '確認しています…';
+  try {
+    const user = await ensureSignedIn();
+    try { localStorage.setItem(LAST_SCHOOL_KEY, schoolId); } catch(e){}
+    const base = { studentName: name, nameKey: (isKanaName(name) ? kanaKey(name) : normalizeName(name)), schoolId, createdAt: firebase.firestore.FieldValue.serverTimestamp() };
+    try {
+      await db.collection('parentViewers').doc(user.uid).set(Object.assign({ status: 'approved' }, base));
+      showForm(name);
+    } catch(e1){
+      await db.collection('parentViewers').doc(user.uid).set(Object.assign({ status: 'pending' }, base));
+      const schoolSel = document.getElementById('gate-school');
+      notifyLine({ type: 'pendingParent', school: schoolSel.selectedOptions[0] ? schoolSel.selectedOptions[0].textContent : schoolId, name });
+      showPending(user.uid);
+    }
+  } catch(e){
+    console.error(e);
+    statusEl.style.color = 'var(--danger)';
+    statusEl.textContent = '確認に失敗しました。もう一度お試しください。';
+  }
+});
+initGate();
+
+document.getElementById('btn-submit').addEventListener('click', async () => {
+  const statusEl = document.getElementById('form-status');
+  const btn = document.getElementById('btn-submit');
+  const schoolId = document.getElementById('f-school').value;
+  const name = document.getElementById('f-name').value.trim();
+  const date = document.getElementById('f-date').value;
+  const note = document.getElementById('f-note').value.trim();
+  const arrive = document.getElementById('f-time').value;
+
+  if (!schoolId){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = '校舎を選択してください。'; return; }
+  if (!name){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = '選手の氏名を入力してください。'; return; }
+  if (!date){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = '練習日を選択してください。'; return; }
+  if (!document.getElementById('f-time').value){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = '到着予定の時刻を入力してください。'; return; }
+  if (!selectedReason){ statusEl.style.color = 'var(--danger)'; statusEl.textContent = '理由を選択してください。'; return; }
+
+  btn.disabled = true;
+  statusEl.style.color = 'var(--ink-soft)';
+  statusEl.textContent = '送信しています…';
+
+  try {
+    await ensureSignedIn();
+    await db.collection('academies').doc(schoolId).collection('lateReports').add({
+      studentName: name,
+      lateDate: date,
+      arriveTime: arrive,
+      reason: selectedReason,
+      note: note,
+      status: 'new',
+      submittedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    try { localStorage.setItem(LAST_SCHOOL_KEY, schoolId); } catch(e){}
+    const schoolSel = document.getElementById('f-school');
+    notifyLine({
+      type: 'late',
+      school: schoolSel.selectedOptions[0] ? schoolSel.selectedOptions[0].textContent : schoolId,
+      name: name,
+      date: date,
+      time: arrive,
+      reason: selectedReason,
+      note: note
+    });
+    document.getElementById('form-card').style.display = 'none';
+    document.getElementById('success-card').style.display = 'block';
+  } catch(err){
+    console.error(err);
+    statusEl.style.color = 'var(--danger)';
+    statusEl.textContent = '送信に失敗しました: ' + (err && err.message ? err.message : String(err));
+    btn.disabled = false;
+  }
+});
+</script>
+</body>
+</html>
