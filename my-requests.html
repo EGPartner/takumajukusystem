@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>申請の確認 - タクマ塾</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700;900&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#EEF5F5;
+    --surface:#FFFFFF;
+    --surface-2:#F2F8F8;
+    --border:#DEEAEA;
+    --border-strong:#C3D5D5;
+    --ink:#12181A;
+    --ink-soft:#586E70;
+    --ink-mute:#8A9DA0;
+    --accent:#0FB8C4;
+    --accent-deep:#0A6169;
+    --accent-bg:#E1F6F7;
+    --danger:#C24B41;
+    --warn-bg:#FFF3DE;
+    --warn-border:#E3AE55;
+    --warn-ink:#8A6416;
+    --radius-lg:20px;
+    --radius-md:14px;
+    --shadow:0 18px 40px -20px rgba(10,97,105,0.28), 0 2px 8px -2px rgba(18,24,26,0.06);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:28px 18px;
+    background:
+      radial-gradient(720px 420px at 12% -8%, #CFF1F2 0%, transparent 60%),
+      radial-gradient(600px 380px at 110% 10%, #DFF6E9 0%, transparent 55%),
+      var(--bg);
+    font-family:"Noto Sans JP","Hiragino Sans","Yu Gothic",-apple-system,BlinkMacSystemFont,sans-serif;
+    color:var(--ink);
+    line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .shell{width:100%;max-width:440px;}
+  .brand-row{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:18px;}
+  .brand-mark{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent-deep));flex:none;box-shadow:0 4px 12px -4px rgba(10,97,105,0.5);}
+  .brand-logo{height:34px;width:auto;display:block;}
+  .brand-name{font-family:"Zen Kaku Gothic New",sans-serif;font-weight:700;font-size:13.5px;letter-spacing:0.04em;color:var(--accent-deep);}
+
+  .card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--radius-lg);
+    padding:30px 26px;
+    box-shadow:var(--shadow);
+  }
+  h1{font-family:"Zen Kaku Gothic New",sans-serif;font-weight:900;font-size:20px;margin:0 0 6px;letter-spacing:-0.01em;text-wrap:balance;}
+  p.sub{font-size:13.5px;color:var(--ink-soft);margin:0 0 24px;}
+
+  label{font-size:12.5px;font-weight:700;color:var(--ink-soft);display:block;margin-bottom:7px;letter-spacing:0.01em;}
+  .field{margin-bottom:17px;}
+  input[type=text],input[type=date],input[type=time],select,textarea{
+    width:100%;
+    padding:12px 13px;
+    border:1.5px solid var(--border-strong);
+    border-radius:11px;
+    font-size:16px;
+    background:var(--surface-2);
+    color:var(--ink);
+    font-family:inherit;
+    transition:border-color 0.15s, background 0.15s;
+  }
+  select{
+    font-weight:600;
+    appearance:none;-webkit-appearance:none;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23586E70' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 14px center;padding-right:36px;
+  }
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);background:var(--surface);}
+  textarea{resize:vertical;min-height:76px;}
+
+  .notice{font-size:12px;line-height:1.6;background:var(--warn-bg);border:1px solid var(--warn-border);border-radius:10px;padding:10px 12px;color:var(--warn-ink);margin:9px 0 0;}
+
+  .reason-group{display:flex;gap:8px;flex-wrap:wrap;}
+  .reason-btn{
+    flex:1 1 auto;padding:11px 8px;border:1.5px solid var(--border-strong);border-radius:11px;
+    background:var(--surface-2);font-size:13.5px;font-weight:600;cursor:pointer;text-align:center;
+    color:var(--ink-soft);font-family:inherit;transition:all 0.12s;
+  }
+  .reason-btn.selected{background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:0 6px 14px -8px rgba(10,97,105,0.6);}
+
+  button.submit{
+    width:100%;padding:15px;border:none;border-radius:12px;
+    background:linear-gradient(135deg,var(--accent),var(--accent-deep));
+    color:#fff;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;margin-top:8px;
+    box-shadow:0 10px 22px -10px rgba(10,97,105,0.55);
+    transition:transform 0.12s, box-shadow 0.12s;
+  }
+  button.submit:active{transform:translateY(1px);box-shadow:0 6px 14px -8px rgba(10,97,105,0.5);}
+  button.submit:disabled{opacity:0.55;cursor:default;box-shadow:none;}
+
+  .status-line{font-size:12.5px;margin-top:12px;text-align:center;min-height:18px;color:var(--ink-mute);}
+  .back-link{font-size:12.5px;text-align:center;margin-top:18px;}
+  .back-link a{color:var(--accent-deep);text-decoration:none;font-weight:600;}
+
+  .success{text-align:center;padding:8px 0;}
+  .success .icon{width:56px;height:56px;border-radius:50%;background:var(--accent-bg);color:var(--accent-deep);display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 16px;}
+
+  .pending-icon{width:52px;height:52px;border-radius:50%;background:var(--accent-bg);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:22px;}
+  .pending-title{font-family:"Zen Kaku Gothic New",sans-serif;font-weight:700;font-size:15.5px;text-align:center;margin:0 0 8px;}
+  .pending-desc{font-size:13px;color:var(--ink-soft);text-align:center;margin:0;}
+  .ghost-link{display:block;margin:14px auto 0;background:none;border:none;color:var(--ink-soft);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:3px;}
+
+  @media (max-width:400px){ .card{padding:24px 20px;} }
+
+  .req{border:1px solid var(--border);border-radius:16px;padding:14px 16px;margin:0 0 10px;background:var(--surface);}
+  .req-top{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+  .badge{font-size:12px;font-weight:700;padding:3px 10px;border-radius:999px;background:var(--accent-bg);color:var(--accent-deep);}
+  .badge.absence{background:#FDEBE8;color:#A33B31;}
+  .req-sent{margin-left:auto;font-size:11.5px;color:var(--ink-mute);}
+  .req-main{font-size:16px;font-weight:700;margin:0;}
+  .req-sub{font-size:13px;color:var(--ink-soft);margin:2px 0 0;word-break:break-word;}
+  .req-ok{font-size:12px;color:var(--accent-deep);font-weight:600;margin:8px 0 0;}
+  .empty{text-align:center;color:var(--ink-soft);font-size:14px;padding:18px 0 6px;}
+  .more{display:block;width:100%;margin-top:6px;padding:12px;border:1.5px solid var(--border-strong);border-radius:12px;background:var(--surface-2);color:var(--ink-soft);font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="brand-row">
+    <img class="brand-logo" src="takuma-logo-teal.png" alt="タクマ塾">
+  </div>
+  <div class="card">
+    <h1>申請の確認</h1>
+    <p class="sub">この端末から送った、欠席・到着遅れのご連絡です。新しい順に表示します。</p>
+    <div id="list"><p class="empty">読み込み中…</p></div>
+    <p class="back-link"><a href="parent-menu.html">← メニューへ戻る</a></p>
+  </div>
+</div>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+firebase.initializeApp({
+  apiKey: "AIzaSyDKTuN49WGP1pFobS6rS_RwDnDvzJe1h00",
+  authDomain: "takuma-juku-iwakuni.firebaseapp.com",
+  projectId: "takuma-juku-iwakuni",
+  storageBucket: "takuma-juku-iwakuni.firebasestorage.app",
+  messagingSenderId: "1065956673618",
+  appId: "1:1065956673618:web:e765409502a9b87031b78b"
+});
+const auth = firebase.auth();
+const db = firebase.firestore();
+const $list = document.getElementById('list');
+const WD = ['日','月','火','水','木','金','土'];
+const esc = v => String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+// "2026-11-20" → "11月20日(金)"
+function dayLabel(ymd){
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(ymd || '');
+  if (!m) return esc(ymd || '');
+  const d = new Date(Date.UTC(+m[1], +m[2]-1, +m[3]));
+  return (+m[2]) + '月' + (+m[3]) + '日(' + WD[d.getUTCDay()] + ')';
+}
+// 日本時間で「11月13日(金) 08:11」
+function jst(ts){
+  if (!ts || !ts.toDate) return '';
+  const j = new Date(ts.toDate().getTime() + 9*3600*1000);
+  const p = n => String(n).padStart(2,'0');
+  return (j.getUTCMonth()+1) + '月' + j.getUTCDate() + '日(' + WD[j.getUTCDay()] + ') ' + p(j.getUTCHours()) + ':' + p(j.getUTCMinutes());
+}
+let items = [], shown = 20;
+function render(){
+  if (!items.length){ $list.innerHTML = '<p class="empty">まだ送信した連絡はありません。<br>欠席・到着遅れのご連絡を送ると、ここに残ります。</p>'; return; }
+  const rows = items.slice(0, shown).map(r => {
+    const late = r.kind === 'late';
+    return '<div class="req">'
+      + '<div class="req-top"><span class="badge ' + (late ? '' : 'absence') + '">' + (late ? '到着遅れ' : '欠席') + '</span>'
+      + '<span class="req-sent">' + esc(jst(r.submittedAt)) + ' 送信</span></div>'
+      + '<p class="req-main">' + esc(r.studentName) + '・' + dayLabel(r.date) + (late && r.time ? ' ' + esc(r.time) + 'ごろ到着' : '') + '</p>'
+      + '<p class="req-sub">' + esc(r.schoolName) + (r.reason ? '・' + esc(r.reason) : '') + '</p>'
+      + (r.note ? '<p class="req-sub">' + esc(r.note) + '</p>' : '')
+      + '<p class="req-ok">✓ スタッフに届いています</p></div>';
+  }).join('');
+  $list.innerHTML = rows + (items.length > shown ? '<button type="button" class="more" id="more">もっと見る</button>' : '');
+  const more = document.getElementById('more');
+  if (more) more.onclick = () => { shown += 20; render(); };
+}
+(async () => {
+  try {
+    const user = await new Promise(res => { const u = auth.onAuthStateChanged(x => { u(); res(x); }); });
+    if (!user){ items = []; render(); return; }
+    const snap = await db.collection('parentViewers').doc(user.uid).collection('requests').get();
+    items = snap.docs.map(d => d.data()).sort((a,b) => ((b.submittedAt && b.submittedAt.seconds) || 0) - ((a.submittedAt && a.submittedAt.seconds) || 0));
+    render();
+  } catch(e){
+    console.error(e);
+    $list.innerHTML = '<p class="empty">読み込みに失敗しました。通信状況を確認して、もう一度開いてください。</p>';
+  }
+})();
+</script>
+</body>
+</html>
