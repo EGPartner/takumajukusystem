@@ -260,6 +260,37 @@
   .foot{font-size:11.5px;color:var(--ink-mute);text-align:center;margin:26px 0 0;}
   .foot .en{letter-spacing:.16em;font-weight:600;}
 
+
+  /* ---------- スマホでの使いやすさ調整(2026-11) ---------- */
+  html{-webkit-text-size-adjust:100%;}
+  .tiles.quick-grid{grid-template-columns:1fr 1fr;gap:12px;}
+  .tiles.list{grid-template-columns:1fr;gap:10px;}
+  a.tile.quick{min-height:148px;padding:18px 18px 16px;display:flex;flex-direction:column;}
+  a.tile.quick .tile-top{margin-bottom:auto;}
+  a.tile.quick .tile-icon{width:52px;height:52px;border-radius:16px;}
+  a.tile.quick .tile-arrow{width:34px;height:34px;}
+  a.tile.quick .tile-title{font-size:20px;margin:16px 0 2px;}
+  a.tile.quick .tile-desc{font-size:13px;}
+  a.tile.compact{min-height:76px;padding:14px 16px;gap:14px;}
+  a.tile.compact .tile-icon{width:48px;height:48px;border-radius:15px;}
+  a.tile.compact .tile-title{font-size:18px;margin:0 0 1px;}
+  a.tile.compact .tile-desc{font-size:12.5px;line-height:1.5;}
+  .section-label{margin:26px 4px 10px;}
+  .section-label h2{font-size:19px;}
+  .school-pill{padding:14px 16px;}
+  .notice{font-size:11.5px;}
+  @media (max-width:639px){
+    .hero{padding:calc(14px + env(safe-area-inset-top)) 20px 78px;}
+    .hero-copy{margin-top:26px;}
+    .hero h1{font-size:clamp(30px,8.6vw,38px);}
+    .hero-lead{font-size:13.5px;margin-top:10px;line-height:1.65;}
+    .main{margin-top:-48px;padding:0 14px calc(36px + env(safe-area-inset-bottom));}
+  }
+  @media (max-width:360px){
+    a.tile.quick .tile-title{font-size:18px;}
+    a.tile.quick .tile-desc{font-size:12px;}
+  }
+
   /* 表示時のふわっとしたアニメーション(動きを減らす設定の端末では無効) */
   .rise{animation:rise .7s var(--ease) both;}
   .rise.d1{animation-delay:.06s;} .rise.d2{animation-delay:.12s;} .rise.d3{animation-delay:.18s;} .rise.d4{animation-delay:.24s;}
@@ -276,6 +307,8 @@
     .panel{padding:34px 32px;}
     .tiles{grid-template-columns:1fr 1fr;}
     a.tile{min-height:220px;}
+    a.tile.quick{min-height:168px;}
+    a.tile.compact{min-height:76px;}
   }
 </style>
 </head>
@@ -290,7 +323,7 @@
     <div class="hero-copy rise">
       <p class="eyebrow en">FOR FAMILIES</p>
       <h1>保護者ページ</h1>
-      <p class="hero-lead">欠席のご連絡や、練習・試合の予定をここから確認できます。</p>
+      <p class="hero-lead">欠席・遅れのご連絡、練習や試合の予定の確認、イベントのお申し込みが、ここからできます。</p>
     </div>
   </div>
 </header>
@@ -340,63 +373,51 @@
       <p class="notice"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16.5v.5"/></svg><span>「福井校(エリート)」は「坂井・福井校(エリート)」に統合されました。福井校(エリート)の方は「坂井・福井校(エリート)」をお選びください。</span></p>
     </div>
 
-    <div class="section-label rise d2"><h2>メニュー</h2><span class="en">MENU</span></div>
-
-    <div class="tiles">
-      <a class="tile feature rise d3" href="absence-form.html">
+    <div class="section-label rise d2"><h2>練習のご連絡</h2><span class="en">CONTACT</span></div>
+    <div class="tiles quick-grid">
+      <a class="tile quick feature rise d3" href="absence-form.html">
         <div class="tile-top">
-          <div class="tile-icon" aria-hidden="true">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H8l-4 4V5z"/><path d="M9 10.5h6"/></svg>
-          </div>
-          <div class="tile-arrow" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+          <div class="tile-icon" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H8l-4 4V5z"/><path d="M9 10.5h6"/></svg></div>
+          <div class="tile-arrow" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
         </div>
-        <p class="tile-kicker en">ABSENCE</p>
         <h3 class="tile-title">欠席連絡</h3>
-        <p class="tile-desc">練習をお休みするときは、こちらからご連絡ください。</p>
+        <p class="tile-desc">練習を休むとき</p>
       </a>
-      <a class="tile rise d4" href="late-form.html">
+      <a class="tile quick rise d3" href="late-form.html">
         <div class="tile-top">
-          <div class="tile-icon" aria-hidden="true">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-          </div>
-          <div class="tile-arrow" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+          <div class="tile-icon" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+          <div class="tile-arrow" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
         </div>
-        <p class="tile-kicker en">LATE</p>
         <h3 class="tile-title">到着遅れ連絡</h3>
-        <p class="tile-desc">練習に遅れるときは、こちらからご連絡ください。</p>
+        <p class="tile-desc">遅れて行くとき</p>
       </a>
-      <a class="tile rise d4" href="calendar-view.html" style="grid-column:1/-1;">
-        <div class="tile-top">
-          <div class="tile-icon" aria-hidden="true">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/><circle cx="12" cy="15" r="1.2" fill="currentColor" stroke="none"/></svg>
-          </div>
-          <div class="tile-arrow" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+    </div>
+
+    <div class="section-label rise d4"><h2>確認・お申し込み</h2><span class="en">INFO</span></div>
+    <div class="tiles list">
+      <a class="tile compact rise d4" href="calendar-view.html">
+        <div class="tile-icon" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/><circle cx="12" cy="15" r="1.2" fill="currentColor" stroke="none"/></svg></div>
+        <div class="tile-body">
+          <h3 class="tile-title">活動予定</h3>
+          <p class="tile-desc">練習・試合・イベントの予定と担当コーチ</p>
         </div>
-        <p class="tile-kicker en">SCHEDULE</p>
-        <h3 class="tile-title">活動予定</h3>
-        <p class="tile-desc">練習・試合・イベントの予定(今日から60日分)と担当コーチをご覧いただけます。</p>
+        <div class="tile-arrow" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
       </a>
-      <a class="tile rise d4" href="events.html" style="grid-column:1/-1;">
-        <div class="tile-top">
-          <div class="tile-icon" aria-hidden="true">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10v4a1 1 0 0 0 1 1h2l5 4V5L7 9H5a1 1 0 0 0-1 1z"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/></svg>
-          </div>
-          <div class="tile-arrow" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+      <a class="tile compact rise d4" href="events.html">
+        <div class="tile-icon" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10v4a1 1 0 0 0 1 1h2l5 4V5L7 9H5a1 1 0 0 0-1 1z"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/></svg></div>
+        <div class="tile-body">
+          <h3 class="tile-title">イベント・お知らせ</h3>
+          <p class="tile-desc">ご案内と、参加のお申し込み</p>
         </div>
-        <p class="tile-kicker en">EVENTS</p>
-        <h3 class="tile-title">イベント・お知らせ</h3>
-        <p class="tile-desc">開催前のイベントのご案内と、参加の申込はこちらからどうぞ。</p>
+        <div class="tile-arrow" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
       </a>
-      <a class="tile rise d4" href="inquiry-form.html" style="grid-column:1/-1;">
-        <div class="tile-top">
-          <div class="tile-icon" aria-hidden="true">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.5 2.5 0 0 1 4.8.9c0 1.7-2.4 2.2-2.4 3.6"/><circle cx="12" cy="17" r="1" fill="currentColor" stroke="none"/></svg>
-          </div>
-          <div class="tile-arrow" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+      <a class="tile compact rise d4" href="inquiry-form.html">
+        <div class="tile-icon" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.5 2.5 0 0 1 4.8.9c0 1.7-2.4 2.2-2.4 3.6"/><circle cx="12" cy="17" r="1" fill="currentColor" stroke="none"/></svg></div>
+        <div class="tile-body">
+          <h3 class="tile-title">お問い合わせ</h3>
+          <p class="tile-desc">ご相談・ご質問はこちら</p>
         </div>
-        <p class="tile-kicker en">CONTACT</p>
-        <h3 class="tile-title">お問い合わせ</h3>
-        <p class="tile-desc">練習のこと、お子さまの様子、お手続きのご相談など。内容を確認してお返事します。</p>
+        <div class="tile-arrow" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
       </a>
     </div>
 
