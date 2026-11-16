@@ -129,6 +129,14 @@
   .req-ok{font-size:12px;color:var(--accent-deep);font-weight:600;margin:8px 0 0;}
   .empty{text-align:center;color:var(--ink-soft);font-size:14px;padding:18px 0 6px;}
   .more{display:block;width:100%;margin-top:6px;padding:12px;border:1.5px solid var(--border-strong);border-radius:12px;background:var(--surface-2);color:var(--ink-soft);font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;}
+
+  .line-box{margin-top:18px;padding:16px;border:1.5px solid #B7E8CB;background:#F0FBF4;border-radius:14px;text-align:center;}
+  .line-tt{font-weight:700;font-size:15px;margin:0 0 4px;}
+  .line-ds{font-size:12.5px;color:var(--ink-soft);margin:0 0 12px;line-height:1.6;}
+  .line-btn{width:100%;padding:14px;border:none;border-radius:12px;background:#06C755;color:#fff;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;}
+  .line-btn:disabled{opacity:.6;}
+  .line-st{font-size:12px;color:var(--ink-mute);margin:8px 0 0;min-height:16px;}
+  .line-ok{font-size:13px;color:var(--accent-deep);font-weight:600;text-align:center;margin:16px 0 0;}
 </style>
 </head>
 <body>
@@ -139,6 +147,7 @@
   <div class="card">
     <h1>申請の確認</h1>
     <p class="sub">この端末から送った、欠席・到着遅れのご連絡です。新しい順に表示します。</p>
+    <div id="line-box"></div>
     <div id="list"><p class="empty">読み込み中…</p></div>
     <p class="back-link"><a href="parent-menu.html">← メニューへ戻る</a></p>
   </div>
@@ -198,11 +207,13 @@ function render(){
     const snap = await db.collection('parentViewers').doc(user.uid).collection('requests').get();
     items = snap.docs.map(d => d.data()).sort((a,b) => ((b.submittedAt && b.submittedAt.seconds) || 0) - ((a.submittedAt && a.submittedAt.seconds) || 0));
     render();
+    if (window.lineLinkRender) lineLinkRender(document.getElementById('line-box'));
   } catch(e){
     console.error(e);
     $list.innerHTML = '<p class="empty">読み込みに失敗しました。通信状況を確認して、もう一度開いてください。</p>';
   }
 })();
 </script>
+<script src="line-link.js"></script>
 </body>
 </html>
