@@ -1113,6 +1113,22 @@ ul.log .tm{color:var(--ink-3);font-size:12.5px;min-width:42px;font-variant-numer
   .pl-item,.hm-li,.btn{min-height:44px}
 }
 @media (prefers-reduced-motion:reduce){.pbody>*{animation:none}}
+
+/* ===== 入力部品(どの画面でも同じ見た目): やわらかい角丸・細い縁・選んだときは青緑の輪 ===== */
+.pbody select,.pbody textarea,.pbody input:not([type=checkbox]):not([type=radio]):not([type=range]),.pl-sheet select,.pl-sheet textarea{
+  border:0;background:var(--surface);border-radius:14px;padding:11px 14px;box-shadow:inset 0 0 0 1px var(--line);color:var(--ink);font:inherit;font-size:16px;outline:0;box-sizing:border-box;max-width:100%}
+.pbody textarea,.pbody select{width:100%}
+.pbody select,.pl-sheet select{-webkit-appearance:none;appearance:none;padding-right:38px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2386868B' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
+.pbody select:focus,.pbody textarea:focus,.pbody input:focus,.pl-sheet textarea:focus,.pl-sheet select:focus{box-shadow:inset 0 0 0 2px var(--accent)}
+.pbody ::placeholder{color:var(--ink-3)}
+.pbody input[type=checkbox],.pbody input[type=radio]{accent-color:var(--accent);width:20px;height:20px}
+.pbody details>summary{cursor:pointer}
+.pbody h2,.pbody h3{font-family:inherit;letter-spacing:-.01em}
+.pbody .vb-h b,.pbody .vboard>b{font-size:17px}
+.pbody table{border-collapse:separate;border-spacing:0}
+.pbody th{font-weight:600;color:var(--ink-3);font-size:12.5px}
+.pbody .chip,.pbody .tk-chip{border:0;background:var(--surface-2)}
+@media (max-width:719px){body[data-mview="tasks"] .m-title,body[data-mview="voices"] .m-title{display:none!important}}
 /* 今日 */
 .hm h1{font-size:40px;line-height:1.1;letter-spacing:-.02em;margin:28px 0 6px;font-weight:700}
 .hm-lead{color:var(--ink-2);font-size:19px;line-height:1.45;margin:0 0 22px}
