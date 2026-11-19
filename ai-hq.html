@@ -1019,6 +1019,7 @@
   .pl-modal{position:fixed;left:50%;top:50%;transform:translate(-50%,-46%) scale(.96);opacity:0;pointer-events:none;background:var(--surface);border-radius:18px;padding:20px;width:min(360px,88vw);box-shadow:var(--shadow);transition:.18s;z-index:1221}.pl-modal.on{opacity:1;pointer-events:auto;transform:translate(-50%,-50%)}
   .pl-modal h3{margin:0 0 6px}.pl-modal p{margin:0;color:var(--ink-2);font-size:14px}.pl-modal .pl-sbtn{position:static}.pl-modal .pl-sbtn .d{background:var(--bad);color:#fff}
   .pl-sheet .pt-x{padding:0;border:0}
+  .pl-ad{background:var(--accent-soft);border-radius:14px;padding:12px 14px;margin:10px 0}.pl-adt{white-space:pre-wrap;font-size:14.5px;margin:6px 0 10px;line-height:1.6}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -3702,6 +3703,7 @@ function plSheetHTML(p) {
   return `<div class="pl-sh"><b>${esc(p.name || p.lineName || '名前未設定')}</b><button type="button" class="pl-ib" data-pl="sheetclose" aria-label="閉じる">${plSvg('close')}</button></div>
     <div class="pk">${kids ? '選手: ' + esc(kids) + ' ・ ' : '<span class="pl-unl">選手未登録</span> '}${lastMs ? esc(jstStamp(lastMs) + ' ・ ' + paAgo(lastMs)) : ''} ・ ${esc(PA_ST[st])}</div>
     ${kids ? '' : '<p class="pk tip">選手が未登録です。<button type="button" class="btn ghost" data-pl="link">塾生と結びつける</button></p>'}
+    ${p.autoDraft && p.autoDraft.text && p.autoDraft.forLastIn === p.lastInAt ? `<div class="pl-ad"><div class="pk">AIが用意した返信案(確認して、LINEから送ってください)</div><div class="pl-adt">${esc(p.autoDraft.text)}</div><button type="button" class="btn" data-pl="copydraft" data-uid="${uid}">コピー</button></div>` : ''}
     <div class="pt-x">${paDetail(p)}</div><div class="pl-sbtn">${st === 'none' ? '' : acts}</div>`;
 }
 function plSyncOverlay() {
@@ -3741,6 +3743,7 @@ document.addEventListener('click', e => {
   if (a === 'reset') { plDrawerOn = false; plModalOn = true; renderPanel(); return; }
   if (a === 'mno') { plModalOn = false; renderPanel(); return; }
   if (a === 'myes') { plModalOn = false; renderPanel(); plReset(); return; }
+  if (a === 'copydraft') { const q = paList.find(x => x.id === b.dataset.uid); if (q && q.autoDraft) navigator.clipboard.writeText(q.autoDraft.text).then(() => toast('コピーしました。LINE公式アカウントに貼り付けてください')).catch(() => toast('コピーできませんでした')); return; }
   if (a === 'page') { plPage = Math.max(1, Number(b.dataset.plp) || 1); const t = document.getElementById('pa-tbl'); if (t) t.innerHTML = paTableInner(); const pb = document.getElementById('pbody'); if (pb) pb.scrollTop = 0; return; }
 });
 </script>
