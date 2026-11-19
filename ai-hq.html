@@ -1018,6 +1018,14 @@
   .pl-p1{background:var(--accent);color:#fff}.pl-p2{background:var(--surface-2);color:var(--ink)}
   .pl-modal{position:fixed;left:50%;top:50%;transform:translate(-50%,-46%) scale(.96);opacity:0;pointer-events:none;background:var(--surface);border-radius:18px;padding:20px;width:min(360px,88vw);box-shadow:var(--shadow);transition:.18s;z-index:1221}.pl-modal.on{opacity:1;pointer-events:auto;transform:translate(-50%,-50%)}
   .pl-modal h3{margin:0 0 6px}.pl-modal p{margin:0;color:var(--ink-2);font-size:14px}.pl-modal .pl-sbtn{position:static}.pl-modal .pl-sbtn .d{background:var(--bad);color:#fff}
+
+  .pl-cmp{background:var(--surface-2);border-radius:16px;padding:12px 14px;margin:10px 0}.pl-cmp-h{display:flex;gap:8px;align-items:baseline;margin-bottom:6px}.pl-cmp-h b{font-size:15px}
+  .pl-cmp textarea{width:100%;border:1px solid var(--line);border-radius:12px;padding:10px 12px;font:inherit;font-size:15.5px;line-height:1.6;background:var(--surface);color:var(--ink);resize:vertical;box-sizing:border-box}
+  .pl-quick{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.pl-quick button{border:0;border-radius:999px;padding:5px 12px;background:var(--accent-soft);color:var(--accent-ink);font:inherit;font-size:13px;cursor:pointer}
+  .pl-cmp-a{display:flex;gap:6px}.pl-cmp-a input{flex:1;min-width:0;border:1px solid var(--line);border-radius:10px;padding:8px 10px;font:inherit;font-size:14px;background:var(--surface);color:var(--ink)}.pl-cmp-a button{border:0;border-radius:10px;padding:0 12px;cursor:pointer;font:inherit;font-size:13.5px;font-weight:600;white-space:nowrap}
+  .pl-send{width:100%;height:50px;border:0;border-radius:14px;background:var(--accent);color:#fff;font:inherit;font-size:16.5px;font-weight:700;margin-top:10px;cursor:pointer}
+  .pl-pv{background:var(--surface-2);border-radius:12px;padding:10px 12px;margin:12px 0;font-size:14.5px;max-height:180px;overflow:auto;white-space:pre-wrap}
+  .pa-out{margin:6px 0 6px auto;max-width:86%;background:var(--accent-soft);border-radius:14px 14px 4px 14px;padding:8px 12px;font-size:14px}.pa-out time{display:block;font-size:11.5px;color:var(--ink-3);margin-bottom:2px}
   .pl-sheet .pt-x{padding:0;border:0}
   .pl-ad{background:var(--accent-soft);border-radius:14px;padding:12px 14px;margin:10px 0}.pl-adt{white-space:pre-wrap;font-size:14.5px;margin:6px 0 10px;line-height:1.6}
 </style>
@@ -1101,6 +1109,8 @@
 <aside class="pl-drawer" id="plDrawer" aria-label="メニュー"></aside>
 <div class="pl-scrim" id="plScrim2" data-pl="close2" style="z-index:1210"></div>
 <section class="pl-sheet" id="plSheet" aria-label="詳細"><div class="pl-grab"></div><div class="pl-sb" id="plSb"></div></section>
+<div class="pl-scrim" id="plScrim3" data-pl="sendno" style="z-index:1220"></div>
+<div class="pl-modal" id="plSendModal" role="dialog" aria-modal="true" style="z-index:1230"><h3>この内容でLINEを送ります</h3><p id="plSendTo"></p><div class="pl-pv" id="plSendPv"></div><p>送信後は取り消せません。送ると、対応済みになります。</p><div class="pl-sbtn"><button type="button" class="pl-p2" data-pl="sendno">戻る</button><button type="button" class="pl-p1" data-pl="sendyes">送る</button></div></div>
 <div class="pl-modal" id="plModal" role="dialog" aria-modal="true"><h3>バックログをリセットしますか?</h3><p>AIが拾った未対応のやることを閉じ、全員の状態を「未確認」に戻します。やり取りの履歴と名前は消えません。</p><div class="pl-sbtn"><button type="button" class="pl-p2" data-pl="mno">やめる</button><button type="button" class="d" data-pl="myes">リセットする</button></div></div>
 <div class="toast" id="toast" role="status"></div>
 <div id="print-area" aria-hidden="true"></div>
@@ -1840,10 +1850,10 @@ function paThreadHTML(p) {
   vis.forEach(e => {
     const d = paDayKey(paMs(e.at));
     if (d !== day) { day = d; left += `<p class="pa-td">${esc(paDayLabel(d))}</p>`; }
-    left += `<div class="pa-in"><time>${esc(paHm(e.at))}</time>${esc(e.t).replace(/\n/g, '<br>')}</div>`;
+    left += e.k === 'out' ? `<div class="pa-out"><time>${esc(paHm(e.at))} ・ 塾から${e.by ? '(' + esc(e.by) + ')' : ''}</time>${esc(e.t).replace(/\n/g, '<br>')}</div>` : `<div class="pa-in"><time>${esc(paHm(e.at))}</time>${esc(e.t).replace(/\n/g, '<br>')}</div>`;
   });
   const more = ins.length > vis.length ? `<button type="button" class="btn ghost" data-pact="threadmore" data-uid="${esc(p.id)}">さらに古い ${ins.length - vis.length}件を表示</button>` : '';
-  return `<div class="pa-thread"><h4>保護者のメッセージ(新しい順・${ins.length}件)</h4>${left || '(まだありません)'}${more}</div>`;
+  return `<div class="pa-thread"><h4>やり取り(新しい順・${ins.length}件)</h4>${left || '(まだありません)'}${more}</div>`;
 }
 /* ---------- 要点・終わったことを、日付ごとの時系列で見せる(日付が変われば、行を分ける。新しい日が上) ---------- */
 const PA_WD = '日月火水木金土';
@@ -3678,8 +3688,33 @@ auth.onAuthStateChanged(async user => {
 });
 
 
+/* ---------- 保護者LINE: システムから返信する ---------- */
+const PL_QUICK = ['承知しました。', 'ありがとうございます。', '確認して、改めてご連絡します。'];
+function plComposerHTML(p) {
+  const ad = p.autoDraft && p.autoDraft.text && p.autoDraft.forLastIn === (p.lastInAt || '') ? p.autoDraft.text : '';
+  const uid = esc(p.id);
+  return `<div class="pl-cmp"><div class="pl-cmp-h"><b>返信する</b><span class="pk">${ad ? 'AIが返信案を用意しました。確認して送れます' : '文章を書くか、AIに案を作らせます'}</span></div>
+    <textarea id="pl-reply" rows="5" placeholder="返信を入力">${esc(ad)}</textarea>
+    <div class="pl-quick">${PL_QUICK.map(q => `<button type="button" data-pl="quick" data-q="${esc(q)}">${esc(q.replace(/。$/, ''))}</button>`).join('')}</div>
+    <div class="pl-cmp-a"><input type="text" id="pl-hint" placeholder="AIへ ひとこと(例: 会費の件も触れて)" autocomplete="off"><button type="button" class="pl-p2" data-pl="redraft" data-uid="${uid}">AIで案を作る</button></div>
+    <button type="button" class="pl-send" data-pl="sendask" data-uid="${uid}">LINEで送る</button></div>`;
+}
+let plSendUid = null;
+function plSendModal(on) {
+  const m = document.getElementById('plSendModal'); if (!m) return;
+  if (on) { const p = paList.find(x => x.id === plSendUid), ta = document.getElementById('pl-reply'); if (!p || !ta || !ta.value.trim()) { toast('返信の文章を入れてください'); return; }
+    document.getElementById('plSendTo').textContent = '宛先: ' + paName(p); document.getElementById('plSendPv').textContent = ta.value.trim(); }
+  m.classList.toggle('on', on); document.getElementById('plScrim3').classList.toggle('on', on);
+}
+async function plSendNow(btn) {
+  const p = paList.find(x => x.id === plSendUid), ta = document.getElementById('pl-reply'); if (!p || !ta) return;
+  const text = ta.value.trim(); btn.disabled = true; btn.textContent = '送っています…';
+  try { await call('aiParentSend')({ uid: p.id, text }); toast('送りました。対応済みにしました'); plSendModal(false); paOpen = null; paCompose = null; }
+  catch (err) { toast(/not-found|NOT_FOUND|404/.test(String(err.message)) ? 'この機能には、バックエンドの更新(デプロイ)が必要です' : '送れませんでした: ' + err.message); }
+  btn.disabled = false; btn.textContent = '送る'; renderPanel();
+}
 /* ---------- 保護者LINE(新UI): ドロワー / ボトムシート / モーダル ---------- */
-let plDrawerOn = false, plModalOn = false;
+let plDrawerOn = false, plModalOn = false, plKeepUid = null;
 const plOnParents = () => panelTab === 'tasks' && tasksView === 'parent';
 function plDrawerHTML() {
   const cfg = tkCfg || {}, unl = paList.filter(p => !(p.children || []).length).length, when = paState && paState.lastRunAt ? tkWhen(paState.lastRunAt) : 'まだありません';
@@ -3703,7 +3738,7 @@ function plSheetHTML(p) {
   return `<div class="pl-sh"><b>${esc(p.name || p.lineName || '名前未設定')}</b><button type="button" class="pl-ib" data-pl="sheetclose" aria-label="閉じる">${plSvg('close')}</button></div>
     <div class="pk">${kids ? '選手: ' + esc(kids) + ' ・ ' : '<span class="pl-unl">選手未登録</span> '}${lastMs ? esc(jstStamp(lastMs) + ' ・ ' + paAgo(lastMs)) : ''} ・ ${esc(PA_ST[st])}</div>
     ${kids ? '' : '<p class="pk tip">選手が未登録です。<button type="button" class="btn ghost" data-pl="link">塾生と結びつける</button></p>'}
-    ${p.autoDraft && p.autoDraft.text && p.autoDraft.forLastIn === p.lastInAt ? `<div class="pl-ad"><div class="pk">AIが用意した返信案(確認して、LINEから送ってください)</div><div class="pl-adt">${esc(p.autoDraft.text)}</div><button type="button" class="btn" data-pl="copydraft" data-uid="${uid}">コピー</button></div>` : ''}
+    ${plComposerHTML(p)}
     <div class="pt-x">${paDetail(p)}</div><div class="pl-sbtn">${st === 'none' ? '' : acts}</div>`;
 }
 function plSyncOverlay() {
@@ -3714,6 +3749,7 @@ function plSyncOverlay() {
   if (drOn) dr.innerHTML = plDrawerHTML();
   dr.classList.toggle('on', drOn);
   if (p) { // 開いている間にFirestoreが更新されても、入力中の文・スクロール・入力位置を保つ
+    if (plKeepUid !== paOpen) { plKeepUid = paOpen; sb.innerHTML = ''; } // 別の保護者に切り替えたら、前の入力は持ち越さない
     const keep = {}, act = document.activeElement, actId = act && act.closest && act.closest('#plSb') ? act.id : '', pos = actId && act.selectionStart != null ? [act.selectionStart, act.selectionEnd] : null, y = sb.scrollTop;
     sb.querySelectorAll('textarea').forEach(t => { if (t.id && t.value) keep[t.id] = t.value; });
     sb.innerHTML = plSheetHTML(p);
@@ -3743,6 +3779,15 @@ document.addEventListener('click', e => {
   if (a === 'reset') { plDrawerOn = false; plModalOn = true; renderPanel(); return; }
   if (a === 'mno') { plModalOn = false; renderPanel(); return; }
   if (a === 'myes') { plModalOn = false; renderPanel(); plReset(); return; }
+  if (a === 'quick') { const ta = document.getElementById('pl-reply'); if (ta) { ta.value = (ta.value ? ta.value.replace(/\s+$/, '') + '\n' : '') + b.dataset.q; ta.focus(); } return; }
+  if (a === 'redraft') {
+    const ta = document.getElementById('pl-reply'), hint = (document.getElementById('pl-hint') || {}).value || ''; b.disabled = true; b.textContent = '作っています…';
+    call('aiParentOps')({ action: 'draft', uid: b.dataset.uid, hint }).then(r => { if (ta) ta.value = (r.data && r.data.reply) || ta.value; }).catch(err => toast('案を作れませんでした: ' + err.message)).finally(() => { b.disabled = false; b.textContent = 'AIで案を作る'; });
+    return;
+  }
+  if (a === 'sendask') { plSendUid = b.dataset.uid; plSendModal(true); return; }
+  if (a === 'sendno') { plSendModal(false); return; }
+  if (a === 'sendyes') { plSendNow(b); return; }
   if (a === 'copydraft') { const q = paList.find(x => x.id === b.dataset.uid); if (q && q.autoDraft) navigator.clipboard.writeText(q.autoDraft.text).then(() => toast('コピーしました。LINE公式アカウントに貼り付けてください')).catch(() => toast('コピーできませんでした')); return; }
   if (a === 'page') { plPage = Math.max(1, Number(b.dataset.plp) || 1); const t = document.getElementById('pa-tbl'); if (t) t.innerHTML = paTableInner(); const pb = document.getElementById('pbody'); if (pb) pb.scrollTop = 0; return; }
 });
