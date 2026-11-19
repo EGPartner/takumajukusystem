@@ -2190,8 +2190,8 @@ function tdCandHTML() {
 /** 統括グループへの自動通知の、停止・再開(ホールドにしている間は送らない) */
 function notifyBoxHTML() {
   const item = (key, label, when) => { const on = !!(tkCfg && tkCfg[key] === true); return `<div class="nb-i"><span><b>${label}</b> <span class="pk">(${when})</span></span><span class="tk-chip${on ? '' : ' warn'}">${on ? '稼働中' : 'ホールド中'}</span><button type="button" class="btn ${on ? 'ghost' : ''}" data-tknotify="${key}" data-on="${on ? '0' : '1'}">${on ? '止める' : '再開する'}</button></div>`; };
-  const hold = !(tkCfg && tkCfg.weekly === true && tkCfg.parentRemind === true);
-  return `<details class="gx-pop nb"><summary class="btn ghost">統括LINE通知${hold ? ' <span class="tk-chip warn">ホールド中</span>' : ''}</summary><div class="gx-card">${item('weekly', '統括タスクの週のまとめ', '毎週月曜 8:30')}${item('parentRemind', '保護者対応の未対応のお知らせ', '毎朝 9:00')}<p class="pk tip">ホールド中は、LINEには何も送りません(画面の表示や記録は、これまでどおり動きます)。「再開する」を押したものだけ、送ります。</p></div></details>`;
+  const hold = !(tkCfg && tkCfg.weekly === true && tkCfg.parentRemind === true && tkCfg.parentDigest === true);
+  return `<details class="gx-pop nb"><summary class="btn ghost">統括LINE通知${hold ? ' <span class="tk-chip warn">ホールド中</span>' : ''}</summary><div class="gx-card">${item('weekly', '統括タスクの週のまとめ', '毎週月曜 8:30')}${item('parentRemind', '保護者対応の未対応のお知らせ', '毎朝 9:00')}${item('parentDigest', '保護者LINEの日次まとめ(ボタン付き)', '毎晩 21:30')}<p class="pk tip">ホールド中は、LINEには何も送りません(画面の表示や記録は、これまでどおり動きます)。「再開する」を押したものだけ、送ります。</p></div></details>`;
 }
 function todoTableHTML() {
   const { open, hidden } = tdRows();
