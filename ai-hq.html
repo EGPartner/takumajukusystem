@@ -1061,6 +1061,58 @@ body{font-family:-apple-system,"SF Pro Text","Hiragino Sans","Noto Sans JP",sans
 .vfilter{gap:6px}.vfilter button{border:0!important;border-radius:999px!important;background:var(--surface)!important;color:var(--ink-2)!important;box-shadow:var(--shadow);font-weight:600}
 .vfilter button[aria-pressed="true"]{background:var(--ink)!important;color:var(--bg)!important;box-shadow:none}
 .vfilter button .n{background:var(--bad);color:#fff;border-radius:999px}
+
+/* ===== 共通のスマホの触感(押した感じ・なめらかなスクロール・小さな動き) ===== */
+html{-webkit-tap-highlight-color:transparent}
+button,.btn,a.chip,.hm-k,.hm-li,.pl-item .pl-main{-webkit-touch-callout:none;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+button:not(:disabled):active,.btn:active,.hm-k:active,.hm-li:active{transform:scale(.975);transition:transform .08s}
+button,.btn,.hm-k,.hm-li{transition:transform .2s cubic-bezier(.2,.8,.2,1),background .15s,opacity .15s}
+textarea,input,select{font-size:16px}
+.pl-sheet,.pl-drawer,.viewer .vbody{overscroll-behavior:contain}
+/* 画面の切り替えは、ふわっと */
+.pbody>*{animation:pbin .28s cubic-bezier(.2,.8,.2,1) both}@keyframes pbin{from{opacity:0;transform:translateY(8px)}}
+/* 決裁カード */
+.card.dc{border:0;border-radius:24px;padding:22px 22px 18px;box-shadow:var(--shadow);background:var(--surface)}
+.dc-m{font-size:13px;color:var(--ink-3);display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.dc h3{font-size:22px;line-height:1.3;letter-spacing:-.01em;margin:8px 0 10px;font-weight:700;font-family:inherit}
+.dc .row{display:block;padding:0;margin:0 0 10px;border:0}.dc .row .lb{display:block;font-size:12px;font-weight:600;color:var(--ink-3);margin-bottom:2px;letter-spacing:.02em}
+.dc .row .bd{font-size:15.5px;line-height:1.55;color:var(--ink)}
+.dc .row.rec{background:var(--accent-soft);border-radius:16px;padding:12px 14px}.dc .row.rec .lb{color:var(--accent-ink)}
+.dc .row.dis{background:color-mix(in srgb,var(--warn) 12%,var(--surface));border-radius:16px;padding:12px 14px}
+.dc-more{border:0;margin:6px 0 0}.dc-more>summary{list-style:none;cursor:pointer;color:var(--accent-ink);font-size:15px;padding:8px 0;display:flex;align-items:center;gap:6px}.dc-more>summary::-webkit-details-marker{display:none}.dc-more>summary::after{content:"";width:7px;height:7px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg) translateY(-2px);transition:.2s}.dc-more[open]>summary::after{transform:rotate(-135deg)}
+.card.dc .actions{display:grid!important;grid-auto-flow:row!important;grid-template-columns:1fr 1fr!important;grid-auto-columns:auto!important;gap:10px;margin-top:14px}
+.card.dc .actions .btn{height:48px;border-radius:14px;font-size:16px;font-weight:600;border:0;background:var(--surface-2);color:var(--ink);white-space:nowrap;flex:none}
+.card.dc .actions .btn.primary{grid-column:1/-1;height:54px;font-size:17px;background:var(--accent);color:#fff}
+/* 指示 */
+ul.orders{gap:12px}.oi{border:0!important;border-radius:22px!important;box-shadow:var(--shadow);padding:16px 18px!important;background:var(--surface)}
+.oi .oh{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.oi .ot{font-size:16.5px;line-height:1.5;font-weight:600;margin-top:6px}
+.oi .st{border-radius:999px;padding:2px 11px;font-size:12px;font-weight:700}
+.oi .oh .who{flex:1;min-width:0}.oi .btn.chk{margin-left:auto;border:0;background:var(--surface-2);border-radius:999px;color:var(--accent-ink);font-weight:600}
+.od{margin-top:12px;border-top:1px solid var(--line);padding-top:12px}
+.pbar{height:6px;border-radius:3px;background:var(--surface-2);overflow:hidden}.pbar i{display:block;height:100%;background:var(--accent);border-radius:3px;transition:width .5s cubic-bezier(.2,.8,.2,1)}
+.outbox{border:0;border-radius:18px;background:var(--surface-2);padding:14px 16px;text-align:left}
+/* 記録・メモ */
+.vboard{border:0!important;border-radius:22px!important;background:var(--surface);box-shadow:var(--shadow);padding:16px 18px}
+ul.log{list-style:none;margin:0;padding:0;background:var(--surface);border-radius:22px;box-shadow:var(--shadow);overflow:hidden}
+ul.log>li{display:flex;gap:12px;padding:14px 18px;border-top:1px solid var(--line);font-size:14.5px;line-height:1.5}ul.log>li:first-child{border-top:0}
+ul.log .tm{color:var(--ink-3);font-size:12.5px;min-width:42px;font-variant-numeric:tabular-nums}ul.log .who{font-weight:600;font-size:13px;color:var(--ink-2)}
+.sec-h{font-size:13px;font-weight:700;color:var(--ink-3);letter-spacing:.03em;margin:18px 4px 8px}.sec-h.big{font-size:19px;color:var(--ink);letter-spacing:-.01em}
+.empty{border:0!important;background:var(--surface);border-radius:22px;padding:44px 22px;text-align:center;color:var(--ink-3);box-shadow:var(--shadow)}.empty b{display:block;color:var(--ink);font-size:19px;margin-bottom:4px}
+.alertbox{border:0;border-radius:18px;background:color-mix(in srgb,var(--bad) 10%,var(--surface));padding:13px 16px}
+.card{border:0;border-radius:22px;box-shadow:var(--shadow)}
+/* スワイプで対応済み(保護者LINE) */
+.pl-item{touch-action:pan-y}.pl-swipe{position:absolute;inset:0;display:flex;align-items:center;justify-content:flex-end;padding-right:22px;color:#fff;background:var(--ok);font-weight:700;opacity:0;pointer-events:none}.pl-swipe svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:2.4;margin-left:8px}
+.pl-item .pl-r{position:relative;background:var(--surface);will-change:transform}
+/* スクロールすると、上のバーに画面の名前が出る(iPhoneの大見出しのように) */
+#bar-title{display:none}
+@media (max-width:719px){
+  #bar-title{display:block;position:absolute;left:50%;transform:translateX(-50%);font-weight:700;font-size:16px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:44vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  body.scrolled #bar-title{opacity:1}body.scrolled .bar .brand{opacity:0;transition:opacity .2s}
+  .bar{position:sticky}
+  .pl-sheet{max-height:92dvh;touch-action:pan-y}.pl-grab{padding:10px 0;margin:0 auto;width:100%;background:none;display:flex;justify-content:center}.pl-grab::before{content:"";width:40px;height:5px;border-radius:3px;background:var(--line-strong)}
+  .pl-item,.hm-li,.btn{min-height:44px}
+}
+@media (prefers-reduced-motion:reduce){.pbody>*{animation:none}}
 /* 今日 */
 .hm h1{font-size:40px;line-height:1.1;letter-spacing:-.02em;margin:28px 0 6px;font-weight:700}
 .hm-lead{color:var(--ink-2);font-size:19px;line-height:1.45;margin:0 0 22px}
@@ -1095,7 +1147,7 @@ body{font-family:-apple-system,"SF Pro Text","Hiragino Sans","Noto Sans JP",sans
 <div class="gate" id="gate"><div class="gbox"><b>タクマ塾 AI本部</b><p id="gate-msg">ログインを確認しています…</p><a class="btn primary" href="hq.html">管理システムを開く</a></div></div>
 <div class="wrap" id="app" hidden>
   <div class="bar">
-    <div class="brand"><b>タクマ塾 AI本部</b><span class="live"><i></i>LIVE</span></div>
+    <div class="brand"><b>タクマ塾 AI本部</b><span class="live"><i></i>LIVE</span></div><span id="bar-title" aria-hidden="true"></span>
     <button class="chip alarm" id="chip-alarm" type="button" hidden>要対応 <b id="n-alarm">0</b></button>
     <button class="chip decide" id="chip-decide" type="button">決裁待ち <b id="n-decide">0</b></button>
     <span class="chip">本日 <b id="n-today">0</b>件</span>
@@ -1722,6 +1774,7 @@ function renderPanel() {
   if (actId) { const t = document.getElementById(actId); if (t) { t.focus({ preventScroll: true }); if (pos && t.setSelectionRange) t.setSelectionRange(pos[0], pos[1]); } }
   hydrateFiles();
   if (typeof plSyncOverlay === 'function') plSyncOverlay();
+  if (typeof plBarTitle === 'function') plBarTitle();
 }
 function renderPanelInner() {
   const gid = groupOf().id; document.querySelectorAll('[data-pgroup]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.pgroup === gid)));
@@ -3884,6 +3937,45 @@ document.addEventListener('click', e => {
   if (a === 'copydraft') { const q = paList.find(x => x.id === b.dataset.uid); if (q && q.autoDraft) navigator.clipboard.writeText(q.autoDraft.text).then(() => toast('コピーしました。LINE公式アカウントに貼り付けてください')).catch(() => toast('コピーできませんでした')); return; }
   if (a === 'page') { plPage = Math.max(1, Number(b.dataset.plp) || 1); const t = document.getElementById('pa-tbl'); if (t) t.innerHTML = paTableInner(); const pb = document.getElementById('pbody'); if (pb) pb.scrollTop = 0; return; }
 });
+
+/* ---------- スマホの操作: 大見出しのたたみ込み・スワイプで対応済み・シートを下へ引いて閉じる・触感 ---------- */
+const plBuzz = ms => { try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) { /* 対応していない端末では何もしない */ } };
+function plBarTitle() {
+  const el = document.getElementById('bar-title'); if (!el) return;
+  const g = groupOf(), sub = g.subs.find(subOn);
+  el.textContent = (sub && sub.label) || g.label || '';
+}
+window.addEventListener('scroll', () => document.body.classList.toggle('scrolled', window.scrollY > 56), { passive: true });
+(function swipe() {
+  let el = null, x0 = 0, y0 = 0, dx = 0, lock = '', fired = false;
+  const reset = () => { if (el) { el.style.transition = 'transform .25s cubic-bezier(.2,.8,.2,1)'; el.style.transform = ''; const sw = el.parentNode.querySelector('.pl-swipe'); if (sw) sw.style.opacity = 0; } el = null; };
+  document.addEventListener('touchstart', e => {
+    const r = e.target.closest && e.target.closest('.pl-item.todo .pl-r'); if (!r || !isMobile()) return;
+    el = r; x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; dx = 0; lock = ''; fired = false; el.style.transition = 'none';
+    if (!el.parentNode.querySelector('.pl-swipe')) el.parentNode.insertAdjacentHTML('afterbegin', `<div class="pl-swipe">対応済み${plSvg('check')}</div>`);
+  }, { passive: true });
+  document.addEventListener('touchmove', e => {
+    if (!el) return; const t = e.touches[0], mx = t.clientX - x0, my = t.clientY - y0;
+    if (!lock) { if (Math.abs(mx) > 8 || Math.abs(my) > 8) lock = Math.abs(mx) > Math.abs(my) * 1.4 && mx < 0 ? 'x' : 'y'; }
+    if (lock !== 'x') return;
+    dx = Math.max(mx, -160); el.style.transform = `translateX(${dx}px)`;
+    const sw = el.parentNode.querySelector('.pl-swipe'); if (sw) sw.style.opacity = Math.min(1, -dx / 90);
+    if (-dx > 100 && !fired) { fired = true; plBuzz(12); } else if (-dx <= 100) fired = false;
+  }, { passive: true });
+  document.addEventListener('touchend', () => {
+    if (!el) return;
+    if (lock === 'x' && -dx > 100) { const ok = el.querySelector('[data-pact="review"].ok'); reset(); if (ok) ok.click(); }
+    else reset();
+  });
+  document.addEventListener('touchcancel', reset);
+})();
+(function sheetDrag() {
+  let y0 = 0, dy = 0, on = false;
+  document.addEventListener('touchstart', e => { const g = e.target.closest && e.target.closest('.pl-grab'); if (!g) return; on = true; y0 = e.touches[0].clientY; dy = 0; document.getElementById('plSheet').style.transition = 'none'; }, { passive: true });
+  document.addEventListener('touchmove', e => { if (!on) return; dy = Math.max(0, e.touches[0].clientY - y0); document.getElementById('plSheet').style.transform = `translateY(${dy}px)`; }, { passive: true });
+  document.addEventListener('touchend', () => { if (!on) return; on = false; const sh = document.getElementById('plSheet'); sh.style.transition = ''; sh.style.transform = ''; if (dy > 90) { plBuzz(8); paOpen = null; paCompose = null; renderPanel(); } });
+})();
+document.addEventListener('click', e => { if (e.target.closest('.btn.primary,.pl-send,.pl-p1,.hm-k')) plBuzz(8); }, true);
 </script>
 </body>
 </html>
