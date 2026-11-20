@@ -1128,7 +1128,38 @@ ul.log .tm{color:var(--ink-3);font-size:12.5px;min-width:42px;font-variant-numer
 .pbody table{border-collapse:separate;border-spacing:0}
 .pbody th{font-weight:600;color:var(--ink-3);font-size:12.5px}
 .pbody .chip,.pbody .tk-chip{border:0;background:var(--surface-2)}
-@media (max-width:719px){body[data-mview="tasks"] .m-title,body[data-mview="voices"] .m-title{display:none!important}}
+@media (max-width:719px){body[data-mview="tasks"] .m-title,body[data-mview="voices"] .m-title,body[data-mview="log"] .m-title,body[data-mview="roster"] .m-title{display:none!important}}
+
+/* ===== 今日(続き)・記録・塾生の確認 ===== */
+.hm-zero{display:flex;align-items:center;gap:8px;margin:26px auto 0;border:0;background:none;color:var(--ink-3);font:inherit;font-size:14px;cursor:pointer}.hm-zero svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.8}
+.hm-slot:empty{display:none}.hm-slot{margin-top:14px}.hm-slot .scroller{display:block!important;margin:0!important;border:0!important;border-radius:22px!important;overflow:hidden;box-shadow:var(--shadow);background:var(--surface)}.hm-slot .hint{display:none!important}body.office-open .stage-wrap>.zoom-btn{display:none!important}
+.hm-dec .hm-card{box-shadow:0 0 0 2px color-mix(in srgb,var(--bad) 30%,transparent),var(--shadow)}
+.dx-ul{list-style:none;margin:12px 0;padding:0}.dx-ul li{padding:10px 0;border-top:1px solid var(--line)}.dx-ul li:first-child{border-top:0}.dx-ul b{display:block;font-size:15.5px}.dx-ul span{display:block;color:var(--ink-3);font-size:13px}
+.dx-choice{display:grid;gap:8px;margin:14px 0}.dx-choice button{border:0;border-radius:14px;padding:14px;background:var(--surface-2);color:var(--ink);font:inherit;font-size:15.5px;font-weight:600;cursor:pointer}.dx-choice button.d{background:color-mix(in srgb,var(--bad) 14%,var(--surface));color:var(--bad)}
+.lg-head{display:flex;align-items:flex-start;gap:10px;margin:18px 4px 14px}.lg-head>div{flex:1}.lg-head h2{font-size:30px;letter-spacing:-.02em;margin:0;font-weight:700}.lg-head span{color:var(--ink-3);font-size:13.5px}
+.lg-kn{background:var(--surface);border-radius:22px;box-shadow:var(--shadow);margin:0 0 16px;overflow:hidden}.lg-kn>summary{list-style:none;display:flex;align-items:center;gap:8px;padding:15px 18px;font-weight:600;cursor:pointer}.lg-kn>summary::-webkit-details-marker{display:none}.lg-kn>summary svg{width:16px;height:16px;margin-left:auto;color:var(--ink-3);stroke:currentColor;fill:none;stroke-width:2;transition:.2s}.lg-kn[open]>summary svg{transform:rotate(90deg)}.lg-kn .vboard{box-shadow:none;border-radius:0;padding:4px 14px 14px}
+ul.lg-list{list-style:none;margin:0;padding:0;background:var(--surface);border-radius:22px;box-shadow:var(--shadow);overflow:clip}
+.lg-day{padding:8px 18px;background:var(--surface-2);color:var(--ink-3);font-size:12.5px;font-weight:700;position:sticky;top:56px;z-index:1}
+.lg-r{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:0;border-top:1px solid var(--line);background:none;color:inherit;font:inherit;padding:13px 18px;cursor:pointer}.lg-day+li .lg-r{border-top:0}.lg-r:hover{background:var(--surface-2)}
+.lg-tm{color:var(--ink-3);font-size:12.5px;min-width:40px;font-variant-numeric:tabular-nums}.lg-b{flex:1;min-width:0}.lg-b b{display:block;font-size:12.5px;color:var(--ink-3);font-weight:600}.lg-b span{display:block;font-size:14.5px;line-height:1.45;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.lg-r>svg{width:15px;height:15px;color:var(--ink-3);stroke:currentColor;fill:none;stroke-width:2;flex:none}
+.dx-q{background:var(--surface-2);border-radius:16px;padding:12px 14px;margin:6px 0 12px;font-size:14.5px;line-height:1.55;max-height:140px;overflow:auto;white-space:pre-wrap}
+.dx-load{display:flex;gap:10px;align-items:center;justify-content:center;padding:34px 0;color:var(--ink-3)}
+.dx-diag{margin:6px 0 12px}.dx-diag p{margin:6px 0 0;font-size:15.5px;line-height:1.6}.dx-urg{display:inline-block;font-size:12px;font-weight:700;padding:2px 11px;border-radius:999px;background:var(--surface-2);color:var(--ink-2)}.dx-urg.hot{background:var(--bad);color:#fff}
+.dx-opts{display:grid;gap:10px;margin:10px 0}.dx-opt{border:0;border-radius:18px;padding:14px 16px;text-align:left;background:var(--surface-2);color:var(--ink);font:inherit;cursor:pointer;display:block}.dx-opt b{display:flex;align-items:center;gap:8px;font-size:16.5px}.dx-opt b i{font-style:normal;font-size:11.5px;background:var(--accent);color:#fff;border-radius:999px;padding:1px 9px}.dx-opt span{display:block;color:var(--ink-3);font-size:13.5px;margin-top:3px}
+.dx-opt.rec{background:var(--accent-soft);box-shadow:inset 0 0 0 2px var(--accent)}.dx-opt:disabled{opacity:.5}
+.dx-free{display:flex;gap:8px;align-items:flex-end;margin-top:12px}.dx-free textarea{flex:1;min-width:0}.dx-free button{border:0;border-radius:14px;padding:0 16px;height:48px;font:inherit;font-weight:700;cursor:pointer;white-space:nowrap}
+.dx-done{text-align:center;padding:26px 6px 6px}.dx-done svg{width:54px;height:54px;color:var(--ok);stroke:currentColor;fill:none;stroke-width:1.8}.dx-done b{display:block;font-size:21px;margin:8px 0 4px}.dx-done span{display:block;color:var(--ink-3);font-size:14.5px;margin-bottom:14px}
+.ro-alert{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:0;background:color-mix(in srgb,var(--warn) 14%,var(--surface));border-radius:20px;padding:14px 16px;cursor:pointer;color:inherit;font:inherit}.ro-alert b{display:block;font-size:16.5px}.ro-alert .ro-alert-t span{display:block;color:var(--ink-2);font-size:13px}.ro-alert .ro-alert-t{flex:1}.ro-alert svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2}.ro-alert-i{width:38px;height:38px;border-radius:12px;background:var(--warn);color:#fff;display:grid;place-items:center}.ro-alert-i svg{width:22px;height:22px}
+.rc-list{display:grid;gap:10px;margin:8px 0}.rc-r{background:var(--surface-2);border-radius:18px;padding:12px 14px}.rc-n b{font-size:16px}.rc-n span{display:block;color:var(--ink-3);font-size:12.5px;margin-bottom:8px}
+.rc-c{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.rc-c button{border:0;border-radius:12px;padding:12px 4px;background:var(--surface);color:var(--ink-2);font:inherit;font-size:14.5px;font-weight:600;cursor:pointer;line-height:1.25}.rc-c button[aria-pressed="true"]{background:var(--accent);color:#fff}
+.pl-send:disabled{opacity:.4}
+.ro-chartwrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -4px;padding:0 4px;scroll-snap-type:x proximity}
+.ro-svg{max-height:none}
+.ro-val{font-size:17px;font-weight:700;fill:var(--ink)}.ro-val.base{font-size:20px;fill:var(--accent-ink)}.ro-ax{font-size:14px;fill:var(--ink-3)}.ro-yr{font-size:12px;fill:var(--ink-3)}.ro-df{font-size:13.5px;font-weight:700}
+.ro-dot{fill:var(--accent)}.ro-dot.base{fill:var(--surface);stroke:var(--accent);stroke-width:3}
+.ro-card{border:0!important;border-radius:22px!important;box-shadow:var(--shadow);padding:16px 18px}.ro-card h4{font-size:16px;color:var(--ink);font-weight:700}
+.ro-k{border:0!important;border-radius:20px!important;box-shadow:var(--shadow)}
 /* 今日 */
 .hm h1{font-size:40px;line-height:1.1;letter-spacing:-.02em;margin:28px 0 6px;font-weight:700}
 .hm-lead{color:var(--ink-2);font-size:19px;line-height:1.45;margin:0 0 22px}
@@ -1232,6 +1263,9 @@ ul.log .tm{color:var(--ink-3);font-size:12.5px;min-width:42px;font-variant-numer
 <aside class="pl-drawer" id="plDrawer" aria-label="メニュー"></aside>
 <div class="pl-scrim" id="plScrim2" data-pl="close2" style="z-index:1210"></div>
 <section class="pl-sheet" id="plSheet" aria-label="詳細"><div class="pl-grab"></div><div class="pl-sb" id="plSb"></div></section>
+<div class="pl-scrim" id="dxScrim" data-dx="close" style="z-index:1240"></div>
+<section class="pl-sheet" id="dxSheet" aria-label="詳細" style="z-index:1241"><div class="pl-grab"></div><div class="pl-sb" id="dxSb"></div></section>
+<div class="pl-modal" id="dxModal" role="dialog" aria-modal="true" style="z-index:1250"></div>
 <div class="pl-scrim" id="plScrim3" data-pl="sendno" style="z-index:1220"></div>
 <div class="pl-modal" id="plSendModal" role="dialog" aria-modal="true" style="z-index:1230"><h3>この内容でLINEを送ります</h3><p id="plSendTo"></p><div class="pl-pv" id="plSendPv"></div><p>送信後は取り消せません。送ると、対応済みになります。</p><div class="pl-sbtn"><button type="button" class="pl-p2" data-pl="sendno">戻る</button><button type="button" class="pl-p1" data-pl="sendyes">送る</button></div></div>
 <div class="pl-modal" id="plModal" role="dialog" aria-modal="true"><h3>バックログをリセットしますか?</h3><p>AIが拾った未対応のやることを閉じ、全員の状態を「未確認」に戻します。やり取りの履歴と名前は消えません。</p><div class="pl-sbtn"><button type="button" class="pl-p2" data-pl="mno">やめる</button><button type="button" class="d" data-pl="myes">リセットする</button></div></div>
@@ -1782,6 +1816,7 @@ function renderPanel() {
   const pos = actId && act.selectionStart != null ? [act.selectionStart, act.selectionEnd] : null;
   document.querySelectorAll('#pbody textarea, #pbody input#rule-text').forEach(t => { if (t.value) keep[t.id] = t.value; });
   const y = $('#pbody').scrollTop;
+  if (typeof plOfficeBack === 'function') plOfficeBack();
   renderPanelInner();
   Object.entries(keep).forEach(([id, v]) => { const t = document.getElementById(id); if (t) t.value = v; });
   $('#pbody').scrollTop = y;
@@ -1789,6 +1824,7 @@ function renderPanel() {
   if (isMobile() && VIEW_TITLE[panelTab] && !(panelTab === 'tasks' && tasksView === 'parent')) $('#pbody').insertAdjacentHTML('afterbegin', `<h2 class="m-title">${VIEW_TITLE[panelTab]}</h2>`);
   if (actId) { const t = document.getElementById(actId); if (t) { t.focus({ preventScroll: true }); if (pos && t.setSelectionRange) t.setSelectionRange(pos[0], pos[1]); } }
   hydrateFiles();
+  if (typeof plPlaceOffice === 'function') plPlaceOffice();
   if (typeof plSyncOverlay === 'function') plSyncOverlay();
   if (typeof plBarTitle === 'function') plBarTitle();
 }
@@ -1821,7 +1857,7 @@ function renderPanelInner() {
   } else if (panelTab === 'orders') {
     P.innerHTML = orders.length ? `<ul class="orders">${orders.map(renderOrder).join('')}</ul>` : `<div class="empty"><b>まだ指示はありません</b>下の入力欄に業務命令を書くか話すと、AI秘書が宛先を判断して届けます。</div>`;
   } else {
-    P.innerHTML = knowledgeHTML() + (logs.length ? `<div class="sec-h">AI本部の記録</div><ul class="log">${logs.map(l => `<li><span class="tm">${esc(hm(toDate(l.at)))}</span><div><div class="who">${esc(l.who)}</div>${esc(l.what)}</div></li>`).join('')}</ul>` : `<div class="empty"><b>まだ記録はありません</b></div>`) + settingsHTML();
+    P.innerHTML = logHTML() + settingsHTML();
   }
 }
 /** 設定(月に1回も使わないもの。「記録」の一番下にまとめる) */
@@ -2068,7 +2104,8 @@ const PL_I = {
   eye: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>', team: '<circle cx="9" cy="8" r="3.5"/><path d="M2 20a7 7 0 0114 0M17 5a3.5 3.5 0 010 7M22 20a6 6 0 00-4-5.6"/>', task: '<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 12l3 3 5-6"/>', doc: '<path d="M6 3h9l4 4v14H6zM14 3v5h5"/>', right: '<path d="M9 6l6 6-6 6"/>', home: '<path d="M3 11l9-8 9 8M5 10v10h14V10"/>'
 };
 const plSvg = n => `<svg viewBox="0 0 24 24" aria-hidden="true">${PL_I[n] || ''}</svg>`;
-let plPage = 1, plHide = false, plQ0 = '';
+let plPage = 1, plHide = false, plQ0 = '', rosterChecks = {};
+const rcKey = (r, k) => (r.st.id || String(r.st.name || '').replace(/\s/g, '')) + '|' + k;
 const PL_PER = 30, PL_COL = ['#0f8f8f', '#6b7fd7', '#c0679a', '#d9822b', '#3d9970', '#8a6bd7', '#2f80c7'];
 const PL_CAT = { att: ['cal', '出欠', ''], money: ['yen', 'お金', 'money'], uni: ['shirt', 'ユニフォーム', ''], join: ['user', '入塾・体験', ''], rest: ['pause', '休会・退会', 'rest'], ask: ['help', '質問', ''], etc: ['chat', 'その他', ''], tap: ['menu', 'メニュー', ''] };
 function plCat(text) {
@@ -2520,19 +2557,19 @@ function roHeadHTML(m) {
 }
 /** 在籍数の推移(階段): 月ごとの人数を階段状に並べ、下に前月からの増減を出す */
 function roStepSVG(m) {
-  const n = m.months.length, W = 1000, H = 250, L = 38, R = 12, T = 28, B = 56, cw = (W - L - R) / n;
-  const vals = m.totals.filter(v => v !== null), vmin = vals.length ? Math.min(...vals) : 0, vmax = vals.length ? Math.max(...vals) : 0, lo = Math.max(0, vmin - Math.max(3, Math.round((vmax - vmin) * .35))), hi = vmax + 3, y = v => T + (H - T - B) * (1 - (v - lo) / Math.max(1, hi - lo));
+  const n = m.months.length, mob = isMobile(), CW = mob ? 74 : 0, L = 44, R = 16, T = 44, B = 74, H = mob ? 360 : 300, W = mob ? Math.max(380, L + R + n * CW) : 1000, cw = (W - L - R) / n;
+  const vals = m.totals.filter(v => v !== null), vmin = vals.length ? Math.min(...vals) : 0, vmax = vals.length ? Math.max(...vals) : 0, lo = Math.max(0, vmin - Math.max(4, Math.round((vmax - vmin) * .4))), hi = vmax + 4, y = v => T + (H - T - B) * (1 - (v - lo) / Math.max(1, hi - lo));
   const x = i => L + i * cw;
   let path = '', i0 = -1, i1 = -1;
   m.totals.forEach((v, i) => { if (v === null) return; if (i0 < 0) i0 = i; i1 = i; path += (i === i0 ? `M${x(i)},${y(v)}` : ` V${y(v)}`) + ` H${x(i + 1)}`; });
   const area = i0 < 0 ? '' : path + ` V${H - B} H${x(i0)} Z`;
-  const grid = [0, .5, 1].map(f => { const v = Math.round(lo + (hi - lo) * f); return `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" class="ro-gl"/><text x="${L - 6}" y="${y(v) + 4}" text-anchor="end" class="ro-ax">${v}</text>`; }).join('');
+  const grid = [0, .25, .5, .75, 1].map(f => { const v = Math.round(lo + (hi - lo) * f); return `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" class="ro-gl"/><text x="${L - 8}" y="${y(v) + 5}" text-anchor="end" class="ro-ax">${v}</text>`; }).join('');
   const cur = roCur();
   const cols = m.months.map((k, i) => `<g><rect x="${x(i)}" y="${T}" width="${cw}" height="${H - B - T}" class="ro-col${k === cur ? ' cur' : ''}${k === m.base ? ' base' : ''}"/>
-    ${m.totals[i] === null ? '' : `<text x="${x(i) + cw / 2}" y="${y(m.totals[i]) - 8}" text-anchor="middle" class="ro-val">${m.totals[i]}</text>`}
-    <text x="${x(i) + cw / 2}" y="${H - B + 17}" text-anchor="middle" class="ro-ax">${Number(k.slice(5))}月${k.slice(5) === '01' || i === 0 ? '<tspan x="' + (x(i) + cw / 2) + '" dy="12" class="ro-yr">' + k.slice(0, 4) + '</tspan>' : ''}</text>
-    ${m.diffs[i] === null ? '' : `<text x="${x(i) + cw / 2}" y="${H - 6}" text-anchor="middle" class="ro-df ${m.diffs[i] > 0 ? 'up' : m.diffs[i] < 0 ? 'dn' : ''}">${roSign(m.diffs[i])}</text>`}</g>`).join('');
-  return `<svg viewBox="0 0 ${W} ${H}" class="ro-svg" role="img" aria-label="在籍塾生数の月ごとの推移(階段グラフ)">${grid}${cols}<path d="${area}" class="ro-area"/><path d="${path}" class="ro-line"/></svg>`;
+    ${m.totals[i] === null ? '' : `<circle cx="${x(i) + cw / 2}" cy="${y(m.totals[i])}" r="${k === m.base ? 6 : 4}" class="ro-dot${k === m.base ? ' base' : ''}"/><text x="${x(i) + cw / 2}" y="${y(m.totals[i]) - 14}" text-anchor="middle" class="ro-val${k === m.base ? ' base' : ''}">${m.totals[i]}</text>`}
+    <text x="${x(i) + cw / 2}" y="${H - B + 24}" text-anchor="middle" class="ro-ax">${Number(k.slice(5))}月${k.slice(5) === '01' || i === 0 ? '<tspan x="' + (x(i) + cw / 2) + '" dy="16" class="ro-yr">' + k.slice(0, 4) + '</tspan>' : ''}</text>
+    ${m.diffs[i] === null ? '' : `<text x="${x(i) + cw / 2}" y="${H - 8}" text-anchor="middle" class="ro-df ${m.diffs[i] > 0 ? 'up' : m.diffs[i] < 0 ? 'dn' : ''}">${roSign(m.diffs[i])}</text>`}</g>`).join('');
+  return `<div class="ro-chartwrap"><svg viewBox="0 0 ${W} ${H}" ${mob ? `width="${W}" height="${H}"` : ''} class="ro-svg" role="img" aria-label="在籍塾生数の月ごとの推移(階段グラフ)">${grid}${cols}<path d="${area}" class="ro-area"/><path d="${path}" class="ro-line"/></svg></div>`;
 }
 /** 今月の動きを、入塾・復塾 / 退塾 / 休塾 / 体験 に分ける。退塾と休塾の区別は、塾生リストの「退会月」「休塾開始月」「復帰予定月」で決める(印が消えただけでは決めない) */
 function roKinds(m) {
@@ -2540,7 +2577,7 @@ function roKinds(m) {
   const notes = roF.roster ? Object.fromEntries(roF.roster.filter(n => n.id).map(n => [n.id, n])) : null, byName = roF.roster ? Object.fromEntries(roF.roster.map(n => [nm(n.name), n])) : null;
   const note = r => (notes && (notes[r.st.id] || byName[nm(r.st.name)])) || {};
   const pause = [], leave = [], check = [];
-  mv.left.forEach(r => { if (!notes) { leave.push({ ...r, n: {} }); return; } const n = note(r); if (n.pause || n.resume) pause.push({ ...r, n }); else if (n.leave) leave.push({ ...r, n }); else check.push({ ...r, n }); });
+  mv.left.forEach(r => { if (!notes) { leave.push({ ...r, n: {} }); return; } const n = note(r); if (n.pause || n.resume) pause.push({ ...r, n }); else if (n.leave) leave.push({ ...r, n }); else if (!rosterChecks[rcKey(r, k)]) check.push({ ...r, n }); }); // 統括が「確認した」ものは、もう確認が必要には出さない
   const paused = notes ? m.all.filter(r => { const n = note(r); return n.pause && n.pause < k && (!n.resume || n.resume > k) && !roAct(r.st, k); }).map(r => ({ ...r, n: note(r) })) : [];
   const trial = roF.rows ? roFModel(m).uniq.filter(r => r.type === '体験' && r.month === k).sort((a, b) => b.at.localeCompare(a.at)) : null;
   return { k, joined: mv.joined, fresh: mv.joined.filter(r => !r.again), back: mv.joined.filter(r => r.again), pause, leave, check, paused, trial, ready: !!notes };
@@ -2579,7 +2616,7 @@ function roSumHTML(m) {
       ${kc('退塾', kd.leave.length, 'var(--bad)', kd.ready ? '退会月が入っている人' : '(区分は更新後)')}
       ${kc('休塾', kd.pause.length, 'var(--warn)', kd.paused.length ? '休塾中(継続) ' + kd.paused.length + '人' : kd.ready ? '今月から休塾した人' : '(区分は更新後)')}
       ${kc('体験', kd.trial ? kd.trial.length : (roF.err ? '—' : '…'), 'var(--accent)', '入塾フォーム回答より')}</div>
-    ${kd.check.length ? `<div class="alertbox"><b>確認が必要: ${kd.check.length}人</b>前月にいたのに今月は印がなく、塾生リストに「退会月」「休塾開始月」の記載もありません。リストを確認してください: ${kd.check.map(r => esc(r.st.name) + '(' + esc(r.school) + ')').join('、')}</div>` : ''}
+    ${kd.check.length ? `<button type="button" class="ro-alert" data-rochk="open"><span class="ro-alert-i">${plSvg('help')}</span><span class="ro-alert-t"><b>確認が必要 ${kd.check.length}人</b><span>前月にいたのに今月は印がありません。タップして、ここで確認を終わらせます</span></span>${plSvg('right')}</button>` : ''}
     <div class="ro-card"><h4>在籍数の推移</h4>${roStepSVG(m)}</div>
     ${ro.school === 'all' ? `<div class="ro-card"><h4>校舎ごとの人数</h4><div class="ro-scroll"><table class="ro-tbl">${head}${rows}${foot}</table></div></div>` : ''}
     ${roAbsCard(m)}
@@ -3272,7 +3309,8 @@ document.addEventListener('click', async e => {
     const g = btn.dataset.hmgo;
     if (g === 'decide') { const w = GROUPS.find(x => x.id === 'work'); goSub(w, w.subs.find(x => x.tab === 'decide')); }
     else if (g === 'parent') { const w = GROUPS.find(x => x.id === 'people'); goSub(w, w.subs[0]); }
-    else if (g === 'office') { if (isMobile()) { document.body.classList.toggle('office-open'); renderPanel(); } else closePanel(); }
+    else if (g === 'office') { document.body.classList.toggle('office-open'); renderPanel(); }
+    else if (g === 'zero') hmZeroOpen();
     return;
   }
   if (btn.dataset.ibdis) { inboxDismiss(btn.dataset.ibdis, btn); return; }
@@ -3797,6 +3835,7 @@ auth.onAuthStateChanged(async user => {
   const day = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
   db.doc('aiUsage/' + day).onSnapshot(s => { usage = s.exists ? s.data() : null; renderCounts(); });
   const metaItems = (name, set) => db.doc('aiMeta/' + name).onSnapshot(s => { set(s.exists ? s.data() : null); if (panelTab === 'voices') renderAll(); }, e => console.error(e));
+  db.doc('aiMeta/rosterChecks').onSnapshot(sn => { rosterChecks = (sn.exists && sn.data().items) || {}; if (panelTab === 'roster') renderPanel(); }, e => console.error(e));
   metaItems('voiceThemes', d => { voiceThemes = (d && d.items) || []; });
   metaItems('rules', d => { voiceRules = (d && d.items) || []; });
   metaItems('voiceReview', d => { voiceReview = d; });
@@ -3855,25 +3894,31 @@ const HM_CATS = [
 let hmMore = {};
 function homeGreeting() { const h = (new Date(Date.now() + 9 * 3600e3)).getUTCHours(); return h < 11 ? 'おはようございます。' : h < 18 ? 'こんにちは。' : 'お疲れさまです。'; }
 function homeHTML() {
-  const items = inboxItems(), used = new Set(), cats = HM_CATS.map(c => ({ ...c, list: items.filter(x => !used.has(x.key) && c.pick(x)).map(x => (used.add(x.key), x)) })).filter(c => c.list.length);
+  const items = inboxItems(), used = new Set(items.filter(x => x.src === 'decision').map(x => x.key)), cats = HM_CATS.map(c => ({ ...c, list: items.filter(x => !used.has(x.key) && c.pick(x)).map(x => (used.add(x.key), x)) })).filter(c => c.list.length);
   const nDec = decisions.length, need = paList.filter(paNeeds).length, late = paList.filter(p => ['new', 'need'].includes(paStatus(p)) && paNeeds(p) && Date.now() - paSince(p) >= 24 * 3600e3).length;
   const bad = orders.filter(o => o.stage === 'error' || o.stage === 'paused_quota'), act = orders.filter(o => ACTIVE.includes(o.stage)).length, total = items.length;
-  const days = apiKeyMeta && apiKeyMeta.daysLeft;
-  const lead = nDec ? `決めてほしいことが${nDec}件あります。` : total ? `今日やることが${total}件あります。` : '今日やることは、ありません。';
+  const days = apiKeyMeta && apiKeyMeta.daysLeft, officeOn = document.body.classList.contains('office-open');
+  const lead = nDec === 1 ? `決めてほしいことが1件あります。「${esc(decisions[0].title || '決裁')}」です。` : nDec ? `決めてほしいことが${nDec}件あります。下の「決めてほしいこと」から開けます。` : total ? `今日やることが${total}件あります。` : '今日やることは、ありません。';
   const kpi = (label, n, sub, go, cls) => `<button type="button" class="hm-k" data-hmgo="${go}"><span>${label}</span><b class="${cls || ''}">${n}</b><small>${sub}</small></button>`;
   const item = x => `<button type="button" class="hm-li" data-ibgo="${esc(x.key)}"><span class="hm-t"><b>${esc(x.title)}</b><span>${esc(x.grp ? x.grp + ' ・ ' : '')}${esc(x.sub || '')}</span></span>${x.score >= 60 || x.urgent ? '<span class="hm-urg">急ぎ</span>' : ''}${plSvg('right')}</button>`;
   const catHTML = c => { const open = hmMore[c.id], shown = open ? c.list : c.list.slice(0, 3);
     return `<section class="hm-cat"><div class="hm-ch"><span class="hm-ico">${plSvg(c.icon)}</span><div><b>${esc(c.name)}</b><small>${esc(c.src)}</small></div><span class="hm-n">${c.list.length}</span></div>
       <div class="hm-card">${shown.map(item).join('')}${c.list.length > 3 ? `<button type="button" class="hm-more" data-hmmore="${c.id}">${open ? '閉じる' : `ほか${c.list.length - 3}件を見る`}</button>` : ''}</div></section>`; };
+  const decHTML = nDec ? `<section class="hm-cat hm-dec"><div class="hm-ch"><span class="hm-ico" style="background:color-mix(in srgb,var(--bad) 14%,var(--surface));color:var(--bad)">${plSvg('task')}</span><div><b>決めてほしいこと</b><small>統括の判断が必要です</small></div><span class="hm-n" style="background:var(--bad);color:#fff">${nDec}</span></div>
+      <div class="hm-card">${decisions.map(d => `<button type="button" class="hm-li" data-ibgo="d:${esc(d.id)}"><span class="hm-t"><b>${esc(d.title || '決裁')}</b><span>${esc(deptName(d.dept) || '部長会議')} ・ 指示#${esc(d.orderNo || '')}</span></span><span class="hm-urg">決裁</span>${plSvg('right')}</button>`).join('')}</div></section>` : '';
+  const zeroN = need + tdRows().open.length;
   return `<div class="hm">
     <h1>${homeGreeting()}</h1><p class="hm-lead">${lead}${late ? `保護者LINEで、24時間以上そのままの連絡が${late}件あります。` : ''}</p>
     ${bad.length ? `<div class="hm-alert">${plSvg('help')}<div><b>要対応 ${bad.length}件</b> ${bad.map(o => `指示#${o.no}: ${esc(pauseText(o))}`).join(' / ')}</div></div>` : ''}
     ${days != null && days <= 7 ? `<div class="hm-alert">${plSvg('help')}<div><b>APIキーの更新時期です</b> 期限まであと${days}日</div></div>` : ''}
     <div class="hm-kpis">${kpi('決裁待ち', nDec, nDec ? '統括の判断が必要' : 'ありません', 'decide', nDec ? 'bad' : '')}${kpi('保護者LINE', need, late ? `要確認(24時間超 ${late})` : '要確認', 'parent')}${kpi('今日のAI費用', '¥' + costYen().toLocaleString('ja-JP'), '上限 ¥300', '')}</div>
     ${act ? `<div class="hm-live"><span class="hm-pulse"></span><span>AI本部が、${act}件の指示を実行しています</span></div>` : ''}
-    <h2>今日やること${total ? `<span class="hm-n">${total}</span>` : ''}</h2>
+    ${decHTML}
+    <h2>今日やること${total - nDec > 0 ? `<span class="hm-n">${total - nDec}</span>` : ''}</h2>
     ${cats.length ? cats.map(catHTML).join('') : `<div class="hm-empty">${plSvg('check')}<b>やることは、ありません</b><span>新しい連絡や決裁が届くと、ここに出ます。</span></div>`}
-    <button type="button" class="hm-office" data-hmgo="office">オフィス(AI本部の様子)を見る</button></div>`;
+    ${zeroN ? `<button type="button" class="hm-zero" data-hmgo="zero">${plSvg('undo')}今日やることを、いったんゼロにする…</button>` : ''}
+    <button type="button" class="hm-office" data-hmgo="office">${officeOn ? 'オフィスを隠す' : 'オフィス(AI本部の様子)を見る'}</button>
+    <div class="hm-slot" id="hm-office-slot"></div></div>`;
 }
 /* ---------- 保護者LINE(新UI): ドロワー / ボトムシート / モーダル ---------- */
 let plDrawerOn = false, plModalOn = false, plKeepUid = null;
@@ -3986,12 +4031,127 @@ window.addEventListener('scroll', () => document.body.classList.toggle('scrolled
   document.addEventListener('touchcancel', reset);
 })();
 (function sheetDrag() {
-  let y0 = 0, dy = 0, on = false;
-  document.addEventListener('touchstart', e => { const g = e.target.closest && e.target.closest('.pl-grab'); if (!g) return; on = true; y0 = e.touches[0].clientY; dy = 0; document.getElementById('plSheet').style.transition = 'none'; }, { passive: true });
-  document.addEventListener('touchmove', e => { if (!on) return; dy = Math.max(0, e.touches[0].clientY - y0); document.getElementById('plSheet').style.transform = `translateY(${dy}px)`; }, { passive: true });
-  document.addEventListener('touchend', () => { if (!on) return; on = false; const sh = document.getElementById('plSheet'); sh.style.transition = ''; sh.style.transform = ''; if (dy > 90) { plBuzz(8); paOpen = null; paCompose = null; renderPanel(); } });
+  let y0 = 0, dy = 0, on = false, tgt = null;
+  document.addEventListener('touchstart', e => { const g = e.target.closest && e.target.closest('.pl-grab'); if (!g) return; tgt = g.closest('.pl-sheet'); on = true; y0 = e.touches[0].clientY; dy = 0; tgt.style.transition = 'none'; }, { passive: true });
+  document.addEventListener('touchmove', e => { if (!on) return; dy = Math.max(0, e.touches[0].clientY - y0); tgt.style.transform = `translateY(${dy}px)`; }, { passive: true });
+  document.addEventListener('touchend', () => { if (!on) return; on = false; const sh = tgt || document.getElementById('plSheet'); sh.style.transition = ''; sh.style.transform = ''; if (dy > 90) { plBuzz(8); if (sh.id === 'dxSheet') dxSheetOn(false); else { paOpen = null; paCompose = null; renderPanel(); } } });
 })();
 document.addEventListener('click', e => { if (e.target.closest('.btn.primary,.pl-send,.pl-p1,.hm-k')) plBuzz(8); }, true);
+
+/* ---------- 今日: オフィスを同じ画面の下に開く / 今日やることをゼロにする ---------- */
+let plOfficeEl = null, plOfficeHome = null;
+function plOfficeBack() { // 画面を描き直す前に、オフィスを元の場所へ戻す(描き直しで消えないように)
+  if (!plOfficeEl) { plOfficeEl = document.querySelector('.stage-wrap > .scroller'); if (plOfficeEl) plOfficeHome = { parent: plOfficeEl.parentNode, next: plOfficeEl.nextSibling }; }
+  if (plOfficeEl && plOfficeHome && plOfficeEl.parentNode !== plOfficeHome.parent) plOfficeHome.parent.insertBefore(plOfficeEl, plOfficeHome.next);
+}
+function plPlaceOffice() {
+  const slot = document.getElementById('hm-office-slot');
+  if (plOfficeEl && slot && document.body.classList.contains('office-open')) slot.appendChild(plOfficeEl);
+}
+function dxModal(html, on = true) { const m = document.getElementById('dxModal'); if (html != null) m.innerHTML = html; m.classList.toggle('on', on); document.getElementById('dxScrim').classList.toggle('on', on || document.getElementById('dxSheet').classList.contains('on')); }
+function hmZeroOpen() {
+  const need = paList.filter(paNeeds).length, tasksN = tdRows().open.length, nDec = decisions.length, rep = pendingB().length;
+  dxModal(`<h3>今日やることを、ゼロにしますか?</h3><p>次のものを、いったん片付けます。</p>
+    <ul class="dx-ul"><li><b>保護者LINE ${need}人</b><span>状態を「未確認」に戻し、AIが拾った未対応のやることを閉じます(やり取りの履歴は消えません)</span></li>
+    <li><b>やること ${tasksN}件</b><span>統括・スタッフのやることを、不要として閉じます(記録は残ります)</span></li></ul>
+    <p class="pk">残るもの: 決裁待ち ${nDec}件(本当の判断なので、そのまま)${rep ? `・完了報告 ${rep}件(7日で自動で閉じます)` : ''}</p>
+    <div class="pl-sbtn"><button type="button" class="pl-p2" data-dx="close">やめる</button><button type="button" class="d" data-dx="zerogo">ゼロにする</button></div>`);
+}
+async function hmZeroRun(btn) {
+  btn.disabled = true; btn.textContent = '片付けています…'; const out = [];
+  try { const r = await call('aiParentOps')({ action: 'resetBacklog' }); out.push(`保護者LINE ${r.data.parents}人`); } catch (e) { out.push('保護者LINE: できませんでした'); }
+  try {
+    const open = tdRows().open.map(r => ({ src: r.src, id: r.t.id })); let n = 0;
+    for (let i = 0; i < open.length; i += 70) { const r = await call('aiTokatsuTasks')({ action: 'bulkClose', items: open.slice(i, i + 70) }); n += r.data.closed || 0; }
+    out.push(`やること ${n}件`);
+  } catch (e) { out.push('やること: できませんでした'); }
+  dxModal('', false); toast('片付けました: ' + out.join('・')); plBuzz(14); renderPanel();
+}
+
+/* ---------- 記録: 日ごとにまとめる / 整理(削除) / タップでAIが診断 ---------- */
+let lgShown = 30;
+function logHTML() {
+  const total = logs.length, sh = logs.slice(0, lgShown), day = ms => new Date(ms + 9 * 3600e3).toISOString().slice(0, 10), t0 = todayJst();
+  let cur = '', body = '';
+  sh.forEach((l, i) => { const d = toDate(l.at), k = d ? day(d.getTime()) : ''; if (k !== cur) { cur = k; body += `<li class="lg-day">${esc(k === t0 ? '今日' : k === addDaysYmd(t0, -1) ? '昨日' : tkMd(k))}</li>`; }
+    body += `<li><button type="button" class="lg-r" data-lgdx="${i}"><span class="lg-tm">${esc(hm(d))}</span><span class="lg-b"><b>${esc(l.who)}</b><span>${esc(l.what)}</span></span>${plSvg('right')}</button></li>`; });
+  return `<div class="lg-head"><div><h2>記録</h2><span>AI本部の動きの履歴。タップすると、AIが診断します</span></div><button type="button" class="pl-ib" data-lg="purge" data-pltip="整理する" aria-label="記録を整理する">${plSvg('undo')}</button></div>
+    <details class="lg-kn"><summary>社内メモ(${knMemos.length}件)${plSvg('right')}</summary>${knowledgeHTML()}</details>
+    ${total ? `<ul class="lg-list">${body}</ul>${total > lgShown ? `<button type="button" class="hm-more lg-more" data-lg="more">さらに表示(あと${total - lgShown}件)</button>` : ''}` : `<div class="empty"><b>まだ記録はありません</b></div>`}`;
+}
+function lgPurgeOpen() {
+  dxModal(`<h3>記録を整理します</h3><p>削除した記録は、元に戻せません。</p>
+    <div class="dx-choice"><button type="button" data-dx="purge7">7日より古い記録を削除</button><button type="button" data-dx="purge2">2日より古い記録を削除</button><button type="button" class="d" data-dx="purgeall">すべて削除</button></div>
+    <div class="pl-sbtn"><button type="button" class="pl-p2" data-dx="close">やめる</button></div>`);
+}
+async function lgPurge(kind, btn) {
+  btn.disabled = true; btn.textContent = '削除しています…';
+  try { const r = await call('aiLogOps')(kind === 'all' ? { action: 'clear' } : { action: 'purge', days: kind }); dxModal('', false); toast(`${r.data.removed}件を削除しました`); plBuzz(12); }
+  catch (e) { dxModal('', false); toast(/NOT_FOUND|not-found|404/.test(String(e.message)) ? 'この機能には、バックエンドの更新が必要です' : '削除できませんでした: ' + e.message); }
+}
+let dxS = null;
+function dxSheetOn(on) { document.getElementById('dxSheet').classList.toggle('on', on); document.getElementById('dxScrim').classList.toggle('on', on || document.getElementById('dxModal').classList.contains('on')); if (!on) dxS = null; }
+function dxRender() {
+  const s = dxS, sb = document.getElementById('dxSb'); if (!s) return;
+  const head = `<div class="pl-sh"><b>${esc(s.title || 'AIの診断')}</b><button type="button" class="pl-ib" data-dx="sheetclose" aria-label="閉じる">${plSvg('close')}</button></div><div class="dx-q">${esc(s.text)}</div>`;
+  if (s.done) { sb.innerHTML = head + `<div class="dx-done">${plSvg('check')}<b>AI企業が動き始めました</b><span>指示#${esc(s.done.no)}。結果は、部長の決裁(判断が必要なもの)として上がってきます。</span><button type="button" class="pl-send" data-dx="gotoorders">指示の進み具合を見る</button></div>`; return; }
+  if (s.loading) { sb.innerHTML = head + `<div class="dx-load"><span class="pl-spin"></span>AIが診断しています…</div>`; return; }
+  const r = s.res;
+  sb.innerHTML = head + (r ? `<div class="dx-diag"><span class="dx-urg ${r.urgency === '急ぎ' ? 'hot' : ''}">${esc(r.urgency)}</span><p>${esc(r.diagnosis)}</p></div>
+    <div class="dx-opts">${r.options.map((o, i) => `<button type="button" class="dx-opt${i === 0 ? ' rec' : ''}" data-dxopt="${i}" ${s.busy ? 'disabled' : ''}><b>${esc(o.label)}${i === 0 ? '<i>おすすめ</i>' : ''}</b><span>${esc(o.reason || o.instruction)}</span></button>`).join('')}</div>` : `<p class="pk">${esc(s.err || '診断できませんでした')}</p>`)
+    + `<div class="dx-free"><textarea id="dx-free" rows="2" placeholder="ほかの解決のしかたを、書いて指示する"></textarea><button type="button" class="pl-p1" data-dx="free" ${s.busy ? 'disabled' : ''}>${s.busy ? '送っています…' : 'AIに指示する'}</button></div>`;
+}
+async function dxOpen(text, title, kind, extra) {
+  dxS = { text, title, kind, extra, loading: true }; dxSheetOn(true); dxRender();
+  try { const r = await call('aiDiagnose', { quiet: true })({ text, kind, extra }); if (dxS && dxS.text === text) { dxS.res = r.data; dxS.loading = false; dxRender(); } }
+  catch (e) { if (dxS) { dxS.loading = false; dxS.err = /NOT_FOUND|not-found|404/.test(String(e.message)) ? 'この機能には、バックエンドの更新が必要です' : '診断できませんでした: ' + e.message; dxRender(); } }
+}
+async function dxRun(instruction) { // 解決策を押す → 指示を作って出す → AI企業が動く → 結果は決裁に上がる
+  if (!dxS || dxS.busy) return; dxS.busy = true; dxRender();
+  try {
+    const d = (await call('aiDraftOrder')({ text: instruction })).data;
+    const payload = { text: d.text, target: d.target, instruction: d.instruction, due: d.due, steps: d.steps, needsDecision: d.needsDecision, needsResearch: d.needsResearch, needsData: d.needsData, costYen: d.costYen, related: d.related, question: d.question, output: d.output, by: d.by };
+    const r = await call('aiSubmitOrder')({ draft: payload }); dxS.done = { no: r.data.no }; dxS.busy = false; plBuzz(14); dxRender();
+  } catch (e) { dxS.busy = false; dxRender(); toast('指示を出せませんでした: ' + e.message); }
+}
+
+/* ---------- 塾生: 「確認が必要」をその場で確認して終える ---------- */
+let rcSel = {};
+function rcOpen() {
+  const m = roModel ? roModel() : null; if (!m) return;
+  const kd = roKinds(m); if (!kd.check.length) { toast('確認が必要な人は、いません'); return; }
+  rcSel = {}; const k = kd.k;
+  const row = r => `<div class="rc-r" data-rckey="${esc(rcKey(r, k))}"><div class="rc-n"><b>${esc(r.st.name || '(名前なし)')}</b><span>${esc(r.school)}${roGrade(r.st) ? ' ・ ' + esc(roGrade(r.st)) : ''}${r.st.team ? ' ・ ' + esc(r.st.team) : ''}</span></div>
+    <div class="rc-c">${['退塾', '休塾', '継続', '保護者に確認'].map(c => `<button type="button" data-rcc="${c}" aria-pressed="false">${c}</button>`).join('')}</div></div>`;
+  window._rcList = kd.check.map(r => ({ key: rcKey(r, k), name: r.st.name || '', school: r.school, month: k }));
+  dxS = { title: '在籍の確認', text: `${roMJa(k)}の在籍で、前月にいたのに今月は印がない ${kd.check.length}人です。1人ずつ、状況を選んでください。`, rc: true };
+  dxSheetOn(true);
+  document.getElementById('dxSb').innerHTML = `<div class="pl-sh"><b>在籍の確認</b><button type="button" class="pl-ib" data-dx="sheetclose" aria-label="閉じる">${plSvg('close')}</button></div><div class="dx-q">${esc(dxS.text)}</div>
+    <div class="rc-list">${kd.check.map(row).join('')}</div><p class="pk">「退塾」「休塾」を選ぶと、塾生リストの更新が、やることとして登録されます(リストは、AIは直接書き換えません)。</p>
+    <button type="button" class="pl-send" data-dx="rcsave" disabled>確定する</button>`;
+}
+async function rcSave(btn) {
+  const items = (window._rcList || []).filter(x => rcSel[x.key]).map(x => ({ ...x, choice: rcSel[x.key] })); if (!items.length) return;
+  btn.disabled = true; btn.textContent = '保存しています…';
+  try { const r = await call('aiRosterCheck')({ items }); dxSheetOn(false); toast(`${r.data.saved}人の確認を終えました${r.data.tasks ? `(やること ${r.data.tasks}件を登録)` : ''}`); plBuzz(14); }
+  catch (e) { btn.disabled = false; btn.textContent = '確定する'; toast(/NOT_FOUND|not-found|404/.test(String(e.message)) ? 'この機能には、バックエンドの更新が必要です' : '保存できませんでした: ' + e.message); }
+}
+document.addEventListener('click', e => {
+  const t = e.target;
+  const lg = t.closest('[data-lgdx]'); if (lg) { const l = logs[Number(lg.dataset.lgdx)]; if (l) dxOpen(`${l.who}: ${l.what}`, 'この記録を、どう解決する?', '記録', ''); return; }
+  const m = t.closest('[data-lg]'); if (m) { if (m.dataset.lg === 'more') { lgShown += 40; renderPanel(); } else if (m.dataset.lg === 'purge') lgPurgeOpen(); return; }
+  if (t.closest('[data-rochk]')) { rcOpen(); return; }
+  const c = t.closest('[data-rcc]'); if (c) { const r = c.closest('[data-rckey]'), key = r.dataset.rckey; rcSel[key] = c.dataset.rcc; r.querySelectorAll('[data-rcc]').forEach(b => b.setAttribute('aria-pressed', b === c)); const sv = document.querySelector('[data-dx="rcsave"]'); if (sv) { const n = Object.keys(rcSel).length; sv.disabled = !n; sv.textContent = n ? `${n}人を確定する` : '確定する'; } plBuzz(6); return; }
+  const o = t.closest('[data-dxopt]'); if (o && dxS && dxS.res) { dxRun(dxS.res.options[Number(o.dataset.dxopt)].instruction); return; }
+  const x = t.closest('[data-dx]'); if (!x) return; const a = x.dataset.dx;
+  if (a === 'close') { if (document.getElementById('dxModal').classList.contains('on')) dxModal('', false); else dxSheetOn(false); return; }
+  if (a === 'sheetclose') { dxSheetOn(false); return; }
+  if (a === 'zerogo') { hmZeroRun(x); return; }
+  if (a === 'purge7') { lgPurge(7, x); return; } if (a === 'purge2') { lgPurge(2, x); return; } if (a === 'purgeall') { lgPurge('all', x); return; }
+  if (a === 'free') { const v = (document.getElementById('dx-free') || {}).value || ''; if (v.trim()) dxRun(`${dxS ? dxS.text : ''}\n(統括からの指示: ${v.trim()})`); else toast('指示を書いてください'); return; }
+  if (a === 'gotoorders') { dxSheetOn(false); const w = GROUPS.find(g => g.id === 'work'); goSub(w, w.subs.find(q => q.tab === 'orders')); return; }
+  if (a === 'rcsave') { rcSave(x); return; }
+});
 </script>
 </body>
 </html>
