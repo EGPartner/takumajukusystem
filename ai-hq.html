@@ -1161,6 +1161,24 @@ ul.lg-list{list-style:none;margin:0;padding:0;background:var(--surface);border-r
 .ro-card{border:0!important;border-radius:22px!important;box-shadow:var(--shadow);padding:16px 18px}.ro-card h4{font-size:16px;color:var(--ink);font-weight:700}
 .ro-k{border:0!important;border-radius:20px!important;box-shadow:var(--shadow)}
 .hm-usage{margin:22px 4px 0;display:flex;flex-direction:column;gap:6px;font-size:12.5px;color:var(--ink-3)}.hm-ub{height:6px;border-radius:3px;background:var(--surface-2);overflow:hidden}.hm-ub i{display:block;height:100%;background:var(--accent);border-radius:3px}.hm-usage b{color:var(--ink)}
+
+/* ===== アンケート ===== */
+.fm h1{font-size:34px;letter-spacing:-.02em;margin:22px 0 6px;font-weight:700}
+.fm-card{background:var(--surface);border-radius:24px;box-shadow:var(--shadow);padding:20px;margin:14px 0}.fm-card h3{margin:0 0 4px;font-size:19px;font-weight:700}.fm-sub{margin:2px 0 10px;color:var(--ink-3);font-size:13.5px}
+.fm-card textarea{width:100%;margin:4px 0}.fm-l{display:block;font-size:12.5px;font-weight:600;color:var(--ink-3);margin:12px 0 2px}.fm-l input,.fm-l textarea{display:block;width:100%;margin-top:4px;font-weight:400;color:var(--ink)}
+.fm-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}.fm-row label{font-size:12.5px;font-weight:600;color:var(--ink-3)}.fm-row input{display:block;width:100%;margin-top:4px;font-weight:400;color:var(--ink)}
+.fm-go{width:100%;height:54px;border:0;border-radius:16px;background:var(--accent);color:#fff;font:inherit;font-size:17px;font-weight:700;margin-top:10px;display:flex;gap:8px;align-items:center;justify-content:center;cursor:pointer}.fm-go svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2}.fm-go:disabled{opacity:.55}
+.fm-err{color:var(--bad);font-size:14px;margin:8px 2px 0}
+.fm-qs{display:grid;gap:10px;margin-top:12px}.fm-q{background:var(--surface-2);border-radius:18px;padding:10px 12px}.fm-qh{display:flex;align-items:center;gap:8px}.fm-qh input{flex:1;min-width:0;font-weight:600}
+.fm-n{width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;font-size:13px;font-weight:700;flex:none}
+.fm-qb{display:flex;align-items:center;gap:10px;margin:8px 0 2px}.fm-qb select{flex:1}.fm-req{display:flex;align-items:center;gap:6px;font-size:14px;white-space:nowrap}.fm-q textarea{margin-top:6px}
+.fm-add{display:flex;gap:6px;align-items:center;justify-content:center;width:100%;border:0;background:var(--accent-soft);color:var(--accent-ink);border-radius:14px;padding:12px;font:inherit;font-weight:600;margin-top:10px;cursor:pointer}.fm-add svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2}
+.fm-done{box-shadow:0 0 0 2px color-mix(in srgb,var(--ok) 35%,transparent),var(--shadow)}.fm-ok{display:flex;align-items:center;gap:8px;color:var(--ok)}.fm-ok svg{width:30px;height:30px;stroke:currentColor;fill:none;stroke-width:2.2}.fm-ok b{font-size:20px;color:var(--ink)}
+.fm-url{display:flex;gap:8px;margin:6px 0 10px}.fm-url input{flex:1;min-width:0;font-size:14px}
+.fm-copy{border:0;border-radius:12px;background:var(--accent);color:#fff;font:inherit;font-weight:700;padding:0 16px;height:44px;cursor:pointer;white-space:nowrap;text-decoration:none;display:inline-grid;place-items:center}.fm-copy.wide{width:100%;margin-top:8px}
+.fm-links{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px}.fm-links a{color:var(--accent-ink);font-size:14.5px;text-decoration:none;font-weight:600}
+.fm-hist{list-style:none;margin:8px 0 0;padding:0}.fm-hist li{display:flex;align-items:center;gap:8px;padding:10px 0;border-top:1px solid var(--line)}.fm-hist li:first-child{border-top:0}.fm-hist li>div{flex:1;min-width:0}.fm-hist b{display:block;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.fm-hist span{color:var(--ink-3);font-size:12.5px}.fm-hist .fm-copy{height:36px;padding:0 12px;font-size:13px}
+@media (max-width:719px){body[data-mview="forms"] .m-title{display:none!important}.fm h1{font-size:30px}.fm-row{grid-template-columns:1fr}}
 /* 今日 */
 .hm h1{font-size:40px;line-height:1.1;letter-spacing:-.02em;margin:28px 0 6px;font-weight:700}
 .hm-lead{color:var(--ink-2);font-size:19px;line-height:1.45;margin:0 0 22px}
@@ -1788,7 +1806,7 @@ const GROUPS = [
   { id: 'sum', label: '今日', subs: [{ tab: 'sum' }] },
   { id: 'people', label: '保護者・代表', subs: [{ tab: 'tasks', view: 'parent', label: '保護者LINE' }, { tab: 'voices', label: '代表' }] },
   { id: 'players', label: '塾生', subs: [{ tab: 'roster' }] },
-  { id: 'work', label: '仕事', subs: [{ tab: 'tasks', view: 'tk', label: 'やること' }, { tab: 'decide', label: '決裁' }, { tab: 'orders', label: '指示' }, { tab: 'sched', label: '予定' }] },
+  { id: 'work', label: '仕事', subs: [{ tab: 'tasks', view: 'tk', label: 'やること' }, { tab: 'decide', label: '決裁' }, { tab: 'orders', label: '指示' }, { tab: 'forms', label: 'アンケート' }, { tab: 'sched', label: '予定' }] },
   { id: 'log', label: '記録', subs: [{ tab: 'log' }] }
 ];
 const subOn = sb => sb.tab === panelTab && (!sb.view || sb.view === tasksView);
@@ -1853,6 +1871,8 @@ function renderPanelInner() {
     P.innerHTML = rosterHTML();
   } else if (panelTab === 'voices') {
     P.innerHTML = voicesHTML();
+  } else if (panelTab === 'forms') {
+    P.innerHTML = formsHTML();
   } else if (panelTab === 'sched') {
     P.innerHTML = schedHTML();
   } else if (panelTab === 'orders') {
@@ -3007,7 +3027,7 @@ document.addEventListener('click', async e => {
   ga.open = true; renderPanel();
 });
 
-const VIEW_TITLE = { decide: '決裁', tasks: 'やること', orders: '指示', sched: '予定', roster: '名簿',  voices: '代表の意見', log: '記録' };
+const VIEW_TITLE = { forms: 'アンケート', decide: '決裁', tasks: 'やること', orders: '指示', sched: '予定', roster: '名簿',  voices: '代表の意見', log: '記録' };
 let inputMode = 'order';
 function setPlaceholder() { cmdText.placeholder = inputMode === 'consult' ? (isMobile() ? 'CXO秘書に相談' : 'CXO秘書に相談(例: 体験会からの入会率を上げるには?)') : isMobile() ? '業務命令を入力' : '業務命令を入力(例: 岩国の12月の会場を今週中に押さえて)'; }
 mq.addEventListener('change', setPlaceholder);
@@ -3837,6 +3857,7 @@ auth.onAuthStateChanged(async user => {
   db.doc('aiUsage/' + day).onSnapshot(s => { usage = s.exists ? s.data() : null; renderCounts(); });
   const metaItems = (name, set) => db.doc('aiMeta/' + name).onSnapshot(s => { set(s.exists ? s.data() : null); if (panelTab === 'voices') renderAll(); }, e => console.error(e));
   { const hmm = location.hash.match(/^#parent=(.+)$/); if (hmm) { tasksView = 'parent'; paOpen = decodeURIComponent(hmm[1]); const g = GROUPS.find(x => x.id === 'people'); goSub(g, g.subs[0]); history.replaceState(null, '', location.pathname); } } // 返信確認グループのカードの「画面で直す」から来たとき
+  db.doc('aiMeta/forms').onSnapshot(sn => { fmList = (sn.exists && sn.data().items) || []; if (panelTab === 'forms' && !fm.busy) renderPanel(); }, e => console.error(e));
   db.doc('aiMeta/lineUsage').onSnapshot(sn => { lineUsage = sn.exists ? sn.data() : null; if (panelTab === 'sum') renderPanel(); }, e => console.error(e));
   db.doc('aiMeta/rosterChecks').onSnapshot(sn => { rosterChecks = (sn.exists && sn.data().items) || {}; if (panelTab === 'roster') renderPanel(); }, e => console.error(e));
   metaItems('voiceThemes', d => { voiceThemes = (d && d.items) || []; });
@@ -4155,6 +4176,73 @@ document.addEventListener('click', e => {
   if (a === 'free') { const v = (document.getElementById('dx-free') || {}).value || ''; if (v.trim()) dxRun(`${dxS ? dxS.text : ''}\n(統括からの指示: ${v.trim()})`); else toast('指示を書いてください'); return; }
   if (a === 'gotoorders') { dxSheetOn(false); const w = GROUPS.find(g => g.id === 'work'); goSub(w, w.subs.find(q => q.tab === 'orders')); return; }
   if (a === 'rcsave') { rcSave(x); return; }
+});
+
+/* ---------- アンケート(Googleフォーム)をAIの案から作る ---------- */
+let fmList = [];
+const fm = { text: '', hint: '', capacity: '', busy: '', spec: null, announce: '', result: null, err: '' };
+const FM_TYPES = { text: '短い記述', paragraph: '長い記述', radio: '1つ選ぶ', checkbox: '複数選ぶ', dropdown: 'プルダウン', scale: '5段階', date: '日付', time: '時刻', number: '数字' };
+const fmIsChoice = t => ['radio', 'checkbox', 'dropdown'].includes(t);
+const fmLocal = iso => { if (!iso) return ''; const d = new Date(Date.parse(iso) + 9 * 3600e3); return d.toISOString().slice(0, 16); };
+function formsHTML() {
+  const sp = fm.spec, busy = !!fm.busy;
+  const input = `<section class="fm-card"><h3>1. アンケートにしたい内容</h3><p class="fm-sub">募集の案内文や、聞きたいことを、そのまま貼り付けてください。</p>
+    <textarea id="fm-text" rows="7" placeholder="例: 11月28日のデリアテール杯の、エスコートキッズを募集します。…">${esc(fm.text)}</textarea>
+    <div class="fm-row"><label>定員(任意)<input type="number" inputmode="numeric" id="fm-cap" value="${esc(fm.capacity)}" placeholder="例: 10" min="1"></label><label>AIへのひとこと(任意)<input type="text" id="fm-hint" value="${esc(fm.hint)}" placeholder="例: 保護者の連絡先は電話番号で"></label></div>
+    <button type="button" class="fm-go" data-fm="draft" ${busy ? 'disabled' : ''}>${fm.busy === 'draft' ? '<span class="pl-spin"></span> AIが案を作っています…' : plSvg('spark') + 'AIでフォームの案を作る'}</button>${fm.err ? `<p class="fm-err">${esc(fm.err)}</p>` : ''}</section>`;
+  const edit = sp ? `<section class="fm-card"><h3>2. 内容を確認して、直す</h3>
+    <label class="fm-l">題名<input type="text" id="fm-title" value="${esc(sp.title)}"></label>
+    <label class="fm-l">フォームの説明<textarea id="fm-desc" rows="4">${esc(sp.description)}</textarea></label>
+    <div class="fm-qs">${sp.questions.map((q, i) => `<div class="fm-q"><div class="fm-qh"><span class="fm-n">${i + 1}</span><input type="text" data-fq="${i}" data-k="title" value="${esc(q.title)}" aria-label="質問"><button type="button" class="pl-ib" data-fm="qdel" data-i="${i}" aria-label="質問を消す" data-pltip="消す">${plSvg('close')}</button></div>
+      <div class="fm-qb"><select data-fq="${i}" data-k="type" aria-label="答え方">${Object.entries(FM_TYPES).map(([k, v]) => `<option value="${k}"${q.type === k ? ' selected' : ''}>${v}</option>`).join('')}</select>
+      <label class="fm-req"><input type="checkbox" data-fq="${i}" data-k="required"${q.required ? ' checked' : ''}> 必須</label></div>
+      ${fmIsChoice(q.type) ? `<textarea rows="${Math.min(6, Math.max(2, (q.choices || []).length))}" data-fq="${i}" data-k="choices" placeholder="選択肢を、1行に1つ">${esc((q.choices || []).join('\n'))}</textarea>` : ''}</div>`).join('')}</div>
+    <button type="button" class="fm-add" data-fm="qadd">${plSvg('check').replace('M5 12.5l4.5 4.5L19 7.5', 'M12 5v14M5 12h14')}質問を足す</button>
+    <div class="fm-row"><label>受付の締切<input type="datetime-local" id="fm-close" value="${esc(fmLocal(sp.closeAt))}"></label><label>定員<input type="number" inputmode="numeric" id="fm-cap2" value="${esc(sp.capacity || '')}" placeholder="なし" min="1"></label></div>
+    <p class="fm-sub">締切になると、受付が自動で止まります。定員は、先着順で、人数に達すると止まります。</p>
+    <label class="fm-l">保護者への案内文(LINE用・{URL}の所にフォームのURLが入ります)<textarea id="fm-ann" rows="7">${esc(fm.announce)}</textarea></label>
+    <button type="button" class="fm-go" data-fm="create" ${busy ? 'disabled' : ''}>${fm.busy === 'create' ? '<span class="pl-spin"></span> フォームを作っています…' : plSvg('check') + 'Googleフォームを作る'}</button></section>` : '';
+  const r = fm.result ? `<section class="fm-card fm-done"><div class="fm-ok">${plSvg('check')}<b>フォームができました</b></div><p class="fm-sub">${esc(fm.result.title)}</p>
+    <div class="fm-url"><input type="text" readonly value="${esc(fm.result.url)}" aria-label="フォームのURL" onclick="this.select()"><button type="button" class="fm-copy" data-fm="copy" data-v="${esc(fm.result.url)}">URLをコピー</button></div>
+    ${fm.result.announce ? `<label class="fm-l">案内文(URL入り)<textarea rows="7" readonly>${esc(fm.result.announce)}</textarea></label><button type="button" class="fm-copy wide" data-fm="copy" data-v="${esc(fm.result.announce)}">案内文をコピー</button>` : ''}
+    <div class="fm-links"><a href="${esc(fm.result.url)}" target="_blank" rel="noopener">フォームを開く</a><a href="${esc(fm.result.editUrl)}" target="_blank" rel="noopener">編集する</a><a href="${esc(fm.result.sheetUrl)}" target="_blank" rel="noopener">回答を見る</a></div></section>` : '';
+  const hist = fmList.length ? `<section class="fm-card"><h3>これまでに作ったアンケート</h3><ul class="fm-hist">${fmList.slice(0, 20).map(x => `<li><div><b>${esc(x.title)}</b><span>${esc(new Date(x.at).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }))}${x.closeAt ? ' ・ 締切 ' + esc(new Date(x.closeAt).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })) : ''}</span></div><button type="button" class="fm-copy" data-fm="copy" data-v="${esc(x.url)}">URL</button><a class="fm-copy" href="${esc(x.sheetUrl)}" target="_blank" rel="noopener">回答</a></li>`).join('')}</ul></section>` : '';
+  return `<div class="fm"><h1>アンケート</h1><p class="hm-lead">内容を貼り付けるだけで、AIが、Googleフォームを作ります。回答は、アンケート専用のスプレッドシートに、自動でまとまります。</p>${r}${input}${edit}${hist}</div>`;
+}
+document.addEventListener('input', e => {
+  const t = e.target, id = t.id;
+  if (id === 'fm-text') fm.text = t.value; else if (id === 'fm-hint') fm.hint = t.value; else if (id === 'fm-cap') fm.capacity = t.value;
+  else if (id === 'fm-ann') fm.announce = t.value;
+  else if (fm.spec && id === 'fm-title') fm.spec.title = t.value; else if (fm.spec && id === 'fm-desc') fm.spec.description = t.value;
+  else if (fm.spec && id === 'fm-close') fm.spec.closeAt = t.value ? new Date(t.value + ':00+09:00').toISOString() : '';
+  else if (fm.spec && id === 'fm-cap2') fm.spec.capacity = t.value ? Number(t.value) : null;
+  else if (fm.spec && t.dataset && t.dataset.fq !== undefined) { const q = fm.spec.questions[Number(t.dataset.fq)]; if (!q) return; const k = t.dataset.k;
+    if (k === 'title') q.title = t.value; else if (k === 'choices') q.choices = t.value.split('\n').map(x => x.trim()).filter(Boolean); }
+});
+document.addEventListener('change', e => {
+  const t = e.target; if (!fm.spec || !t.dataset || t.dataset.fq === undefined) return; const q = fm.spec.questions[Number(t.dataset.fq)]; if (!q) return;
+  if (t.dataset.k === 'type') { q.type = t.value; if (fmIsChoice(q.type) && !(q.choices || []).length) q.choices = ['はい', 'いいえ']; renderPanel(); }
+  else if (t.dataset.k === 'required') q.required = t.checked;
+});
+document.addEventListener('click', async e => {
+  const b = e.target.closest('[data-fm]'); if (!b) return; const a = b.dataset.fm;
+  if (a === 'copy') { try { await navigator.clipboard.writeText(b.dataset.v); toast('コピーしました。LINEなどに貼り付けてください'); plBuzz(8); } catch (x) { toast('コピーできませんでした。URLを長押しして、コピーしてください'); } return; }
+  if (a === 'qdel') { fm.spec.questions.splice(Number(b.dataset.i), 1); renderPanel(); return; }
+  if (a === 'qadd') { fm.spec.questions.push({ type: 'text', title: '新しい質問', help: '', required: false }); renderPanel(); return; }
+  if (a === 'draft') {
+    if (fm.text.trim().length < 10) { fm.err = 'アンケートにしたい内容を、入れてください(10文字以上)'; renderPanel(); return; }
+    fm.busy = 'draft'; fm.err = ''; fm.result = null; renderPanel();
+    try { const r = await call('aiFormDraft', { quiet: true })({ text: fm.text, hint: fm.hint, capacity: fm.capacity }); fm.spec = r.data.spec; fm.announce = r.data.announce || ''; plBuzz(10); }
+    catch (err) { fm.err = /NOT_FOUND|not-found|404/.test(String(err.message)) ? 'この機能には、バックエンドの更新が必要です' : '案を作れませんでした: ' + err.message; }
+    fm.busy = ''; renderPanel(); return;
+  }
+  if (a === 'create') {
+    if (!fm.spec || !fm.spec.questions.length) return;
+    fm.busy = 'create'; fm.err = ''; renderPanel();
+    try { const r = await call('aiFormCreate', { quiet: true })({ spec: fm.spec, announce: fm.announce }); fm.result = r.data; fm.spec = null; fm.text = ''; fm.announce = ''; plBuzz(14); toast('フォームを作りました'); }
+    catch (err) { fm.err = /NOT_FOUND|not-found|404/.test(String(err.message)) ? 'この機能には、バックエンドの更新が必要です' : 'フォームを作れませんでした: ' + err.message; }
+    fm.busy = ''; renderPanel(); return;
+  }
 });
 </script>
 </body>
