@@ -1160,6 +1160,7 @@ ul.lg-list{list-style:none;margin:0;padding:0;background:var(--surface);border-r
 .ro-dot{fill:var(--accent)}.ro-dot.base{fill:var(--surface);stroke:var(--accent);stroke-width:3}
 .ro-card{border:0!important;border-radius:22px!important;box-shadow:var(--shadow);padding:16px 18px}.ro-card h4{font-size:16px;color:var(--ink);font-weight:700}
 .ro-k{border:0!important;border-radius:20px!important;box-shadow:var(--shadow)}
+.hm-usage{margin:22px 4px 0;display:flex;flex-direction:column;gap:6px;font-size:12.5px;color:var(--ink-3)}.hm-ub{height:6px;border-radius:3px;background:var(--surface-2);overflow:hidden}.hm-ub i{display:block;height:100%;background:var(--accent);border-radius:3px}.hm-usage b{color:var(--ink)}
 /* 今日 */
 .hm h1{font-size:40px;line-height:1.1;letter-spacing:-.02em;margin:28px 0 6px;font-weight:700}
 .hm-lead{color:var(--ink-2);font-size:19px;line-height:1.45;margin:0 0 22px}
@@ -3836,6 +3837,7 @@ auth.onAuthStateChanged(async user => {
   db.doc('aiUsage/' + day).onSnapshot(s => { usage = s.exists ? s.data() : null; renderCounts(); });
   const metaItems = (name, set) => db.doc('aiMeta/' + name).onSnapshot(s => { set(s.exists ? s.data() : null); if (panelTab === 'voices') renderAll(); }, e => console.error(e));
   { const hmm = location.hash.match(/^#parent=(.+)$/); if (hmm) { tasksView = 'parent'; paOpen = decodeURIComponent(hmm[1]); const g = GROUPS.find(x => x.id === 'people'); goSub(g, g.subs[0]); history.replaceState(null, '', location.pathname); } } // 返信確認グループのカードの「画面で直す」から来たとき
+  db.doc('aiMeta/lineUsage').onSnapshot(sn => { lineUsage = sn.exists ? sn.data() : null; if (panelTab === 'sum') renderPanel(); }, e => console.error(e));
   db.doc('aiMeta/rosterChecks').onSnapshot(sn => { rosterChecks = (sn.exists && sn.data().items) || {}; if (panelTab === 'roster') renderPanel(); }, e => console.error(e));
   metaItems('voiceThemes', d => { voiceThemes = (d && d.items) || []; });
   metaItems('rules', d => { voiceRules = (d && d.items) || []; });
@@ -3892,7 +3894,7 @@ const HM_CATS = [
   { id: 'tok', name: '統括管理', src: '統括LINEから', icon: 'task', pick: x => x.src === 'decision' || x.src === 'report' && x.kind !== '保護者LINE' || (x.src === 'task' && x.tsrc === 'tk' && !x.grp && x.kind !== '整理') || x.kind === '代表の意見' },
   { id: 'etc', name: 'その他', src: '取引先・イベントなどのグループ、ほか', icon: 'doc', pick: () => true }
 ];
-let hmMore = {};
+let hmMore = {}, lineUsage = null;
 function homeGreeting() { const h = (new Date(Date.now() + 9 * 3600e3)).getUTCHours(); return h < 11 ? 'おはようございます。' : h < 18 ? 'こんにちは。' : 'お疲れさまです。'; }
 function homeHTML() {
   const items = inboxItems(), used = new Set(items.filter(x => x.src === 'decision').map(x => x.key)), cats = HM_CATS.map(c => ({ ...c, list: items.filter(x => !used.has(x.key) && c.pick(x)).map(x => (used.add(x.key), x)) })).filter(c => c.list.length);
@@ -3917,6 +3919,7 @@ function homeHTML() {
     ${decHTML}
     <h2>今日やること${total - nDec > 0 ? `<span class="hm-n">${total - nDec}</span>` : ''}</h2>
     ${cats.length ? cats.map(catHTML).join('') : `<div class="hm-empty">${plSvg('check')}<b>やることは、ありません</b><span>新しい連絡や決裁が届くと、ここに出ます。</span></div>`}
+    ${lineUsage ? `<div class="hm-usage"><div class="hm-ub"><i style="width:${lineUsage.limit ? Math.min(100, Math.round(lineUsage.used / lineUsage.limit * 100)) : 0}%"></i></div><span>LINE送信枠(秘書室): 今月 <b>${lineUsage.used}</b>${lineUsage.limit ? ' / ' + lineUsage.limit : ''}通 ・ ${new Date(lineUsage.at).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}時点</span></div>` : ''}
     ${zeroN ? `<button type="button" class="hm-zero" data-hmgo="zero">${plSvg('undo')}今日やることを、いったんゼロにする…</button>` : ''}
     <button type="button" class="hm-office" data-hmgo="office">${officeOn ? 'オフィスを隠す' : 'オフィス(AI本部の様子)を見る'}</button>
     <div class="hm-slot" id="hm-office-slot"></div></div>`;
