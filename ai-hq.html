@@ -4288,7 +4288,7 @@ function frRender() {
     const m = frS.mode || 'auto', opt = (k, t, d) => `<button type="button" class="fr-opt" role="radio" aria-checked="${m === k}" data-fr="mode" data-v="${k}"><b>${t}</b><span>${d}</span></button>`;
     sb.innerHTML = head + `<p class="fm-sub" style="margin:4px 2px 10px">どんな集計にしますか?</p><div class="fr-opts" role="radiogroup">${opt('auto', 'お任せ(おすすめ)', 'AIが、要点だけを選んで、1枚にまとめます')}${opt('all', '全部入れ', 'すべての質問の集計と、回答の一覧(名簿)を入れます')}${opt('custom', '自由に書く', '見たい集計を、文章で伝えます')}</div>
       ${m === 'custom' ? `<textarea id="fr-req" rows="3" placeholder="例: 学年ごとの人数と、条件に同意していない人だけを、一覧で">${esc(frS.request || '')}</textarea><div class="chips fr-chips">${['学年ごとの人数だけ', '申込者の名簿(名前と学年)だけ', '気をつけることだけ', '定員までの残り'].map(c => `<button type="button" data-fr="chip" data-v="${esc(c)}">${esc(c)}</button>`).join('')}</div>` : ''}
-      <div class="fr-names"><span>回答者の名前も入れる<small>集計の表と、一覧に、名前が入ります(AIには、名前を渡しません)</small></span><button type="button" class="pl-tg" role="switch" aria-checked="${!!frS.names}" aria-label="回答者の名前も入れる" data-fr="names"></button></div>
+      <div class="fr-names"><span>名前を必ず入れる<small>「自由に書く」では、文章に名前や名簿が必要なら、オフでも自動で入ります。AIには、名前の中身を渡しません</small></span><button type="button" class="pl-tg" role="switch" aria-checked="${!!frS.names}" aria-label="回答者の名前も入れる" data-fr="names"></button></div>
       ${frS.err ? `<p class="fm-err">${esc(frS.err)}</p>` : ''}<button type="button" class="pl-send" data-fr="go">集計する</button>`; return;
   }
   if (frS.loading) { sb.innerHTML = head + `<div class="dx-load"><span class="pl-spin"></span>回答を集計しています…</div>`; return; }
