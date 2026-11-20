@@ -1201,6 +1201,32 @@ ul.lg-list{list-style:none;margin:0;padding:0;background:var(--surface);border-r
 .fr-opts{display:grid;gap:8px}.fr-opt{border:0;border-radius:18px;background:var(--surface-2);padding:14px 16px;text-align:left;font:inherit;color:var(--ink);cursor:pointer}.fr-opt b{display:block;font-size:16.5px}.fr-opt span{display:block;color:var(--ink-3);font-size:13px;margin-top:2px}.fr-opt[aria-checked="true"]{background:var(--accent-soft);box-shadow:inset 0 0 0 2px var(--accent)}
 #dxSb #fr-req{width:100%;margin-top:10px}.fr-chips{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 12px}.fr-chips button{border:0;border-radius:999px;padding:7px 14px;background:var(--accent-soft);color:var(--accent-ink);font:inherit;font-size:13.5px;font-weight:600;cursor:pointer}.fr-mode{display:inline-block;margin:10px 2px 0;font-size:12px;color:var(--ink-3);background:var(--surface-2);border-radius:999px;padding:2px 12px}
 .fr-names{display:flex;align-items:center;gap:12px;background:var(--surface-2);border-radius:16px;padding:12px 14px;margin:12px 0}.fr-names span{flex:1;font-size:15px;font-weight:600}.fr-names small{display:block;color:var(--ink-3);font-size:12px;font-weight:400;margin-top:2px}.fr-who{font-size:12.5px;color:var(--ink-2);margin:-2px 0 6px 2px;line-height:1.5}
+
+/* ===== 仕上げ: 余計な線・枠・重なりを減らし、どの画面も同じ作りにする ===== */
+button:focus:not(:focus-visible),a:focus:not(:focus-visible){outline:none;box-shadow:none}
+.panel .tabs .close{border:0!important;background:var(--surface);box-shadow:var(--shadow);border-radius:999px!important}
+.vfilter.subnav{display:inline-flex;flex-wrap:nowrap;gap:2px;background:var(--surface-2);border-radius:13px;padding:3px;max-width:100%;overflow-x:auto;scrollbar-width:none;margin:2px 0 10px}
+.vfilter.subnav::-webkit-scrollbar{display:none}
+.vfilter.subnav button{background:none!important;box-shadow:none!important;border-radius:10px!important;padding:8px 15px;white-space:nowrap;color:var(--ink-2)!important;flex:none;font-size:14px}
+.vfilter.subnav button[aria-pressed="true"]{background:var(--surface)!important;color:var(--ink)!important;box-shadow:0 1px 4px rgba(0,0,0,.14)!important}
+.vsec{background:var(--surface);border-radius:22px;box-shadow:var(--shadow);margin:0 0 12px;overflow:clip}
+.vsec>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;padding:15px 18px;font-weight:600;font-size:15.5px}.vsec>summary::-webkit-details-marker{display:none}
+.vsec>summary::after{content:"";width:8px;height:8px;border-right:2px solid var(--ink-3);border-bottom:2px solid var(--ink-3);transform:rotate(45deg) translateY(-2px);margin-left:auto;transition:.2s}.vsec[open]>summary::after{transform:rotate(-135deg)}
+.vsec>.vform,.vsec>.vboard{box-shadow:none!important;border-radius:0!important;margin:0;padding:2px 18px 16px;background:none}
+.vsec>.vboard .vb-h{margin-bottom:6px}
+.vrules{background:var(--surface);border-radius:22px;border:0;box-shadow:var(--shadow);margin:0 0 12px}.vrules>summary{padding:15px 18px;font-weight:600;cursor:pointer}
+
+/* ===== 仕上げ(2): 絞り込みの部品を、どの画面も同じ見た目にする ===== */
+.vfilter:not(.subnav){display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 12px}
+.vfilter:not(.subnav) button{border:0!important;border-radius:999px!important;padding:7px 14px;background:var(--surface)!important;color:var(--ink-2)!important;box-shadow:var(--shadow);font-weight:600;font-size:13.5px;cursor:pointer}
+.vfilter:not(.subnav) button[aria-pressed="true"]{background:var(--ink)!important;color:var(--bg)!important;box-shadow:none}
+.vrules>summary{list-style:none;display:flex;align-items:center;gap:8px}.vrules>summary::-webkit-details-marker{display:none}
+.vrules>summary::after{content:"";width:8px;height:8px;border-right:2px solid var(--ink-3);border-bottom:2px solid var(--ink-3);transform:rotate(45deg) translateY(-2px);margin-left:auto;transition:.2s}.vrules[open]>summary::after{transform:rotate(-135deg)}
+.vrules>*:not(summary){margin-left:18px;margin-right:18px}.vrules[open]{padding-bottom:14px}
+@media (max-width:719px){
+  .vfilter.subnav{display:flex;width:100%;scroll-snap-type:x proximity;mask-image:linear-gradient(90deg,#000 88%,transparent)}
+  .vfilter.subnav button{scroll-snap-align:start}
+}
 /* 今日 */
 .hm h1{font-size:40px;line-height:1.1;letter-spacing:-.02em;margin:28px 0 6px;font-weight:700}
 .hm-lead{color:var(--ink-2);font-size:19px;line-height:1.45;margin:0 0 22px}
@@ -2846,13 +2872,13 @@ function voicesHTML() {
     .map(g => ({ ...g, list: g.all.filter(match) })).filter(g => g.list.length).sort((a, b) => (!a.t.id) - (!b.t.id) || openN(b.all) - openN(a.all));
   const rv = voiceReview, nCand = voiceRules.filter(r => r.status === '案').length, nOn = voiceRules.filter(r => r.status === '有効').length;
   const when = rv && rv.at ? new Date(rv.at).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) + `(${esc(rv.trigger || '')})` : 'まだありません';
-  return `<div class="vform"><b>代表タクマの意見を登録</b>
+  return `<details class="vsec"${voices.length ? '' : ' open'}><summary>代表の意見を登録する</summary><div class="vform"><b class="sr">代表タクマの意見を登録</b>
       <div class="cmd-mini" style="margin-top:0"><label for="voice-text" class="sr">意見の内容</label><textarea id="voice-text" placeholder="代表が言っていたこと(できるだけそのままの言葉で)"></textarea>${'%MIC%'}</div>
       <div class="meta"><label class="pk">言われた日 <input type="date" id="voice-date" value="${today}"></label>
         <label class="pk">伝わり方 <select id="voice-channel">${['口頭', 'LINE', '電話', 'メール', '会議', 'その他'].map(c => `<option>${c}</option>`).join('')}</select></label></div>
-      <div class="actions" style="margin-top:0"><button type="button" class="btn primary" id="voice-save">登録する</button></div></div>
-    <div class="vboard"><div class="vb-h"><b>テーマ別の検討</b><span class="pk">前回: ${when} ・ 毎週日曜20時に自動</span><span class="sp"></span><button type="button" class="btn" id="voice-review">今すぐ検討</button></div>
-      ${rv && rv.overall ? `<p>${esc(rv.overall)}</p>` : '<p>意見を1件ずつではなく、同じ根っこのテーマごとに、共通の原因・済んだこと・残っている穴・打ち手をまとめます。</p>'}</div>
+      <div class="actions" style="margin-top:0"><button type="button" class="btn primary" id="voice-save">登録する</button></div></div></details>
+    <details class="vsec"><summary>テーマ別の検討(前回: ${when})</summary><div class="vboard"><div class="vb-h"><b class="sr">テーマ別の検討</b><span class="pk">前回: ${when} ・ 毎週日曜20時に自動</span><span class="sp"></span><button type="button" class="btn" id="voice-review">今すぐ検討</button></div>
+      ${rv && rv.overall ? `<p>${esc(rv.overall)}</p>` : '<p>意見を1件ずつではなく、同じ根っこのテーマごとに、共通の原因・済んだこと・残っている穴・打ち手をまとめます。</p>'}</div></details>
     <details class="vrules"${(rulesOpen === null ? nCand : rulesOpen) ? ' open' : ''}><summary>決まりごとの台帳(有効 ${nOn}件${nCand ? ` ・ 承認待ち ${nCand}件` : ''})</summary>
       <span class="pk">有効にした決まりごとは、全部署のAIが仕事の前提として守ります。統括の指示と食い違うときは指示が優先され、食い違いを最初に知らせます。</span>
       <ul>${voiceRules.filter(r => r.status !== '廃止').map(r => `<li><span class="pill st-${esc(r.status)}">${esc(r.status)}</span><span class="t">${esc(r.text)}${r.voiceNo ? ` <span class="pk">(意見#${esc(r.voiceNo)})</span>` : ''}</span>${r.status === '案' ? `<button type="button" class="btn" data-rule="${esc(r.id)}" data-st="有効">承認して有効に</button><button type="button" class="btn ghost" data-rule="${esc(r.id)}" data-rm="1">見送る</button>` : `<button type="button" class="btn ghost" data-rule="${esc(r.id)}" data-st="廃止">やめる</button>`}</li>`).join('') || '<li><span class="t pk">まだありません。</span></li>'}</ul>
