@@ -1227,6 +1227,16 @@ button:focus:not(:focus-visible),a:focus:not(:focus-visible){outline:none;box-sh
   .vfilter.subnav{display:flex;width:100%;scroll-snap-type:x proximity;mask-image:linear-gradient(90deg,#000 88%,transparent)}
   .vfilter.subnav button{scroll-snap-align:start}
 }
+
+.cv{background:var(--surface);border-radius:22px;box-shadow:var(--shadow);margin:18px 0 0;overflow:clip}.cv.has{box-shadow:0 0 0 2px color-mix(in srgb,var(--warn) 40%,transparent),var(--shadow)}
+.cv-h{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;padding:14px 18px 6px}.cv-h b{font-size:17px}.cv-h span{color:var(--ink-3);font-size:13px}
+.cv-r{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:0;border-top:1px solid var(--line);background:none;color:inherit;font:inherit;padding:12px 18px;cursor:pointer}.cv-r:disabled{cursor:default}.cv-r:first-child{border-top:0}
+.cv-i{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;flex:none}.cv-i svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2.2}
+.cv-r.ok .cv-i{background:color-mix(in srgb,var(--ok) 16%,transparent);color:var(--ok)}.cv-r.warn .cv-i{background:color-mix(in srgb,var(--warn) 22%,transparent);color:var(--warn)}.cv-r.bad .cv-i{background:color-mix(in srgb,var(--bad) 18%,transparent);color:var(--bad)}
+.cv-t{flex:1;min-width:0}.cv-t b{display:block;font-size:15px}.cv-t small{color:var(--ink-3);font-size:12px}.cv-m{font-size:13.5px;font-weight:600}.cv-r.ok .cv-m{color:var(--ok)}.cv-r.warn .cv-m{color:var(--warn)}.cv-r.bad .cv-m{color:var(--bad)}
+.cv-r>svg{width:15px;height:15px;color:var(--ink-3);stroke:currentColor;fill:none;stroke-width:2;flex:none}
+.cv-s{background:var(--surface-2);border-radius:18px;padding:12px 14px;margin:10px 0}.cv-sm span{font-size:12px;color:var(--ink-3)}.cv-sm p{margin:2px 0 8px;font-size:14.5px;line-height:1.55}.cv-s textarea{width:100%}.cv-b{display:flex;gap:8px;margin-top:8px}.cv-b button{flex:1;border:0;border-radius:12px;padding:11px;font:inherit;font-weight:700;cursor:pointer}.cv-b button:disabled{opacity:.5}.cv-b .pl-p2{background:var(--surface);color:var(--ink)}
+@media (max-width:719px){.cv-m{font-size:12.5px}}
 /* 今日 */
 .hm h1{font-size:40px;line-height:1.1;letter-spacing:-.02em;margin:28px 0 6px;font-weight:700}
 .hm-lead{color:var(--ink-2);font-size:19px;line-height:1.45;margin:0 0 22px}
@@ -3926,6 +3936,7 @@ auth.onAuthStateChanged(async user => {
   db.doc('aiUsage/' + day).onSnapshot(s => { usage = s.exists ? s.data() : null; renderCounts(); });
   const metaItems = (name, set) => db.doc('aiMeta/' + name).onSnapshot(s => { set(s.exists ? s.data() : null); if (panelTab === 'voices') renderAll(); }, e => console.error(e));
   { const hmm = location.hash.match(/^#parent=(.+)$/); if (hmm) { tasksView = 'parent'; paOpen = decodeURIComponent(hmm[1]); const g = GROUPS.find(x => x.id === 'people'); goSub(g, g.subs[0]); history.replaceState(null, '', location.pathname); } } // 返信確認グループのカードの「画面で直す」から来たとき
+  db.doc('aiMeta/coverage').onSnapshot(sn => { coverage = sn.exists ? sn.data() : null; if (panelTab === 'sum') renderPanel(); if (covOpen && dxS && dxS.cov) covRender(); }, e => console.error(e));
   db.doc('aiMeta/forms').onSnapshot(sn => { fmList = (sn.exists && sn.data().items) || []; if (panelTab === 'forms' && !fm.busy) renderPanel(); }, e => console.error(e));
   db.doc('aiMeta/lineUsage').onSnapshot(sn => { lineUsage = sn.exists ? sn.data() : null; if (panelTab === 'sum') renderPanel(); }, e => console.error(e));
   db.doc('aiMeta/rosterChecks').onSnapshot(sn => { rosterChecks = (sn.exists && sn.data().items) || {}; if (panelTab === 'roster') renderPanel(); }, e => console.error(e));
@@ -3984,7 +3995,7 @@ const HM_CATS = [
   { id: 'tok', name: '統括管理', src: '統括LINEから', icon: 'task', pick: x => x.src === 'decision' || x.src === 'report' && x.kind !== '保護者LINE' || (x.src === 'task' && x.tsrc === 'tk' && !x.grp && x.kind !== '整理') || x.kind === '代表の意見' },
   { id: 'etc', name: 'その他', src: '取引先・イベントなどのグループ、ほか', icon: 'doc', pick: () => true }
 ];
-let hmMore = {}, lineUsage = null;
+let hmMore = {}, lineUsage = null, coverage = null;
 function homeGreeting() { const h = (new Date(Date.now() + 9 * 3600e3)).getUTCHours(); return h < 11 ? 'おはようございます。' : h < 18 ? 'こんにちは。' : 'お疲れさまです。'; }
 function homeHTML() {
   const items = inboxItems(), used = new Set(items.filter(x => x.src === 'decision').map(x => x.key)), cats = HM_CATS.map(c => ({ ...c, list: items.filter(x => !used.has(x.key) && c.pick(x)).map(x => (used.add(x.key), x)) })).filter(c => c.list.length);
@@ -4007,6 +4018,7 @@ function homeHTML() {
     <div class="hm-kpis">${kpi('決裁待ち', nDec, nDec ? '統括の判断が必要' : 'ありません', 'decide', nDec ? 'bad' : '')}${kpi('保護者LINE', need, late ? `要確認(24時間超 ${late})` : '要確認', 'parent')}${kpi('今日のAI費用', '¥' + costYen().toLocaleString('ja-JP'), '上限 ¥300', '')}</div>
     ${act ? `<div class="hm-live"><span class="hm-pulse"></span><span>AI本部が、${act}件の指示を実行しています</span></div>` : ''}
     ${decHTML}
+    ${covHTML()}
     <h2>今日やること${total - nDec > 0 ? `<span class="hm-n">${total - nDec}</span>` : ''}</h2>
     ${cats.length ? cats.map(catHTML).join('') : `<div class="hm-empty">${plSvg('check')}<b>やることは、ありません</b><span>新しい連絡や決裁が届くと、ここに出ます。</span></div>`}
     ${lineUsage ? `<div class="hm-usage"><div class="hm-ub"><i style="width:${lineUsage.limit ? Math.min(100, Math.round(lineUsage.used / lineUsage.limit * 100)) : 0}%"></i></div><span>LINE送信枠(秘書室): 今月 <b>${lineUsage.used}</b>${lineUsage.limit ? ' / ' + lineUsage.limit : ''}通 ・ ${new Date(lineUsage.at).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}時点</span></div>` : ''}
@@ -4375,6 +4387,32 @@ document.addEventListener('click', e => {
   else if (a === 'back') { frS.ask = true; frS.res = null; frS.err = ''; frRender(); }
 });
 document.addEventListener('input', e => { if (e.target.id === 'fr-req' && frS) frS.request = e.target.value; });
+
+/* ---------- 取りこぼしチェック(3つのLINEで、タスクの漏れがないか) ---------- */
+function covHTML() {
+  const c = coverage; if (!c || !c.sources) return '';
+  const ageMin = Math.round((Date.now() - Date.parse(c.at)) / 60000), stale = ageMin > 150, bad = c.suspects + c.pending;
+  const row = x => { const n = x.suspects.length, st = x.pending ? 'bad' : n ? 'warn' : 'ok', msg = x.pending ? `分析が遅れています(未分析 ${x.pending}件)` : n ? `漏れの疑い ${n}件` : '漏れなし';
+    return `<button type="button" class="cv-r ${st}" data-cov="${x.key}" ${n || x.pending ? '' : 'disabled'}><span class="cv-i">${plSvg(st === 'ok' ? 'check' : 'help')}</span><span class="cv-t"><b>${esc(x.name)}</b><small>受信 ${x.received24h}件(24時間)</small></span><span class="cv-m">${msg}</span>${n ? plSvg('right') : ''}</button>`; };
+  return `<section class="cv ${bad ? 'has' : ''}"><div class="cv-h"><b>取りこぼしチェック</b><span>${bad ? '確認してください' : '3つのLINEとも、漏れはありません'}${stale ? ' ・ 最終確認が古いです' : ''}</span></div><div class="cv-l">${c.sources.map(row).join('')}</div></section>`;
+}
+let covOpen = null;
+function covRender() {
+  const sb = document.getElementById('dxSb'), x = coverage && coverage.sources.find(q => q.key === covOpen); if (!x) { dxSheetOn(false); return; }
+  const head = `<div class="pl-sh"><b>${esc(x.name)}の取りこぼし</b><button type="button" class="pl-ib" data-dx="sheetclose" aria-label="閉じる">${plSvg('close')}</button></div>`;
+  const items = x.suspects.map((m, i) => `<div class="cv-s" data-ck="${esc(m.key)}"><div class="cv-sm"><span>${esc(String(m.at).replace('T', ' ').slice(5, 16))}${m.who ? ' ・ ' + esc(m.who) : ''}</span><p>${esc(m.text)}</p></div>
+      <textarea rows="2" data-ct="${esc(m.key)}" placeholder="やること(直せます)">${esc(m.text.slice(0, 80))}</textarea>
+      <div class="cv-b"><button type="button" class="pl-p2" data-cv="ok" data-k="${esc(m.key)}">問題なし</button><button type="button" class="pl-p1" data-cv="task" data-k="${esc(m.key)}" data-q="${esc(m.text.slice(0, 30))}">やることにする</button></div></div>`).join('');
+  document.getElementById('dxSb').innerHTML = head + `<p class="fm-sub" style="margin:2px 2px 10px">「やること」らしい発言なのに、どのタスクにも結びついていないものです。1件ずつ、「やることにする」か「問題なし」を選んでください。</p>` + (items || '<div class="dx-q">ありません</div>');
+}
+document.addEventListener('click', async e => {
+  const o = e.target.closest('[data-cov]'); if (o && !o.disabled) { covOpen = o.dataset.cov; dxS = { title: '取りこぼし', text: '', cov: true }; dxSheetOn(true); covRender(); return; }
+  const b = e.target.closest('[data-cv]'); if (!b) return;
+  const k = b.dataset.k, ta = document.querySelector(`[data-ct="${CSS.escape(k)}"]`), text = ta ? ta.value.trim() : '';
+  b.disabled = true;
+  try { await call('aiCoverageOps', { quiet: true })({ action: b.dataset.cv === 'task' ? 'task' : 'dismiss', key: k, text, quote: b.dataset.q || '' }); toast(b.dataset.cv === 'task' ? 'やることにしました' : '問題なしにしました'); plBuzz(10); }
+  catch (err) { b.disabled = false; toast(/NOT_FOUND|not-found|404/.test(String(err.message)) ? 'この機能には、バックエンドの更新(受付設定)が必要です' : '処理できませんでした: ' + err.message); }
+});
 </script>
 </body>
 </html>
