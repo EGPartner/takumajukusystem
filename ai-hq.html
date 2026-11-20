@@ -3835,6 +3835,7 @@ auth.onAuthStateChanged(async user => {
   const day = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
   db.doc('aiUsage/' + day).onSnapshot(s => { usage = s.exists ? s.data() : null; renderCounts(); });
   const metaItems = (name, set) => db.doc('aiMeta/' + name).onSnapshot(s => { set(s.exists ? s.data() : null); if (panelTab === 'voices') renderAll(); }, e => console.error(e));
+  { const hmm = location.hash.match(/^#parent=(.+)$/); if (hmm) { tasksView = 'parent'; paOpen = decodeURIComponent(hmm[1]); const g = GROUPS.find(x => x.id === 'people'); goSub(g, g.subs[0]); history.replaceState(null, '', location.pathname); } } // 返信確認グループのカードの「画面で直す」から来たとき
   db.doc('aiMeta/rosterChecks').onSnapshot(sn => { rosterChecks = (sn.exists && sn.data().items) || {}; if (panelTab === 'roster') renderPanel(); }, e => console.error(e));
   metaItems('voiceThemes', d => { voiceThemes = (d && d.items) || []; });
   metaItems('rules', d => { voiceRules = (d && d.items) || []; });
