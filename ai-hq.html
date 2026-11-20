@@ -3983,7 +3983,7 @@ function plSendModal(on) {
 async function plSendNow(btn) {
   const p = paList.find(x => x.id === plSendUid), ta = document.getElementById('pl-reply'); if (!p || !ta) return;
   const text = ta.value.trim(); btn.disabled = true; btn.textContent = '送っています…';
-  try { await call('aiParentSend')({ uid: p.id, text }); toast('送りました。対応済みにしました'); plSendModal(false); paOpen = null; paCompose = null; }
+  try { const r = await call('aiParentSend')({ uid: p.id, text }); toast(r.data && r.data.noticed ? '送りました。対応済みにして、LINEのグループにも「送信完了」を知らせました' : '送りました。対応済みにしました'); plSendModal(false); paOpen = null; paCompose = null; }
   catch (err) { toast(/not-found|NOT_FOUND|404/.test(String(err.message)) ? 'この機能には、バックエンドの更新(デプロイ)が必要です' : '送れませんでした: ' + err.message); }
   btn.disabled = false; btn.textContent = '送る'; renderPanel();
 }
