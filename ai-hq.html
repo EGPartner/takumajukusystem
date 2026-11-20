@@ -1179,6 +1179,11 @@ ul.lg-list{list-style:none;margin:0;padding:0;background:var(--surface);border-r
 .fm-links{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px}.fm-links a{color:var(--accent-ink);font-size:14.5px;text-decoration:none;font-weight:600}
 .fm-hist{list-style:none;margin:8px 0 0;padding:0}.fm-hist li{display:flex;align-items:center;gap:8px;padding:10px 0;border-top:1px solid var(--line)}.fm-hist li:first-child{border-top:0}.fm-hist li>div{flex:1;min-width:0}.fm-hist b{display:block;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.fm-hist span{color:var(--ink-3);font-size:12.5px}.fm-hist .fm-copy{height:36px;padding:0 12px;font-size:13px}
 @media (max-width:719px){body[data-mview="forms"] .m-title{display:none!important}.fm h1{font-size:30px}.fm-row{grid-template-columns:1fr}}
+
+.fm-lim{background:var(--surface-2);border-radius:18px;padding:12px 14px;margin:12px 0}.fm-limh{font-size:13px;font-weight:700;color:var(--ink-2);margin-bottom:8px}
+.fm-seg{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;background:var(--surface);border-radius:12px;padding:3px}.fm-seg button{border:0;background:none;border-radius:9px;padding:9px 2px;font:inherit;font-size:13px;font-weight:600;color:var(--ink-2);cursor:pointer;line-height:1.25}.fm-seg button[aria-checked="true"]{background:var(--accent);color:#fff}
+.fm-sum{margin:10px 2px 0!important;color:var(--ink-2)!important}
+@media (max-width:719px){.fm-seg button{font-size:12.5px}}
 /* 今日 */
 .hm h1{font-size:40px;line-height:1.1;letter-spacing:-.02em;margin:28px 0 6px;font-weight:700}
 .hm-lead{color:var(--ink-2);font-size:19px;line-height:1.45;margin:0 0 22px}
@@ -4184,6 +4189,9 @@ const fm = { text: '', hint: '', capacity: '', busy: '', spec: null, announce: '
 const FM_TYPES = { text: '短い記述', paragraph: '長い記述', radio: '1つ選ぶ', checkbox: '複数選ぶ', dropdown: 'プルダウン', scale: '5段階', date: '日付', time: '時刻', number: '数字' };
 const fmIsChoice = t => ['radio', 'checkbox', 'dropdown'].includes(t);
 const fmLocal = iso => { if (!iso) return ''; const d = new Date(Date.parse(iso) + 9 * 3600e3); return d.toISOString().slice(0, 16); };
+const fmLimitText = sp => { const m = sp.limitMode || 'none', d = sp.closeAt ? new Date(sp.closeAt).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '(未設定)', c = sp.capacity ? sp.capacity + '件' : '(未設定)';
+  return m === 'date' ? `${d} になると、受付が自動で止まります。回答数には、上限を設けません。` : m === 'cap' ? `回答が ${c} に達すると、受付が自動で止まります。期限は設けません。` : m === 'both' ? `${d} になるか、回答が ${c} に達すると、先に来たほうで、受付が自動で止まります。` : '期限も、回答数の上限も、設けません。自動では止まらないので、締め切るときは、Googleフォームの「回答を受け付ける」をオフにしてください。'; };
+function fmApply(sp) { const m = sp.limitMode || 'none'; return { ...sp, closeAt: ['date', 'both'].includes(m) ? sp.closeAt : '', capacity: ['cap', 'both'].includes(m) ? sp.capacity : null }; }
 function formsHTML() {
   const sp = fm.spec, busy = !!fm.busy;
   const input = `<section class="fm-card"><h3>1. アンケートにしたい内容</h3><p class="fm-sub">募集の案内文や、聞きたいことを、そのまま貼り付けてください。</p>
@@ -4198,10 +4206,13 @@ function formsHTML() {
       <label class="fm-req"><input type="checkbox" data-fq="${i}" data-k="required"${q.required ? ' checked' : ''}> 必須</label></div>
       ${fmIsChoice(q.type) ? `<textarea rows="${Math.min(6, Math.max(2, (q.choices || []).length))}" data-fq="${i}" data-k="choices" placeholder="選択肢を、1行に1つ">${esc((q.choices || []).join('\n'))}</textarea>` : ''}</div>`).join('')}</div>
     <button type="button" class="fm-add" data-fm="qadd">${plSvg('check').replace('M5 12.5l4.5 4.5L19 7.5', 'M12 5v14M5 12h14')}質問を足す</button>
-    <div class="fm-row"><label>受付の締切<input type="datetime-local" id="fm-close" value="${esc(fmLocal(sp.closeAt))}"></label><label>定員<input type="number" inputmode="numeric" id="fm-cap2" value="${esc(sp.capacity || '')}" placeholder="なし" min="1"></label></div>
-    <p class="fm-sub">締切になると、受付が自動で止まります。定員は、先着順で、人数に達すると止まります。</p>
+    <div class="fm-lim"><div class="fm-limh">受付の終わり方</div>
+      <div class="fm-seg" role="radiogroup" aria-label="受付の終わり方">${[['date', '期限で止める'], ['cap', '回答数で止める'], ['both', '両方'], ['none', '決めない']].map(([k, v]) => `<button type="button" role="radio" aria-checked="${(sp.limitMode || 'none') === k}" data-fm="mode" data-v="${k}">${v}</button>`).join('')}</div>
+      ${['date', 'both'].includes(sp.limitMode) ? `<label class="fm-l">受付の締切(日本時間)<input type="datetime-local" id="fm-close" value="${esc(fmLocal(sp.closeAt))}"></label>` : ''}
+      ${['cap', 'both'].includes(sp.limitMode) ? `<label class="fm-l">回答数の上限(先着順)<input type="number" inputmode="numeric" id="fm-cap2" value="${esc(sp.capacity || '')}" placeholder="例: 10" min="1"></label>` : ''}
+      <p class="fm-sub fm-sum">${fmLimitText(sp)}</p></div>
     <label class="fm-l">保護者への案内文(LINE用・{URL}の所にフォームのURLが入ります)<textarea id="fm-ann" rows="7">${esc(fm.announce)}</textarea></label>
-    <button type="button" class="fm-go" data-fm="create" ${busy ? 'disabled' : ''}>${fm.busy === 'create' ? '<span class="pl-spin"></span> フォームを作っています…' : plSvg('check') + 'Googleフォームを作る'}</button></section>` : '';
+    <button type="button" class="fm-go" data-fm="create" ${busy ? 'disabled' : ''}>${fm.busy === 'create' ? '<span class="pl-spin"></span> フォームを作っています…' : plSvg('check') + 'Googleフォームを作る'}</button>${fm.err && sp ? `<p class="fm-err">${esc(fm.err)}</p>` : ''}</section>` : '';
   const r = fm.result ? `<section class="fm-card fm-done"><div class="fm-ok">${plSvg('check')}<b>フォームができました</b></div><p class="fm-sub">${esc(fm.result.title)}</p>
     <div class="fm-url"><input type="text" readonly value="${esc(fm.result.url)}" aria-label="フォームのURL" onclick="this.select()"><button type="button" class="fm-copy" data-fm="copy" data-v="${esc(fm.result.url)}">URLをコピー</button></div>
     ${fm.result.announce ? `<label class="fm-l">案内文(URL入り)<textarea rows="7" readonly>${esc(fm.result.announce)}</textarea></label><button type="button" class="fm-copy wide" data-fm="copy" data-v="${esc(fm.result.announce)}">案内文をコピー</button>` : ''}
@@ -4227,19 +4238,23 @@ document.addEventListener('change', e => {
 document.addEventListener('click', async e => {
   const b = e.target.closest('[data-fm]'); if (!b) return; const a = b.dataset.fm;
   if (a === 'copy') { try { await navigator.clipboard.writeText(b.dataset.v); toast('コピーしました。LINEなどに貼り付けてください'); plBuzz(8); } catch (x) { toast('コピーできませんでした。URLを長押しして、コピーしてください'); } return; }
+  if (a === 'mode') { fm.spec.limitMode = b.dataset.v; renderPanel(); return; }
   if (a === 'qdel') { fm.spec.questions.splice(Number(b.dataset.i), 1); renderPanel(); return; }
   if (a === 'qadd') { fm.spec.questions.push({ type: 'text', title: '新しい質問', help: '', required: false }); renderPanel(); return; }
   if (a === 'draft') {
     if (fm.text.trim().length < 10) { fm.err = 'アンケートにしたい内容を、入れてください(10文字以上)'; renderPanel(); return; }
     fm.busy = 'draft'; fm.err = ''; fm.result = null; renderPanel();
-    try { const r = await call('aiFormDraft', { quiet: true })({ text: fm.text, hint: fm.hint, capacity: fm.capacity }); fm.spec = r.data.spec; fm.announce = r.data.announce || ''; plBuzz(10); }
+    try { const r = await call('aiFormDraft', { quiet: true })({ text: fm.text, hint: fm.hint, capacity: fm.capacity }); fm.spec = r.data.spec; fm.spec.limitMode = fm.spec.closeAt && fm.spec.capacity ? 'both' : fm.spec.closeAt ? 'date' : fm.spec.capacity ? 'cap' : 'none'; fm.announce = r.data.announce || ''; plBuzz(10); }
     catch (err) { fm.err = /NOT_FOUND|not-found|404/.test(String(err.message)) ? 'この機能には、バックエンドの更新が必要です' : '案を作れませんでした: ' + err.message; }
     fm.busy = ''; renderPanel(); return;
   }
   if (a === 'create') {
     if (!fm.spec || !fm.spec.questions.length) return;
+    const m = fm.spec.limitMode || 'none';
+    if (['date', 'both'].includes(m) && !(fm.spec.closeAt && Date.parse(fm.spec.closeAt) > Date.now())) { fm.err = '受付の締切を、これから先の日時で入れてください'; renderPanel(); return; }
+    if (['cap', 'both'].includes(m) && !(Number(fm.spec.capacity) >= 1)) { fm.err = '回答数の上限を、1以上の数で入れてください'; renderPanel(); return; }
     fm.busy = 'create'; fm.err = ''; renderPanel();
-    try { const r = await call('aiFormCreate', { quiet: true })({ spec: fm.spec, announce: fm.announce }); fm.result = r.data; fm.spec = null; fm.text = ''; fm.announce = ''; plBuzz(14); toast('フォームを作りました'); }
+    try { const r = await call('aiFormCreate', { quiet: true })({ spec: fmApply(fm.spec), announce: fm.announce }); fm.result = r.data; fm.spec = null; fm.text = ''; fm.announce = ''; plBuzz(14); toast('フォームを作りました'); }
     catch (err) { fm.err = /NOT_FOUND|not-found|404/.test(String(err.message)) ? 'この機能には、バックエンドの更新が必要です' : 'フォームを作れませんでした: ' + err.message; }
     fm.busy = ''; renderPanel(); return;
   }
