@@ -1354,7 +1354,7 @@ const call = (name, { quiet = false } = {}) => {
    開いた先で、印刷・共有・保存ができる。リンクは普通の <a> にする(ボタンから後で開く方法は、iPhoneでは止められることがある)。 */
 const fileUrls = new Map(); // 保存先 → 開くためのURL
 /** 指示(o)のPDFを開くボタン。まだPDFが無い以前の成果物には「PDFを作る」を出す */
-function fileBtn(o, cls = '') {
+function fileBtn0(o, cls = '') {
   if (!o || !o.deliverable) return '';
   if (!o.file || !o.file.path) return `<button type="button" class="btn ${cls}" data-file-make="${o.id}">PDFを作る</button>`;
   const url = fileUrls.get(o.file.path);
@@ -1362,6 +1362,27 @@ function fileBtn(o, cls = '') {
   return url ? `<a class="btn file-open ${cls}" href="${esc(url)}" target="_blank" rel="noopener">${label}</a>`
     : `<a class="btn file-open wait ${cls}" data-file="${esc(o.file.path)}" data-label="${esc(label)}" target="_blank" rel="noopener" aria-disabled="true">PDFを準備中…</a>`;
 }
+/** 名簿・一覧(添付の表)があるときは、PDFのほかに、テキストでコピーするボタンも出す */
+function fileBtn(o, cls = '') {
+  const pdf = fileBtn0(o, cls);
+  return pdf + (o && o.deliverable && (o.attachments || []).length ? `<button type="button" class="btn att-copy ${cls === 'primary' ? '' : cls}" data-attcopy="${esc(o.id)}" data-kind="text">テキストでコピー</button><button type="button" class="btn att-copy ${cls === 'primary' ? '' : cls}" data-attcopy="${esc(o.id)}" data-kind="tsv">表でコピー</button>` : '');
+}
+/** 添付の表を、LINEなどに貼れるテキスト(text)か、スプレッドシートに貼れる表(tsv)にする */
+function attText(o, kind) {
+  return (o.attachments || []).map(t => {
+    const rows = (t.rows || []).map(r => r.cells || r), cols = t.columns || [];
+    if (kind === 'tsv') return [t.title + (t.note ? '\t' + t.note : ''), cols.join('\t'), ...rows.map(r => r.join('\t'))].join('\n');
+    const keep = cols[0] === 'No.' ? 1 : 0;
+    return [`【${t.title}】${rows.length}件`, t.note ? t.note : '', ...rows.map(r => `${keep ? r[0] + '. ' : ''}${r.slice(keep).filter(x => String(x).trim() !== '').join(' / ')}`)].filter(x => x !== '').join('\n');
+  }).join('\n\n');
+}
+document.addEventListener('click', async e => {
+  const b = e.target.closest('[data-attcopy]'); if (!b) return;
+  const o = orders.find(x => x.id === b.dataset.attcopy); if (!o) { toast('指示が見つかりません'); return; }
+  const text = attText(o, b.dataset.kind);
+  try { await navigator.clipboard.writeText(text); toast(b.dataset.kind === 'tsv' ? '表をコピーしました。スプレッドシートに貼り付けてください' : 'テキストをコピーしました。LINEなどに貼り付けてください'); plBuzz(8); }
+  catch (x) { toast('コピーできませんでした'); }
+});
 /** 画面に出ている「準備中」のボタンに、開くためのURLを入れる */
 function hydrateFiles() {
   document.querySelectorAll('a[data-file]').forEach(async a => {
