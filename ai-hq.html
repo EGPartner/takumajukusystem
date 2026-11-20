@@ -1184,6 +1184,7 @@ ul.lg-list{list-style:none;margin:0;padding:0;background:var(--surface);border-r
 .fm-seg{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;background:var(--surface);border-radius:12px;padding:3px}.fm-seg button{border:0;background:none;border-radius:9px;padding:9px 2px;font:inherit;font-size:13px;font-weight:600;color:var(--ink-2);cursor:pointer;line-height:1.25}.fm-seg button[aria-checked="true"]{background:var(--accent);color:#fff}
 .fm-sum{margin:10px 2px 0!important;color:var(--ink-2)!important}
 @media (max-width:719px){.fm-seg button{font-size:12.5px}}
+.fm-hist .fm-trash{width:36px;height:36px;color:var(--ink-3);flex:none}.fm-hist .fm-trash:hover{color:var(--bad)}.fm-hist .fm-trash svg{width:19px;height:19px}
 /* 今日 */
 .hm h1{font-size:40px;line-height:1.1;letter-spacing:-.02em;margin:28px 0 6px;font-weight:700}
 .hm-lead{color:var(--ink-2);font-size:19px;line-height:1.45;margin:0 0 22px}
@@ -2127,7 +2128,7 @@ const PL_I = {
   search: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>', menu: '<path d="M4 6h16M4 12h16M4 18h16"/>', spark: '<path d="M12 3l2 5 5 2-5 2-2 5-2-5-5-2 5-2z"/>',
   list: '<path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/>', bell: '<path d="M6 9a6 6 0 1112 0c0 6 2 7 2 7H4s2-1 2-7M10 20a2 2 0 004 0"/>',
   link: '<path d="M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1-1"/>', undo: '<path d="M9 14L4 9l5-5M4 9h10a6 6 0 010 12h-3"/>',
-  eye: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>', team: '<circle cx="9" cy="8" r="3.5"/><path d="M2 20a7 7 0 0114 0M17 5a3.5 3.5 0 010 7M22 20a6 6 0 00-4-5.6"/>', task: '<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 12l3 3 5-6"/>', doc: '<path d="M6 3h9l4 4v14H6zM14 3v5h5"/>', right: '<path d="M9 6l6 6-6 6"/>', home: '<path d="M3 11l9-8 9 8M5 10v10h14V10"/>'
+  trash: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>', eye: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>', team: '<circle cx="9" cy="8" r="3.5"/><path d="M2 20a7 7 0 0114 0M17 5a3.5 3.5 0 010 7M22 20a6 6 0 00-4-5.6"/>', task: '<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 12l3 3 5-6"/>', doc: '<path d="M6 3h9l4 4v14H6zM14 3v5h5"/>', right: '<path d="M9 6l6 6-6 6"/>', home: '<path d="M3 11l9-8 9 8M5 10v10h14V10"/>'
 };
 const plSvg = n => `<svg viewBox="0 0 24 24" aria-hidden="true">${PL_I[n] || ''}</svg>`;
 let plPage = 1, plHide = false, plQ0 = '', rosterChecks = {};
@@ -4177,6 +4178,7 @@ document.addEventListener('click', e => {
   if (a === 'close') { if (document.getElementById('dxModal').classList.contains('on')) dxModal('', false); else dxSheetOn(false); return; }
   if (a === 'sheetclose') { dxSheetOn(false); return; }
   if (a === 'zerogo') { hmZeroRun(x); return; }
+  if (a === 'fmdelgo') { x.disabled = true; x.textContent = '消しています…'; call('aiFormRemove')({ url: x.dataset.url }).then(() => { dxModal('', false); toast('一覧から消しました。ドライブのファイルは残っています'); plBuzz(10); }).catch(err => { dxModal('', false); toast(/NOT_FOUND|not-found|404/.test(String(err.message)) ? 'この機能には、バックエンドの更新が必要です' : '消せませんでした: ' + err.message); }); return; }
   if (a === 'purge7') { lgPurge(7, x); return; } if (a === 'purge2') { lgPurge(2, x); return; } if (a === 'purgeall') { lgPurge('all', x); return; }
   if (a === 'free') { const v = (document.getElementById('dx-free') || {}).value || ''; if (v.trim()) dxRun(`${dxS ? dxS.text : ''}\n(統括からの指示: ${v.trim()})`); else toast('指示を書いてください'); return; }
   if (a === 'gotoorders') { dxSheetOn(false); const w = GROUPS.find(g => g.id === 'work'); goSub(w, w.subs.find(q => q.tab === 'orders')); return; }
@@ -4217,7 +4219,7 @@ function formsHTML() {
     <div class="fm-url"><input type="text" readonly value="${esc(fm.result.url)}" aria-label="フォームのURL" onclick="this.select()"><button type="button" class="fm-copy" data-fm="copy" data-v="${esc(fm.result.url)}">URLをコピー</button></div>
     ${fm.result.announce ? `<label class="fm-l">案内文(URL入り)<textarea rows="7" readonly>${esc(fm.result.announce)}</textarea></label><button type="button" class="fm-copy wide" data-fm="copy" data-v="${esc(fm.result.announce)}">案内文をコピー</button>` : ''}
     <div class="fm-links"><a href="${esc(fm.result.url)}" target="_blank" rel="noopener">フォームを開く</a><a href="${esc(fm.result.editUrl)}" target="_blank" rel="noopener">編集する</a><a href="${esc(fm.result.sheetUrl)}" target="_blank" rel="noopener">回答を見る</a></div></section>` : '';
-  const hist = fmList.length ? `<section class="fm-card"><h3>これまでに作ったアンケート</h3><ul class="fm-hist">${fmList.slice(0, 20).map(x => `<li><div><b>${esc(x.title)}</b><span>${esc(new Date(x.at).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }))}${x.closeAt ? ' ・ 締切 ' + esc(new Date(x.closeAt).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })) : ''}</span></div><button type="button" class="fm-copy" data-fm="copy" data-v="${esc(x.url)}">URL</button><a class="fm-copy" href="${esc(x.sheetUrl)}" target="_blank" rel="noopener">回答</a></li>`).join('')}</ul></section>` : '';
+  const hist = fmList.length ? `<section class="fm-card"><h3>これまでに作ったアンケート</h3><ul class="fm-hist">${fmList.slice(0, 20).map(x => `<li><div><b>${esc(x.title)}</b><span>${esc(new Date(x.at).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }))}${x.closeAt ? ' ・ 締切 ' + esc(new Date(x.closeAt).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })) : ''}</span></div><button type="button" class="fm-copy" data-fm="copy" data-v="${esc(x.url)}">URL</button><a class="fm-copy" href="${esc(x.sheetUrl)}" target="_blank" rel="noopener">回答</a><button type="button" class="pl-ib fm-trash" data-fm="del" data-url="${esc(x.url)}" data-t="${esc(x.title)}" aria-label="一覧から消す" data-pltip="一覧から消す">${plSvg('trash')}</button></li>`).join('')}</ul></section>` : '';
   return `<div class="fm"><h1>アンケート</h1><p class="hm-lead">内容を貼り付けるだけで、AIが、Googleフォームを作ります。回答は、アンケート専用のスプレッドシートに、自動でまとまります。</p>${r}${input}${edit}${hist}</div>`;
 }
 document.addEventListener('input', e => {
@@ -4238,6 +4240,7 @@ document.addEventListener('change', e => {
 document.addEventListener('click', async e => {
   const b = e.target.closest('[data-fm]'); if (!b) return; const a = b.dataset.fm;
   if (a === 'copy') { try { await navigator.clipboard.writeText(b.dataset.v); toast('コピーしました。LINEなどに貼り付けてください'); plBuzz(8); } catch (x) { toast('コピーできませんでした。URLを長押しして、コピーしてください'); } return; }
+  if (a === 'del') { dxModal(`<h3>一覧から消しますか?</h3><p><b>${esc(b.dataset.t)}</b></p><p class="pk" style="margin-top:8px">AI本部の一覧から消すだけです。Googleフォームと、回答のスプレッドシートは、ドライブに、そのまま残ります。</p><div class="pl-sbtn"><button type="button" class="pl-p2" data-dx="close">やめる</button><button type="button" class="d" data-dx="fmdelgo" data-url="${esc(b.dataset.url)}">一覧から消す</button></div>`); return; }
   if (a === 'mode') { fm.spec.limitMode = b.dataset.v; renderPanel(); return; }
   if (a === 'qdel') { fm.spec.questions.splice(Number(b.dataset.i), 1); renderPanel(); return; }
   if (a === 'qadd') { fm.spec.questions.push({ type: 'text', title: '新しい質問', help: '', required: false }); renderPanel(); return; }
