@@ -4064,7 +4064,7 @@ function plSheetHTML(p) {
   const rbtn = (stt, label, icon, cls) => `<button type="button" class="${cls}" data-pact="review" data-st="${stt}" data-nonote="1" data-uid="${uid}" data-seen="${esc(p.lastInAt || '')}">${label}</button>`;
   const acts = st === 'done' || st === 'skip' ? rbtn('未確認', '要確認に戻す', 'undo', 'pl-p2') : rbtn('対応不要', '不要', 'x', 'pl-p2') + rbtn('対応済み', '対応済み', 'check', 'pl-p1');
   return `<div class="pl-sh"><b>${esc(p.name || p.lineName || '名前未設定')}</b><button type="button" class="pl-ib" data-pl="sheetclose" aria-label="閉じる">${plSvg('close')}</button></div>
-    <div class="pk">${kids ? '選手: ' + esc(kids) + ' ・ ' : '<span class="pl-unl" role="button" tabindex="0" data-reg="${esc(p.id)}">選手未登録</span> '}${lastMs ? esc(jstStamp(lastMs) + ' ・ ' + paAgo(lastMs)) : ''} ・ ${esc(PA_ST[st])}</div>
+    <div class="pk">${kids ? '選手: ' + esc(kids) + ' ・ ' : `<span class="pl-unl" role="button" tabindex="0" data-reg="${uid}">選手未登録</span> `}${lastMs ? esc(jstStamp(lastMs) + ' ・ ' + paAgo(lastMs)) : ''} ・ ${esc(PA_ST[st])}</div>
     ${kids ? '' : '<p class="pk tip">選手が未登録です。<button type="button" class="btn ghost" data-pl="link">塾生と結びつける</button></p>'}
     ${plComposerHTML(p)}
     <div class="pt-x">${paDetail(p)}</div><div class="pl-sbtn">${st === 'none' ? '' : acts}</div>`;
