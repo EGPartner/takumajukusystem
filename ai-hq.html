@@ -1229,7 +1229,7 @@ button:focus:not(:focus-visible),a:focus:not(:focus-visible){outline:none;box-sh
 }
 
 .cv{background:var(--surface);border-radius:22px;box-shadow:var(--shadow);margin:18px 0 0;overflow:clip}.cv.has{box-shadow:0 0 0 2px color-mix(in srgb,var(--warn) 40%,transparent),var(--shadow)}
-.cv-h{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;padding:14px 18px 6px}.cv-h b{font-size:17px}.cv-h span{color:var(--ink-3);font-size:13px}
+.cv-h{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;padding:14px 18px 6px}.cv-h b{font-size:17px}.cv-h span{color:var(--ink-3);font-size:13px;flex:1;min-width:0}.cv-re{border:0;border-radius:999px;background:var(--surface-2);color:var(--accent-ink);font:inherit;font-size:13px;font-weight:600;padding:5px 12px;cursor:pointer;margin-left:auto}
 .cv-r{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:0;border-top:1px solid var(--line);background:none;color:inherit;font:inherit;padding:12px 18px;cursor:pointer}.cv-r:disabled{cursor:default}.cv-r:first-child{border-top:0}
 .cv-i{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;flex:none}.cv-i svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2.2}
 .cv-r.ok .cv-i{background:color-mix(in srgb,var(--ok) 16%,transparent);color:var(--ok)}.cv-r.warn .cv-i{background:color-mix(in srgb,var(--warn) 22%,transparent);color:var(--warn)}.cv-r.bad .cv-i{background:color-mix(in srgb,var(--bad) 18%,transparent);color:var(--bad)}
@@ -4391,10 +4391,10 @@ document.addEventListener('input', e => { if (e.target.id === 'fr-req' && frS) f
 /* ---------- 取りこぼしチェック(3つのLINEで、タスクの漏れがないか) ---------- */
 function covHTML() {
   const c = coverage; if (!c || !c.sources) return '';
-  const ageMin = Math.round((Date.now() - Date.parse(c.at)) / 60000), stale = ageMin > 150, bad = c.suspects + c.pending;
+  const ageMin = Math.round((Date.now() - Date.parse(c.at)) / 60000), stale = ageMin > 36 * 60, bad = c.suspects + c.pending, when = new Date(c.at).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
   const row = x => { const n = x.suspects.length, st = x.pending ? 'bad' : n ? 'warn' : 'ok', msg = x.pending ? `分析が遅れています(未分析 ${x.pending}件)` : n ? `漏れの疑い ${n}件` : '漏れなし';
     return `<button type="button" class="cv-r ${st}" data-cov="${x.key}" ${n || x.pending ? '' : 'disabled'}><span class="cv-i">${plSvg(st === 'ok' ? 'check' : 'help')}</span><span class="cv-t"><b>${esc(x.name)}</b><small>受信 ${x.received24h}件(24時間)</small></span><span class="cv-m">${msg}</span>${n ? plSvg('right') : ''}</button>`; };
-  return `<section class="cv ${bad ? 'has' : ''}"><div class="cv-h"><b>取りこぼしチェック</b><span>${bad ? '確認してください' : '3つのLINEとも、漏れはありません'}${stale ? ' ・ 最終確認が古いです' : ''}</span></div><div class="cv-l">${c.sources.map(row).join('')}</div></section>`;
+  return `<section class="cv ${bad ? 'has' : ''}"><div class="cv-h"><b>取りこぼしチェック</b><span>${bad ? '確認してください' : '3つのLINEとも、漏れはありません'} ・ 毎晩21時に確認 ・ 最終 ${esc(when)}${stale ? '(古いです)' : ''}</span><button type="button" class="cv-re" data-cv="refresh">今すぐ確認</button></div><div class="cv-l">${c.sources.map(row).join('')}</div></section>`;
 }
 let covOpen = null;
 function covRender() {
@@ -4408,6 +4408,7 @@ function covRender() {
 document.addEventListener('click', async e => {
   const o = e.target.closest('[data-cov]'); if (o && !o.disabled) { covOpen = o.dataset.cov; dxS = { title: '取りこぼし', text: '', cov: true }; dxSheetOn(true); covRender(); return; }
   const b = e.target.closest('[data-cv]'); if (!b) return;
+  if (b.dataset.cv === 'refresh') { b.disabled = true; b.textContent = '確認しています…'; try { await call('aiCoverageOps', { quiet: true })({ action: 'refresh' }); toast('確認しました'); } catch (err) { toast('確認できませんでした: ' + err.message); } b.disabled = false; b.textContent = '今すぐ確認'; return; }
   const k = b.dataset.k, ta = document.querySelector(`[data-ct="${CSS.escape(k)}"]`), text = ta ? ta.value.trim() : '';
   b.disabled = true;
   try { await call('aiCoverageOps', { quiet: true })({ action: b.dataset.cv === 'task' ? 'task' : 'dismiss', key: k, text, quote: b.dataset.q || '' }); toast(b.dataset.cv === 'task' ? 'やることにしました' : '問題なしにしました'); plBuzz(10); }
