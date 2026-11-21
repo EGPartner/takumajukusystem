@@ -987,7 +987,7 @@
   .pl-l1 time{margin-left:auto;color:var(--ink-3);font-size:12px;white-space:nowrap;padding-left:6px}.pl-item.late .pl-l1 time{color:var(--bad);font-weight:600}
   .pl-l2{display:flex;gap:6px;align-items:center;margin-top:1px;font-size:13.5px}.pl-l2 svg{width:15px;height:15px;color:var(--accent-ink);stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
   .pl-l2 .t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}.pl-l2.money svg{color:var(--warn)}.pl-l2.rest svg{color:var(--bad)}
-  .pl-unl{font-style:normal;font-size:11.5px;color:var(--warn);border:1px solid var(--warn);border-radius:999px;padding:0 7px;white-space:nowrap}
+  .pl-unl{cursor:pointer;font-style:normal;font-size:11.5px;color:var(--warn);border:1px solid var(--warn);border-radius:999px;padding:0 7px;white-space:nowrap}
   .pl-btns{display:flex;gap:2px}.pl-btns button{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;color:var(--ink-3);position:relative;border:0;background:none;cursor:pointer}
   .pl-btns .ok:hover{background:var(--ok-soft);color:var(--ok)}.pl-btns .no:hover{background:var(--surface-2);color:var(--ink)}
   .pl-btns svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
@@ -2227,7 +2227,7 @@ function paRow(p) {
   const lastMs = paMs(p.lastInAt), late = !fin && (st === 'new' || st === 'need') && Date.now() - paSince(p) >= 24 * 3600e3, c = PL_CAT[cat];
   const sum = tap ? 'メニューのボタンを押しました(本文なし)' : open.length ? open[0].text : lastTxt ? plClip(lastTxt, 60) : '(まだメッセージはありません)';
   const kids = plKids(p), name = p.name || p.lineName || '名前未設定';
-  const kid = kids ? `<em>${esc(kids)}</em>` : `<i class="pl-unl">選手未登録</i>`;
+  const kid = kids ? `<em>${esc(kids)}</em>` : `<i class="pl-unl" role="button" tabindex="0" data-reg="${uid}">選手未登録</i>`;
   const hm = lastMs ? paHm(lastMs) : '';
   const btn = (stt, label, icon, cls) => `<button type="button" class="${cls}" data-pact="review" data-st="${stt}" data-nonote="1" data-uid="${uid}" data-seen="${esc(p.lastInAt || '')}" data-pltip="${label}" aria-label="${label}">${plSvg(icon)}</button>`;
   const acts = st === 'none' ? '' : fin ? btn('未確認', '要確認に戻す', 'check', 'ok') : btn('対応済み', '対応済み', 'check', 'ok') + btn('対応不要', '不要', 'x', 'no');
@@ -3334,6 +3334,7 @@ async function consultCommand(text) {
   } catch (e) { el.hidden = true; el.innerHTML = ''; toast('相談できませんでした: ' + e.message); }
 }
 document.addEventListener('click', async e => {
+  if (e.target.closest('[data-reg]')) return;
   const btn = e.target.closest('button');
   const mic = e.target.closest('[data-mic]'); if (mic) return startVoice(mic.dataset.mic, mic);
   const ov = e.target.closest('[data-view-output]'); if (ov) { const o = orders.find(x => x.id === ov.dataset.viewOutput); if (o) openViewer(o); return; }
@@ -4050,7 +4051,7 @@ function plSheetHTML(p) {
   const rbtn = (stt, label, icon, cls) => `<button type="button" class="${cls}" data-pact="review" data-st="${stt}" data-nonote="1" data-uid="${uid}" data-seen="${esc(p.lastInAt || '')}">${label}</button>`;
   const acts = st === 'done' || st === 'skip' ? rbtn('未確認', '要確認に戻す', 'undo', 'pl-p2') : rbtn('対応不要', '不要', 'x', 'pl-p2') + rbtn('対応済み', '対応済み', 'check', 'pl-p1');
   return `<div class="pl-sh"><b>${esc(p.name || p.lineName || '名前未設定')}</b><button type="button" class="pl-ib" data-pl="sheetclose" aria-label="閉じる">${plSvg('close')}</button></div>
-    <div class="pk">${kids ? '選手: ' + esc(kids) + ' ・ ' : '<span class="pl-unl">選手未登録</span> '}${lastMs ? esc(jstStamp(lastMs) + ' ・ ' + paAgo(lastMs)) : ''} ・ ${esc(PA_ST[st])}</div>
+    <div class="pk">${kids ? '選手: ' + esc(kids) + ' ・ ' : '<span class="pl-unl" role="button" tabindex="0" data-reg="${esc(p.id)}">選手未登録</span> '}${lastMs ? esc(jstStamp(lastMs) + ' ・ ' + paAgo(lastMs)) : ''} ・ ${esc(PA_ST[st])}</div>
     ${kids ? '' : '<p class="pk tip">選手が未登録です。<button type="button" class="btn ghost" data-pl="link">塾生と結びつける</button></p>'}
     ${plComposerHTML(p)}
     <div class="pt-x">${paDetail(p)}</div><div class="pl-sbtn">${st === 'none' ? '' : acts}</div>`;
@@ -4157,6 +4158,33 @@ function plPlaceOffice() {
   if (plOfficeEl && slot && document.body.classList.contains('office-open')) slot.appendChild(plOfficeEl);
 }
 function dxModal(html, on = true) { const m = document.getElementById('dxModal'); if (html != null) m.innerHTML = html; m.classList.toggle('on', on); document.getElementById('dxScrim').classList.toggle('on', on || document.getElementById('dxSheet').classList.contains('on')); }
+/* 選手未登録: タップして、塾生リストから選んで結びつける */
+let regUid = '', regTimer = 0;
+const regRows = (list, tag) => list.length ? `<ul class="dx-ul">${list.map(c => `<li><b>${esc(c.name)}</b><span>${esc([c.school, c.grade, c.kana].filter(Boolean).join(' ・ '))}${tag || ''}</span><button type="button" class="pl-p2" data-dx="regpick" data-sid="${esc(c.id)}" data-name="${esc(c.name)}">この子で登録</button></li>`).join('')}</ul>` : '';
+function regDraw(r, q) {
+  const box = document.getElementById('reg-list'); if (!box) return;
+  const kids = (r.linked || []).length ? `<p class="pk">登録済み: ${esc(r.linked.join('・'))}</p>` : '';
+  box.innerHTML = kids + (q ? (r.results.length ? regRows(r.results) : '<p class="pk">見つかりません。名前の一部・ふりがな・保護者名で探してください</p>') : (r.candidates.length ? '<p class="pk">メッセージから見つかった候補</p>' + regRows(r.candidates) : '<p class="pk">候補はありません。上の欄で、塾生の名前を探してください</p>'));
+}
+async function regFetch(q) {
+  const box = document.getElementById('reg-list'); if (box && !box.innerHTML) box.innerHTML = '<p class="pk">探しています…</p>';
+  try { const r = (await call('aiParentOps')({ action: 'studentSearch', uid: regUid, q })).data; if ((document.getElementById('reg-q') || {}).value.trim() === q) regDraw(r, q); }
+  catch (err) { if (box) box.innerHTML = `<p class="pk">${/操作の種類/.test(String(err.message)) ? 'この機能には、バックエンドの更新(デプロイ)が必要です' : '探せませんでした: ' + esc(err.message)}</p>`; }
+}
+function regOpen(uid) {
+  regUid = uid; const p = paList.find(x => x.id === uid) || {};
+  dxModal(`<h3>選手を登録</h3><p>${esc(p.name || p.lineName || '保護者')} さんのお子さんを、塾生リストから選びます。</p>
+    <input id="reg-q" type="search" placeholder="塾生の名前・ふりがな・保護者名" autocomplete="off" style="width:100%;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:inherit;font:inherit;padding:0 12px;margin:6px 0 10px;box-sizing:border-box">
+    <div id="reg-list" style="max-height:46vh;overflow:auto"></div>
+    <div class="pl-sbtn"><button type="button" class="pl-p2" data-dx="close">閉じる</button></div>`);
+  const inp = document.getElementById('reg-q'); inp.addEventListener('input', () => { clearTimeout(regTimer); regTimer = setTimeout(() => regFetch(inp.value.trim()), 300); });
+  regFetch('');
+}
+async function regPick(x) {
+  x.disabled = true; x.textContent = '登録中…';
+  try { await call('aiParentOps')({ action: 'link', uid: regUid, ids: [x.dataset.sid] }); dxModal('', false); toast(`${x.dataset.name} さんを登録しました`); plBuzz(10); }
+  catch (err) { x.disabled = false; x.textContent = 'この子で登録'; toast('登録できませんでした: ' + err.message); }
+}
 function hmZeroOpen() {
   const need = paList.filter(paNeeds).length, tasksN = tdRows().open.length, nDec = decisions.length, rep = pendingB().length;
   dxModal(`<h3>今日やることを、ゼロにしますか?</h3><p>次のものを、いったん片付けます。</p>
@@ -4246,6 +4274,7 @@ async function rcSave(btn) {
 }
 document.addEventListener('click', e => {
   const t = e.target;
+  const rg = t.closest('[data-reg]'); if (rg) { e.stopPropagation(); regOpen(rg.dataset.reg); return; }
   const lg = t.closest('[data-lgdx]'); if (lg) { const l = logs[Number(lg.dataset.lgdx)]; if (l) dxOpen(`${l.who}: ${l.what}`, 'この記録を、どう解決する?', '記録', ''); return; }
   const m = t.closest('[data-lg]'); if (m) { if (m.dataset.lg === 'more') { lgShown += 40; renderPanel(); } else if (m.dataset.lg === 'purge') lgPurgeOpen(); return; }
   if (t.closest('[data-rochk]')) { rcOpen(); return; }
@@ -4254,6 +4283,7 @@ document.addEventListener('click', e => {
   const x = t.closest('[data-dx]'); if (!x) return; const a = x.dataset.dx;
   if (a === 'close') { if (document.getElementById('dxModal').classList.contains('on')) dxModal('', false); else dxSheetOn(false); return; }
   if (a === 'sheetclose') { dxSheetOn(false); return; }
+  if (a === 'regpick') { regPick(x); return; }
   if (a === 'zerogo') { hmZeroRun(x); return; }
   if (a === 'fmdelgo') { x.disabled = true; x.textContent = '消しています…'; call('aiFormRemove')({ url: x.dataset.url }).then(() => { dxModal('', false); toast('一覧から消しました。ドライブのファイルは残っています'); plBuzz(10); }).catch(err => { dxModal('', false); toast(/NOT_FOUND|not-found|404/.test(String(err.message)) ? 'この機能には、バックエンドの更新が必要です' : '消せませんでした: ' + err.message); }); return; }
   if (a === 'purge7') { lgPurge(7, x); return; } if (a === 'purge2') { lgPurge(2, x); return; } if (a === 'purgeall') { lgPurge('all', x); return; }
