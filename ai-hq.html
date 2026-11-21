@@ -977,11 +977,6 @@
   .pa-act{font-size:12px;color:var(--ink-3);margin:2px 0 2px 10px;padding-left:10px;border-left:2px solid var(--line)}.pa-act time{margin-right:8px}
   .pl-seg{display:inline-flex;background:var(--surface);border-radius:999px;padding:2px;margin-left:8px;vertical-align:middle}.pl-seg button{border:0;background:none;color:var(--ink-3);font:inherit;font-size:12px;padding:3px 10px;border-radius:999px;cursor:pointer}.pl-seg button[aria-pressed=true]{background:var(--accent);color:#fff}
   .pl-fam{list-style:none;margin:0;padding:0}.pl-fam li{display:flex;gap:10px;align-items:center;padding:12px 14px;border-top:1px solid var(--line)}.pl-fam b{font-weight:600}.pl-fam small{color:var(--ink-3)}.pl-fam .sp{flex:1}.pl-fam .chip{font-size:11.5px;color:var(--ink-3);border:1px solid var(--line-strong);border-radius:999px;padding:0 8px;white-space:nowrap}
-  @media (min-width:1100px){
-    .pl-sheet{left:auto;right:16px;top:76px;bottom:16px;width:min(580px,42vw);max-width:none;margin:0;border-radius:20px;max-height:none;transform:translateX(115%)}.pl-sheet.on{transform:none}.pl-grab{display:none}
-    body.pl-open #plScrim2{background:transparent;pointer-events:none}
-    body.pl-open #pbody{padding-right:calc(min(580px,42vw) + 32px)}
-  }
   .pl-total{color:var(--ink-3);font-size:12px;margin:0 4px 6px}
   ul.pl-list{margin:0;padding:0;list-style:none;background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
   .pl-day{padding:5px 14px;background:var(--surface-2);color:var(--ink-3);font-size:12px;font-weight:600}
@@ -1267,6 +1262,12 @@ button:focus:not(:focus-visible),a:focus:not(:focus-visible){outline:none;box-sh
 .hm-empty{text-align:center;color:var(--ink-3);padding:48px 0}.hm-empty svg{width:48px;height:48px;color:var(--ok);stroke:currentColor;fill:none;stroke-width:1.7;display:block;margin:0 auto 8px}.hm-empty b{display:block;color:var(--ink);font-size:20px}
 .hm-office{margin:30px auto 0;display:block;border:0;background:none;color:var(--accent-ink);font:inherit;font-size:14.5px;cursor:pointer}
 @media (max-width:719px){.hm h1{font-size:32px;margin-top:20px}.hm-lead{font-size:17px}.hm-k{padding:14px}.hm-k b{font-size:30px}.hm h2{font-size:22px}}
+  @media (min-width:1100px){
+    .pl-sheet{left:auto;right:16px;top:76px;bottom:16px;width:min(580px,42vw);max-width:none;margin:0;border-radius:20px;max-height:none;transform:translateX(115%)}.pl-sheet.on{transform:none}.pl-grab{display:none}
+    .pl-sheet .pa-split{grid-template-columns:1fr}
+    body.pl-open #plScrim2{background:transparent;pointer-events:none}
+    body.pl-open #pbody{padding-right:calc(min(580px,42vw) + 32px)}
+  }
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
