@@ -1023,7 +1023,7 @@
   .pl-cmp textarea{width:100%;border:1px solid var(--line);border-radius:12px;padding:10px 12px;font:inherit;font-size:15.5px;line-height:1.6;background:var(--surface);color:var(--ink);resize:vertical;box-sizing:border-box}
   .pl-quick{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.pl-quick button{border:0;border-radius:999px;padding:5px 12px;background:var(--accent-soft);color:var(--accent-ink);font:inherit;font-size:13px;cursor:pointer}
   .pl-cmp-a{display:flex;gap:6px}.pl-cmp-a input{flex:1;min-width:0;border:1px solid var(--line);border-radius:10px;padding:8px 10px;font:inherit;font-size:14px;background:var(--surface);color:var(--ink)}.pl-cmp-a button{border:0;border-radius:10px;padding:0 12px;cursor:pointer;font:inherit;font-size:13.5px;font-weight:600;white-space:nowrap}
-  .pl-send{width:100%;height:50px;border:0;border-radius:14px;background:var(--accent);color:#fff;font:inherit;font-size:16.5px;font-weight:700;margin-top:10px;cursor:pointer}
+  .pl-card{width:100%;height:44px;border:0;border-radius:12px;background:var(--surface);color:var(--accent-ink);font:inherit;font-size:14.5px;font-weight:600;margin-top:8px;cursor:pointer}.pl-send{width:100%;height:50px;border:0;border-radius:14px;background:var(--accent);color:#fff;font:inherit;font-size:16.5px;font-weight:700;margin-top:10px;cursor:pointer}
   .pl-pv{background:var(--surface-2);border-radius:12px;padding:10px 12px;margin:12px 0;font-size:14.5px;max-height:180px;overflow:auto;white-space:pre-wrap}
   .pa-out{margin:6px 0 6px auto;max-width:86%;background:var(--accent-soft);border-radius:14px 14px 4px 14px;padding:8px 12px;font-size:14px}.pa-out time{display:block;font-size:11.5px;color:var(--ink-3);margin-bottom:2px}
   .pl-sheet .pt-x{padding:0;border:0}
@@ -3971,7 +3971,8 @@ function plComposerHTML(p) {
     <textarea id="pl-reply" rows="5" placeholder="返信を入力">${esc(ad)}</textarea>
     <div class="pl-quick">${PL_QUICK.map(q => `<button type="button" data-pl="quick" data-q="${esc(q)}">${esc(q.replace(/。$/, ''))}</button>`).join('')}</div>
     <div class="pl-cmp-a"><input type="text" id="pl-hint" placeholder="AIへ ひとこと(例: 会費の件も触れて)" autocomplete="off"><button type="button" class="pl-p2" data-pl="redraft" data-uid="${uid}">AIで案を作る</button></div>
-    <button type="button" class="pl-send" data-pl="sendask" data-uid="${uid}">LINEで送る</button></div>`;
+    <button type="button" class="pl-send" data-pl="sendask" data-uid="${uid}">LINEで送る</button>
+    <button type="button" class="pl-card" data-pl="sendcard" data-uid="${uid}">返信確認グループに、カードを送る</button></div>`;
 }
 let plSendUid = null;
 function plSendModal(on) {
@@ -4098,6 +4099,7 @@ document.addEventListener('click', e => {
     call('aiParentOps')({ action: 'draft', uid: b.dataset.uid, hint }).then(r => { if (ta) ta.value = (r.data && r.data.reply) || ta.value; }).catch(err => toast('案を作れませんでした: ' + err.message)).finally(() => { b.disabled = false; b.textContent = 'AIで案を作る'; });
     return;
   }
+  if (a === 'sendcard') { b.disabled = true; const t0 = b.textContent; b.textContent = 'カードを送っています…'; call('aiParentOps')({ action: 'sendCard', uid: b.dataset.uid }).then(() => toast('返信確認グループに、カードを送りました(LINEを見てください)')).catch(err => toast(/NOT_FOUND|not-found|404/.test(String(err.message)) ? 'この機能には、バックエンドの更新が必要です' : err.message)).finally(() => { b.disabled = false; b.textContent = t0; }); return; }
   if (a === 'sendask') { plSendUid = b.dataset.uid; plSendModal(true); return; }
   if (a === 'sendno') { plSendModal(false); return; }
   if (a === 'sendyes') { plSendNow(b); return; }
