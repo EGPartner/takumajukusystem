@@ -1268,6 +1268,15 @@ button:focus:not(:focus-visible),a:focus:not(:focus-visible){outline:none;box-sh
     body.pl-open #plScrim2{background:transparent;pointer-events:none}
     body.pl-open #pbody{padding-right:calc(min(580px,42vw) + 32px)}
   }
+  .tb-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:4px 0 12px}.tb-h b{font-size:20px;letter-spacing:-.01em}.tb-h .sp{flex:1}
+  .tb-f{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 12px;align-items:center}.tb-f button{border:0;background:var(--surface);color:var(--ink-2);font:inherit;font-size:13px;padding:6px 12px;border-radius:999px;cursor:pointer}.tb-f button[aria-pressed=true]{background:var(--accent);color:#fff}.tb-f .n{opacity:.7;margin-left:4px}.tb-f label{margin-left:auto;font-size:13px;color:var(--ink-3);display:flex;gap:6px;align-items:center}
+  .tb-t{background:var(--surface);border-radius:16px;overflow:hidden}.tb-r{display:grid;grid-template-columns:92px 96px 84px 70px 1fr 74px;gap:10px;align-items:start;padding:12px 14px;border-top:1px solid var(--line);width:100%;text-align:left;background:none;border-left:0;border-right:0;border-bottom:0;color:inherit;font:inherit;font-size:13.5px;cursor:pointer}
+  .tb-r.hd{cursor:default;font-size:12px;color:var(--ink-3);font-weight:600;border-top:0;background:rgba(0,0,0,.03)}.tb-r:not(.hd):hover{background:rgba(127,127,127,.07)}
+  .tb-r .a{font-weight:500}.tb-r .a small{display:block;color:var(--ink-3);font-weight:400;margin-top:2px;font-size:12px}.tb-r.fin{color:var(--ink-3)}.tb-r.fin .a{text-decoration:line-through}
+  .tb-g{display:inline-block;font-size:12px;border-radius:999px;padding:1px 9px;background:rgba(127,127,127,.14);white-space:nowrap}.tb-g.g1{background:rgba(10,143,152,.14);color:var(--accent-ink)}.tb-g.g2{background:rgba(94,92,230,.14)}.tb-g.g3{background:rgba(255,159,10,.18)}
+  .tb-p{font-size:12px;border-radius:999px;padding:1px 9px;border:1px solid var(--line-strong);white-space:nowrap;justify-self:start}.tb-p.doing{border-color:var(--accent);color:var(--accent-ink)}.tb-p.done{color:var(--ok)}.tb-d.over{color:var(--bad);font-weight:600}
+  .tb-empty{padding:28px 14px;text-align:center;color:var(--ink-3)}
+  @media (max-width:719px){.tb-r{grid-template-columns:1fr auto;gap:4px 10px}.tb-r.hd{display:none}.tb-r .c-at,.tb-r .c-ow{font-size:12px;color:var(--ink-3)}.tb-r .a{grid-column:1/-1;order:-1;font-size:14.5px}.tb-r .c-g{order:0}.tb-r .c-p{order:1;justify-self:end}}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -1894,7 +1903,7 @@ const GROUPS = [
   { id: 'sum', label: '今日', subs: [{ tab: 'sum' }] },
   { id: 'people', label: '保護者・代表', subs: [{ tab: 'tasks', view: 'parent', label: '保護者LINE' }, { tab: 'voices', label: '代表' }] },
   { id: 'players', label: '塾生', subs: [{ tab: 'roster' }] },
-  { id: 'work', label: '仕事', subs: [{ tab: 'tasks', view: 'tk', label: 'やること' }, { tab: 'decide', label: '決裁' }, { tab: 'orders', label: '指示' }, { tab: 'forms', label: 'アンケート' }, { tab: 'sched', label: '予定' }] },
+  { id: 'work', label: '仕事', subs: [{ tab: 'tasks', view: 'board', label: 'タスク管理' }, { tab: 'tasks', view: 'tk', label: 'やること' }, { tab: 'decide', label: '決裁' }, { tab: 'orders', label: '指示' }, { tab: 'forms', label: 'アンケート' }, { tab: 'sched', label: '予定' }] },
   { id: 'log', label: '記録', subs: [{ tab: 'log' }] }
 ];
 const subOn = sb => sb.tab === panelTab && (!sb.view || sb.view === tasksView);
@@ -1903,7 +1912,7 @@ const lastSub = {}; // 入口ごとに、最後に見ていた画面を覚える
 function subCount(sb) {
   if (sb.tab === 'decide') return decisions.length;
   if (sb.tab === 'voices') return voices.filter(v => (v.status || '未対応') === '未対応').length;
-  if (sb.tab === 'tasks') return sb.view === 'parent' ? paList.filter(paNeeds).length : tasksDue().length;
+  if (sb.tab === 'tasks') return sb.view === 'parent' ? paList.filter(paNeeds).length : sb.view === 'board' ? tbRows().filter(r => r.open).length : tasksDue().length;
   return 0;
 }
 function subnavHTML() {
@@ -1954,7 +1963,7 @@ function renderPanelInner() {
       + (pendingB().length ? `<div class="sec-h big">目を通すもの ・ 完了報告(${pendingB().length}件)</div><p class="pk tip">押さなくても業務は止まりません。${7}日たつと自動で「確認なしで完了」になり、記録は残ります(後からでも採用・不採用にできます)。</p>` + pendingB().map(reviewCard).join('') : '');
     P.insertAdjacentHTML('beforeend', decidedHTML());
   } else if (panelTab === 'tasks') {
-    P.innerHTML = (tasksView === 'parent' ? parentsHTML() : stlHTML() + todoTableHTML());
+    P.innerHTML = (tasksView === 'parent' ? parentsHTML() : tasksView === 'board' ? tbHTML() : stlHTML() + todoTableHTML());
   } else if (panelTab === 'roster') {
     P.innerHTML = rosterHTML();
   } else if (panelTab === 'voices') {
@@ -3234,7 +3243,7 @@ function openViewer(o) {
   $('#v-title').textContent = d.title;
   $('#v-meta').textContent = `指示#${o.no} ・ ${targetName(o.target)} ・ ${hm(toDate(o.doneAt))} ・ ${o.adoption && o.adoption.status === 'adopted' ? '採用済み' : o.adoption && o.adoption.status === 'rejected' ? '不採用' : o.stage === 'awaiting_adoption' ? '採用の決裁待ち' : '未確認'} ・ AIが作成`;
   $('#v-body').innerHTML = deliverableHTML(o, false) + attachmentsHTML(o);
-  $('#v-file').innerHTML = fileBtn(o, 'primary');
+  $('#v-file').innerHTML = fileBtn(o, 'primary') + `<button type="button" class="btn" data-ordtask="${esc(o.id)}">${o.tasked ? 'タスク管理に入れ済み(' + (o.tasked.n || 0) + '件)' : 'タスク管理に入れる'}</button>`;
   $('#viewer').hidden = false; $('#v-close').focus();
   hydrateFiles();
 }
@@ -4200,6 +4209,53 @@ async function regPick(x) {
   try { await call('aiParentOps')({ action: 'link', uid: regUid, ids: [x.dataset.sid] }); dxModal('', false); toast(`${x.dataset.name} さんを登録しました`); plBuzz(10); }
   catch (err) { x.disabled = false; x.textContent = 'この子で登録'; toast('登録できませんでした: ' + err.message); }
 }
+/* ---------- タスク管理: 4つの出どころ(スタッフLINE・統括LINE・保護者LINE・その他)のやることを、1つの表に ---------- */
+const TB_G = ['スタッフLINE', '統括LINE', '保護者LINE', 'その他'], TB_SHEET = 'https://docs.google.com/spreadsheets/d/1Cl3KHHtn9YqiAWBxHpgzZk0jXV05pu8hLx6XFOFBuzA/edit';
+let tbG = 'all', tbDone = false;
+const tbAt = iso => { const m = Date.parse(iso || ''); return m ? new Date(m + 9 * 3600e3).toISOString().slice(5, 16).replace('T', ' ').replace('-', '/') : ''; };
+function tbRows() {
+  const out = [], q = s => String(s || '').replace(/\s+/g, ' ').trim();
+  const prog = x => (x.status === '完了' ? '完了' : (x.status === '不要' || x.status === '期限切れ') ? '不要' : x.doing ? '進行中' : '未着手');
+  tkTasks.filter(x => !x.cand).forEach(x => out.push({ key: 'tk:' + x.id, at: x.createdAt, group: x.group === 'staff-line' ? 'スタッフLINE' : '統括LINE', owner: tdOwner(x.owner) || '担当未定', due: x.due || '', action: q(x.text), prog: prog(x), from: x.quote ? '発言「' + q(x.quote).slice(0, 40) + '」' : q(x.from), doneAt: x.doneAt }));
+  tasks.forEach(x => { const s = x.source || {}; out.push({ key: 'st:' + x.id, at: x.createdAt, group: s.type === 'attendance' ? '保護者LINE' : (s.type === 'memo' && /^LINE/.test(s.label || '')) ? 'スタッフLINE' : 'その他', owner: tdOwner(x.owner) || '担当未定', due: x.due || '', action: q(x.text), prog: prog(x), from: q(s.label || (s.type === 'manual' ? '手で追加' : '')), doneAt: x.doneAt }); });
+  paList.forEach(p => (p.todos || []).forEach(x => out.push({ key: `pa:${p.id}:${x.id}`, at: x.createdAt, group: '保護者LINE', owner: tdOwner(x.owner) || '担当未定', due: x.due || '', action: q(x.text), prog: x.status === '未対応' ? '未着手' : x.status === '不要' ? '不要' : '完了', from: paName(p) + (x.quote ? ' 「' + q(x.quote).slice(0, 30) + '」' : ''), doneAt: x.doneAt, uid: p.id })));
+  const cut = Date.now() - 60 * 864e5, isOpen = r => r.prog === '未着手' || r.prog === '進行中';
+  out.forEach(r => { r.open = isOpen(r); });
+  const keep = out.filter(r => r.open || (Date.parse(r.doneAt || r.at || 0) || 0) >= cut);
+  return [...keep.filter(r => r.open).sort((a, b) => (a.due || '9999').localeCompare(b.due || '9999') || String(a.at).localeCompare(String(b.at))), ...keep.filter(r => !r.open).sort((a, b) => String(b.doneAt || b.at || '').localeCompare(String(a.doneAt || a.at || '')))];
+}
+function tbHTML() {
+  const all = tbRows(), today = todayJst(), cnt = g => all.filter(r => r.open && (g === 'all' || r.group === g)).length;
+  const rows = all.filter(r => (tbG === 'all' || r.group === tbG) && (tbDone || r.open));
+  const gcls = g => 'g' + (TB_G.indexOf(g) + 1);
+  const line = r => `<button type="button" class="tb-r${r.open ? '' : ' fin'}" data-tb="go" data-key="${esc(r.key)}"><span class="c-at">${esc(tbAt(r.at))}</span><span class="c-g"><span class="tb-g ${gcls(r.group)}">${esc(r.group)}</span></span><span class="c-ow">${esc(r.owner)}</span><span class="tb-d c-d${r.open && r.due && r.due < today ? ' over' : ''}">${esc(r.due ? tkMd(r.due) : '期限なし')}</span><span class="a">${esc(r.action)}${r.from ? `<small>${esc(r.from)}</small>` : ''}</span><span class="c-p"><span class="tb-p ${r.prog === '進行中' ? 'doing' : r.open ? '' : 'done'}">${esc(r.prog)}</span></span></button>`;
+  return `<div class="vboard"><div class="tb-h"><b>タスク管理</b><span class="pk">未完了 ${cnt('all')}件 ・ どこで・誰が・いつまでに・何をするか</span><span class="sp"></span><button type="button" class="btn ghost" data-tb="sync">シートに書き出す</button><a class="btn ghost" href="${TB_SHEET}" target="_blank" rel="noopener">スプレッドシートで開く↗</a></div>
+    <div class="tb-f"><button type="button" data-tb="g" data-g="all" aria-pressed="${tbG === 'all'}">すべて<span class="n">${cnt('all')}</span></button>${TB_G.map(g => `<button type="button" data-tb="g" data-g="${esc(g)}" aria-pressed="${tbG === g}">${esc(g)}<span class="n">${cnt(g)}</span></button>`).join('')}<label><input type="checkbox" data-tb="done" ${tbDone ? 'checked' : ''}>完了・不要も表示</label></div>
+    <div class="tb-t"><div class="tb-r hd"><span>登録</span><span>グループ</span><span>担当</span><span>期限</span><span>具体的なアクション</span><span>進捗</span></div>${rows.map(line).join('') || '<div class="tb-empty">該当するタスクはありません</div>'}</div>
+    <p class="pk" style="margin-top:12px;display:block">グループ=どの会話から管理を始めたか。行を押すと、元の画面で完了・担当・期限を直せます。AI企業の指示の成果物は、「指示」の成果物を開いて「タスク管理に入れる」を押すと、ここに入ります。</p></div>`;
+}
+document.addEventListener('click', async e => {
+  const b = e.target.closest('[data-tb]'); if (!b) return;
+  const a = b.dataset.tb;
+  if (a === 'g') { tbG = b.dataset.g; renderPanel(); return; }
+  if (a === 'done') { tbDone = b.checked; renderPanel(); return; }
+  if (a === 'go') {
+    const k = b.dataset.key || '';
+    if (k.startsWith('pa:')) { const uid = k.split(':')[1]; tasksView = 'parent'; paFiltSt = 'all'; paOpen = uid; paCompose = null; renderPanel(); return; }
+    tasksView = 'tk'; tdOpen = k; renderPanel(); return;
+  }
+  if (a === 'sync') { b.disabled = true; try { const r = await call('aiTaskOps')({ action: 'sync' }); toast(`スプレッドシートの「タスク管理」に ${r.data.rows}件を書き出しました`); } catch (err) { toast(/NOT_FOUND|not-found|404/.test(String(err.message)) ? 'この機能には、バックエンドの更新が必要です' : '書き出せませんでした: ' + err.message); } b.disabled = false; return; }
+});
+document.addEventListener('click', async e => {
+  const b = e.target.closest('[data-ordtask]'); if (!b) return;
+  b.disabled = true; const t0 = b.textContent; b.textContent = 'やることを取り出しています…';
+  try {
+    const r = (await call('aiTaskOps')({ action: 'fromOrder', orderId: b.dataset.ordtask })).data;
+    if (r.already) { if (confirm(`すでに ${r.n}件をタスク管理に入れています。もう一度、取り出して追加しますか?(同じ内容は重複しません)`)) { b.textContent = '取り出しています…'; const r2 = (await call('aiTaskOps')({ action: 'fromOrder', orderId: b.dataset.ordtask, again: true })).data; toast(`タスク管理に ${r2.n}件を入れました`); b.textContent = `タスク管理に入れ済み(${r2.n}件)`; } else b.textContent = t0; }
+    else { toast(`タスク管理に ${r.n}件を入れました(仕事 → タスク管理で確認できます)`); b.textContent = `タスク管理に入れ済み(${r.n}件)`; }
+  } catch (err) { b.textContent = t0; toast(/NOT_FOUND|not-found|404/.test(String(err.message)) ? 'この機能には、バックエンドの更新が必要です' : err.message); }
+  b.disabled = false;
+});
 function hmZeroOpen() {
   const need = paList.filter(paNeeds).length, tasksN = tdRows().open.length, nDec = decisions.length, rep = pendingB().length;
   dxModal(`<h3>今日やることを、ゼロにしますか?</h3><p>次のものを、いったん片付けます。</p>
