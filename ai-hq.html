@@ -974,6 +974,14 @@
   .pl-ib svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
   [data-pltip]:hover::after{content:attr(data-pltip);position:absolute;top:100%;left:50%;transform:translate(-50%,6px);background:#222;color:#fff;font-size:12px;padding:4px 8px;border-radius:6px;white-space:nowrap;z-index:30;pointer-events:none}
   .pl-legend{display:flex;gap:14px;flex-wrap:wrap;color:var(--ink-3);font-size:12px;margin:2px 4px 8px}.pl-legend span{display:inline-flex;gap:5px;align-items:center}.pl-legend i{width:3px;height:14px;border-radius:2px;display:inline-block}
+  .pa-act{font-size:12px;color:var(--ink-3);margin:2px 0 2px 10px;padding-left:10px;border-left:2px solid var(--line)}.pa-act time{margin-right:8px}
+  .pl-seg{display:inline-flex;background:var(--surface);border-radius:999px;padding:2px;margin-left:8px;vertical-align:middle}.pl-seg button{border:0;background:none;color:var(--ink-3);font:inherit;font-size:12px;padding:3px 10px;border-radius:999px;cursor:pointer}.pl-seg button[aria-pressed=true]{background:var(--accent);color:#fff}
+  .pl-fam{list-style:none;margin:0;padding:0}.pl-fam li{display:flex;gap:10px;align-items:center;padding:12px 14px;border-top:1px solid var(--line)}.pl-fam b{font-weight:600}.pl-fam small{color:var(--ink-3)}.pl-fam .sp{flex:1}.pl-fam .chip{font-size:11.5px;color:var(--ink-3);border:1px solid var(--line-strong);border-radius:999px;padding:0 8px;white-space:nowrap}
+  @media (min-width:1100px){
+    .pl-sheet{left:auto;right:16px;top:76px;bottom:16px;width:min(580px,42vw);max-width:none;margin:0;border-radius:20px;max-height:none;transform:translateX(115%)}.pl-sheet.on{transform:none}.pl-grab{display:none}
+    body.pl-open #plScrim2{background:transparent;pointer-events:none}
+    body.pl-open #pbody{padding-right:calc(min(580px,42vw) + 32px)}
+  }
   .pl-total{color:var(--ink-3);font-size:12px;margin:0 4px 6px}
   ul.pl-list{margin:0;padding:0;list-style:none;background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
   .pl-day{padding:5px 14px;background:var(--surface-2);color:var(--ink-3);font-size:12px;font-weight:600}
@@ -2102,16 +2110,17 @@ function paTodo(p, t) {
 /** この人とのやり取りの記録(新しい順)。左=保護者のメッセージ(日ごと)、右=管理者の対応(誰が・いつ・開始/済み・メモ) */
 function paThreadHTML(p) {
   const all = ((p.thread && p.thread.length) ? p.thread : (p.recent || []).map(m => ({ at: m.at, k: 'in', t: m.text }))).slice().sort((a, b) => String(b.at).localeCompare(String(a.at)));
-  const ins = all.filter(e => e.k !== 'act'); // 管理者の対応(誰がいつ押したか)は、画面には出さない(記録はデータに残る)
+  const ins = all; // 受信・塾からの返信・管理者の操作(誰がいつ何をしたか)を、すべて時間順に出す
   const full = paThreadFull === p.id, vis = full ? ins : ins.slice(0, 40);
   let day = '', left = '';
   vis.forEach(e => {
     const d = paDayKey(paMs(e.at));
     if (d !== day) { day = d; left += `<p class="pa-td">${esc(paDayLabel(d))}</p>`; }
+    if (e.k === 'act') { left += `<div class="pa-act"><time>${esc(paHm(e.at))}</time>${e.by ? esc(paWho(e.by)) + ': ' : ''}${esc(e.t)}</div>`; return; }
     left += e.k === 'out' ? `<div class="pa-out"><time>${esc(paHm(e.at))} ・ 塾から${e.by ? '(' + esc(e.by) + ')' : ''}</time>${esc(e.t).replace(/\n/g, '<br>')}</div>` : `<div class="pa-in"><time>${esc(paHm(e.at))}</time>${esc(e.t).replace(/\n/g, '<br>')}</div>`;
   });
   const more = ins.length > vis.length ? `<button type="button" class="btn ghost" data-pact="threadmore" data-uid="${esc(p.id)}">さらに古い ${ins.length - vis.length}件を表示</button>` : '';
-  return `<div class="pa-thread"><h4>やり取り(新しい順・${ins.length}件)</h4>${left || '(まだありません)'}${more}</div>`;
+  return `<div class="pa-thread"><h4>会話の記録(新しい順・受信 ${ins.filter(e => e.k === 'in').length}件)</h4>${left || '(まだありません)'}${more}</div>`;
 }
 /* ---------- 要点・終わったことを、日付ごとの時系列で見せる(日付が変われば、行を分ける。新しい日が上) ---------- */
 const PA_WD = '日月火水木金土';
@@ -2180,6 +2189,7 @@ const LINE_CHAT_BASE = 'https://chat.line.biz/U91689be46b4c7a64eeb685a327019f50'
 const jstStamp = ms => { if (!ms) return ''; const d = new Date(ms + 9 * 3600e3), p2 = n => String(n).padStart(2, '0'); return `${p2(d.getUTCMonth() + 1)}月${p2(d.getUTCDate())}日(${'日月火水木金土'[d.getUTCDay()]}) ${p2(d.getUTCHours())}:${p2(d.getUTCMinutes())}`; };
 const paAgo = ms => { const m = Math.floor((Date.now() - ms) / 60000); return m < 1 ? 'たった今' : m < 60 ? m + '分前' : m < 1440 ? Math.floor(m / 60) + '時間前' : Math.floor(m / 1440) + '日前'; };
 /** 全保護者の一覧(1人=1行)。状態は人が選ぶ。行をタップすると、その下にやり取りと状態の選択が開く */
+let plAll = false, plFam = null; // 全保護者: 塾生リストの、まだLINEに結びつかない家庭も出す
 let paFiltSt = 'todo', paQuery = '', paSel = new Set(), paTools = false; // todo=要確認(やることが残っている・見落とし疑い・人が要対応にした人)
 /** 要確認: 返信などの対応がまだの人のうち、AIが拾った「やること」が残っている・AIが拾っていない発言がある・人が要対応/対応中にした人 */
 const paNeeds = p => { const st = paStatus(p); return (st === 'need' || st === 'working') || ((st === 'new') && (paOpenTodos(p).length > 0 || paMissed(p).length > 0)); };
@@ -2244,7 +2254,9 @@ function paTableInner() {
   for (const p of part) { const day = paDayKey(paMs(p.lastInAt) || Date.now()); if (day !== prev) { h += `<li class="pl-day">${esc(paDayLabel(day))}</li>`; prev = day; } h += paRow(p); }
   const empty = `<li class="pl-empty">${plSvg('check').replace('<svg', '<svg style="width:42px;height:42px;color:var(--ok);stroke:currentColor;fill:none;stroke-width:1.8"')}<div><b>${paList.length ? '該当する保護者はいません' : 'まだ受信がありません'}</b></div><div>${paQuery ? '検索の言葉を変えてみてください' : ''}</div></li>`;
   const pg = pages > 1 ? `<div class="pl-pager"><button type="button" data-pl="page" data-plp="${plPage - 1}" ${plPage === 1 ? 'disabled' : ''} aria-label="前へ">‹</button>${Array.from({ length: pages }, (_, i) => `<button type="button" data-pl="page" data-plp="${i + 1}"${i + 1 === plPage ? ' aria-current="true"' : ''}>${i + 1}</button>`).join('')}<button type="button" data-pl="page" data-plp="${plPage + 1}" ${plPage === pages ? 'disabled' : ''} aria-label="次へ">›</button></div>` : '';
-  return `<div class="pl-total">全${paList.length}人・届いた順${all.length !== paList.length ? ` ・ 表示 ${all.length}人` : ''}</div><ul class="pl-list">${h || empty}</ul>${pg}`;
+  const q = paQuery.trim().toLowerCase(), fams = plAll && plFam ? plFam.filter(f => !q || (f.label + ' ' + f.school + ' ' + f.lines.join(' ')).toLowerCase().includes(q)) : [];
+  const famHTML = !plAll ? '' : plFam === null ? '<p class="pk" style="margin:14px 4px">塾生リストの保護者を読み込んでいます…</p>' : plFam === false ? '<p class="pk" style="margin:14px 4px">読み込めませんでした(バックエンドの更新が必要かもしれません)</p>' : `<div class="pl-total" style="margin-top:18px">LINE未連携の保護者 ${fams.length}家庭(塾生リストの保護者のうち、公式LINEの友だちと結びついていない家庭)</div><ul class="pl-fam">${fams.map(f => `<li><span><b>${esc(f.label)}</b><br><small>${esc([f.school, f.grade, f.lines.length ? 'LINE名: ' + f.lines.join('・') : ''].filter(Boolean).join(' ・ '))}</small></span><span class="sp"></span><span class="chip">LINE未連携</span></li>`).join('') || '<li><small>該当する家庭はありません</small></li>'}</ul>`;
+  return `<div class="pl-total">${plAll ? `やり取りのある保護者 ${paList.length}人` : `全${paList.length}人・届いた順`}${all.length !== paList.length ? ` ・ 表示 ${all.length}人` : ''}<span class="pl-seg" role="group" aria-label="表示"><button type="button" data-pl="allno" aria-pressed="${!plAll}">やり取りあり</button><button type="button" data-pl="allyes" aria-pressed="${plAll}">全保護者</button></span></div><ul class="pl-list">${h || empty}</ul>${pg}${famHTML}`;
 }
 function plkHTML() {
   const unlinked = paList.filter(p => !(p.children || []).length).length;
@@ -4072,7 +4084,7 @@ function plSyncOverlay() {
     sb.scrollTop = y;
     if (actId) { const t = document.getElementById(actId); if (t) { t.focus({ preventScroll: true }); if (pos && t.setSelectionRange) t.setSelectionRange(pos[0], pos[1]); } }
   }
-  sh.classList.toggle('on', !!p);
+  sh.classList.toggle('on', !!p); document.body.classList.toggle('pl-open', !!p);
   document.getElementById('plModal').classList.toggle('on', here && plModalOn);
   document.getElementById('plScrim').classList.toggle('on', drOn);
   document.getElementById('plScrim2').classList.toggle('on', !!p || (here && plModalOn));
@@ -4084,6 +4096,8 @@ async function plReset(btn) {
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-pl]'); if (!b) return;
   const a = b.dataset.pl;
+  if (a === 'allno') { plAll = false; renderPanel(); return; }
+  if (a === 'allyes') { plAll = true; renderPanel(); if (!Array.isArray(plFam)) call('aiParentOps')({ action: 'families' }).then(r => { plFam = r.data.families || []; renderPanel(); }).catch(() => { plFam = false; renderPanel(); }); return; }
   if (a === 'menu') { plDrawerOn = true; plSyncOverlay(); return; }
   if (a === 'close') { plDrawerOn = false; plSyncOverlay(); return; }
   if (a === 'close2') { if (plModalOn) plModalOn = false; else { paOpen = null; paCompose = null; } renderPanel(); return; }
